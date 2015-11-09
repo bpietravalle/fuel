@@ -1,0 +1,11 @@
+node_modules/
+coverage/
+bower_components/
+.sass-cache/
+.idea/
+.tmp/
+dist/
+
+*.swo
+*.swp
+*.swn
