@@ -2,6 +2,6 @@
   'use strict';
 
   angular
-    .module('fuel', ['ngAnimate', 'ngCookies', 'ngTouch', 'ngSanitize']);
+    .module('firebase-fuel', ['firebase-starter','platanus.inflector']);
 
 })();

@@ -99,7 +99,7 @@
     }
 
 
-    angular.module("fireStarter.services")
+    angular.module("firebase-fuel")
         .factory("utils", utilsFactory);
 
 })();

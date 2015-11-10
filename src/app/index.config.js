@@ -2,19 +2,14 @@
   'use strict';
 
   angular
-    .module('fuel')
+    .module('firebase-fuel')
     .config(config);
 
   /** @ngInject */
-  function config($logProvider, toastr) {
-    // Enable log
+  function config($logProvider) {
+
     $logProvider.debugEnabled(true);
 
-    // Set options third-party lib
-    toastr.options.timeOut = 3000;
-    toastr.options.positionClass = 'toast-top-right';
-    toastr.options.preventDuplicates = true;
-    toastr.options.progressBar = true;
   }
 
 })();

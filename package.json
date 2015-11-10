@@ -1,6 +1,6 @@
 {
   "name": "fuel",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "dependencies": {},
   "scripts": {
     "test": "gulp test"

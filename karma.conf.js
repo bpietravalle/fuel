@@ -16,8 +16,9 @@ function listFiles() {
         .concat([
             path.join(conf.paths.src, '/app/**/*.module.js'),
             path.join(conf.paths.src, '/app/**/*.js'),
+            path.join(conf.paths.src, '/test/*.js'),
+            path.join(conf.paths.src, '/testutils/*.js'),
             path.join(conf.paths.src, '/**/*.spec.js'),
-            path.join(conf.paths.src, '/**/*.mock.js'),
             path.join(conf.paths.src, '/**/*.html')
         ]);
 }
@@ -42,7 +43,7 @@ module.exports = function(config) {
         },
 
         // reporters: ['notify', 'progress'],
-        reporters: ['coverage', 'spec', 'progress', 'notify', 'nested'],
+        reporters: ['spec', 'progress', 'notify', 'nested'],
 
         ngHtml2JsPreprocessor: {
             stripPrefix: 'src/',
@@ -55,12 +56,10 @@ module.exports = function(config) {
             'karma-phantomjs-launcher',
             'karma-angular-filesort',
             'karma-spec-reporter',
-            'karma-coverage',
             // 'karma-verbose-reporter',
             'karma-nested-reporter',
             'karma-notify-reporter',
             'karma-jasmine-matchers',
-            'karma-sinon',
             'karma-jasmine',
             'karma-ng-html2js-preprocessor'
         ],

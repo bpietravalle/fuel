@@ -2,10 +2,11 @@
     "use strict";
 
     describe("FirePath factory", function() {
-        var path, $window, fuel, ref, utils, fireEntity, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
+        var path, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
 
         beforeEach(function() {
-            angular.module("fireStarter.services")
+            angular.module("firebase-fuel")
+                .constant("FBURL", "https://your-firebase.firebaseio.com/")
                 .factory("session", function() {
                     return {
                         getId: jasmine.createSpy("getId").and.callFake(function() {
@@ -14,11 +15,14 @@
                         })
                     }
                 });
-            module("fireStarter.services");
-            inject(function(_fireEntity_, _$window_, _utils_, _firePath_, _$rootScope_, _$q_, _$log_, _$injector_) {
+            module("testutils");
+            module("firebase-fuel");
+            MockFirebase.override();
+            inject(function(_fuel_, _$window_, _utils_, _testutils_, _firePath_, _$rootScope_, _$q_, _$log_, _$injector_) {
+                testutils = _testutils_;
                 utils = _utils_;
                 $window = _$window_;
-                fireEntity = _fireEntity_;
+                fuel = _fuel_;
                 $rootScope = _$rootScope_;
                 $injector = _$injector_;
                 firePath = _firePath_;
@@ -37,7 +41,7 @@
             };
             spyOn($log, "info");
             path = firePath("trips", options);
-            // fuel = fireEntity("trips");
+            // fuel = fuel("trips");
         });
         afterEach(function() {
             path = null;
@@ -66,8 +70,8 @@
             ["mainRecord", "trips/1", "1"],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-            ["makeNestedRef", "trips/1/hotels/5/rooms/100", "1/hotels/5/rooms", "100"],
-            ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
+            // ["makeNestedRef", "trips/1/hotels/5/rooms/100", "1/hotels/5/rooms", "100"],
+            // ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
             // ["userNestedArray", "users/1/trips"],
             // ["userNestedRecord", "users/1/trips/5", "5"],
             ["geofireArray", "geofire/trips"],
@@ -89,7 +93,7 @@
                     expect(test).toBeAPromise();
                 });
                 it("should be an angularfire object/array", function() {
-                    expect(getPromValue(test).ref()).toBeAFirebaseRef();
+                    expect(getPromValue(test).$ref()).toBeAFirebaseRef();
                 });
 
                 it("should create the correct path", function() {
@@ -100,13 +104,13 @@
 
         paths.forEach(testPaths);
 
-				describe("currentRef",function(){
-					it("shouoldn't be defined",function(){
-						expect(path.currentRef()).not.toBeDefined();
+        describe("currentRef", function() {
+            it("shouoldn't be defined", function() {
+                expect(path.currentRef()).not.toBeDefined();
 
-					});
+            });
 
-				});
+        });
 
         describe("rootRef", function() {
             it("is a firebaseRef", function() {
@@ -125,7 +129,6 @@
                 path.setCurrentRef(ref);
                 $rootScope.$digest();
                 $rootScope.$digest();
-                // expect(path.gsetCurrentPath).toHaveBeenCalledWith("data/child");
                 expect(path.currentRef()).toEqual(ref);
             });
 
@@ -183,7 +186,6 @@
                     it("call $log info with: " + y[3], function() {
                         path.checkPathParams(y[1]);
                         $rootScope.$digest();
-                        // logCheck(null,true);
                         logContains(y[3], true);
                     });
                 });
@@ -200,7 +202,7 @@
                         };
                         firePath("trips", options);
 
-                    }).toThrow(),"object";
+                    }).toThrow(), "object";
                 });
                 it("should throw error if no sessionIdMethod is present", function() {
                     expect(function() {
@@ -212,6 +214,7 @@
 
                     }).toThrow();
                 });
+
 
             });
 
@@ -248,34 +251,15 @@
         currentPaths.forEach(testCurrentPath);
 
         function logCheck(x, flag) {
-            if (flag === true) {
-                return expect($log.info.calls.allArgs()).toEqual(x);
-            } else {
-                it("should log:" + x, function() {
-                    expect($log.info.calls.allArgs()).toEqual(x);
-                });
-            }
+					return testutils.logCheck(x,flag);
         }
 
         function getPromValue(obj, flag) {
-            if (flag === true) {
-                return obj.$$state.value['data'];
-            } else {
-                return obj.$$state.value;
-            }
+					return testutils.getPromValue(obj,flag);
         }
+
         function logContains(message, flag) {
-            var logArray = $log.info.calls.allArgs();
-            var flatLog = logArray.reduce(function(x, y) {
-                return x.concat(y);
-            }, []);
-            if (flag === true) {
-                return expect(flatLog.indexOf(message)).toBeGreaterThan(-1);
-            } else {
-                it("should call $log.info with " + message, function() {
-                    expect(flatLog.indexOf(message)).toBeGreaterThan(-1);
-                });
-            }
+					return testutils.logContains(message, flag);
         }
     });
 

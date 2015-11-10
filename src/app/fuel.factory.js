@@ -1,24 +1,23 @@
 (function() {
     "use strict";
-    var FireEntity;
+    var Fuel;
 
 
-    angular.module("fireStarter.services")
-        .factory("fireEntity", FireEntityFactory);
+    angular.module("firebase-fuel")
+        .factory("fuel", FuelFactory);
 
     /** @ngInject */
-    function FireEntityFactory(utils, $timeout, firePath, $q, $log, $injector) {
+    function FuelFactory(utils, firePath, $q, $log, $injector) {
 
         return function(path, options) {
-            var fb = new FireEntity(utils, $timeout, firePath, $q, $log, $injector, path, options);
+            var fb = new Fuel(utils, firePath, $q, $log, $injector, path, options);
             return fb.construct();
         };
 
     }
 
-    FireEntity = function(utils, $timeout, firePath, $q, $log, $injector, path, options) {
+    Fuel = function(utils, firePath, $q, $log, $injector, path, options) {
         this._utils = utils;
-        this._timeout = $timeout;
         this._firePath = firePath;
         this._q = $q;
         this._log = $log;
@@ -74,61 +73,65 @@
     };
 
 
-    FireEntity.prototype = {
+    Fuel.prototype = {
         construct: function() {
             var self = this;
             var entity = {};
 
-            entity.mainArray = mainArray;
+            // entity.mainArray = mainArray;
             // entity.mainRecord = mainRecord;
 
             /* fireBaseRef Mngt */
+            entity.currentBase = getCurrentBase;
             entity.currentRef = getCurrentRef;
             entity.currentPath = getCurrentPath;
+            entity.currentParentRef = getCurrentParentRef;
 
             /*Queries*/
-            entity.loadMainArray = loadMainArray;
-            entity.loadMainRecord = loadMainRecord;
+            entity.load = load;
 
             /*Commands*/
-            entity.createMainRecord = createMainRecord;
-            entity.removeMainRecord = removeMainRecord;
+            entity.add = createMainRecord;
+						entity.save = save;
+            entity.remove = removeMainRecord;
             entity.inspect = inspect;
 
-            if (self._geofire === true) {
-                //four below should be private
-                entity.createLocationRecord = createLocationRecord;
-                entity.removeLocationRecord = removeLocationRecord;
+            // if (self._geofire === true) {
+            //     //four below should be private
+            //     entity.createLocationRecord = createLocationRecord;
+            //     entity.removeLocationRecord = removeLocationRecord;
 
-                entity.geofireSet = geofireSet;
-                entity.geofireGet = geofireGet;
-                entity.geofireRemove = geofireRemove;
+            //     entity.geofireSet = geofireSet;
+            //     entity.geofireGet = geofireGet;
+            //     entity.geofireRemove = geofireRemove;
 
-                entity.trackLocations = trackLocations;
-                entity.trackLocation = trackLocation;
-                entity.untrackLocations = untrackLocations;
-                entity.untrackLocation = untrackLocation;
-            }
+            //     entity.trackLocations = trackLocations;
+            //     entity.trackLocation = trackLocation;
+            //     entity.untrackLocations = untrackLocations;
+            //     entity.untrackLocation = untrackLocation;
+            // }
 
-            if (self._user === true) {
-                // entity.userNestedArray = userNestedArray;
-                // entity.userNestedRecord = userNestedRecord;
-                entity.loadUserRecords = loadUserRecords;
-                entity.loadUserRecord = loadUserRecord;
-                entity.createUserAndMain = createUserAndMain;
-                entity.createUserRecord = createUserRecord;
-                entity.removeUserRecord = removeUserRecord;
-                entity.loadMainFromUser = loadMainFromUser;
-            }
+            // if (self._user === true) {
+            //     // entity.userNestedArray = userNestedArray;
+            //     // entity.userNestedRecord = userNestedRecord;
+            //     entity.loadUserRecords = loadUserRecords;
+            //     entity.loadUserRecord = loadUserRecord;
+            //     entity.createUserAndMain = createUserAndMain;
+            //     entity.createUserRecord = createUserRecord;
+            //     entity.removeUserRecord = removeUserRecord;
+            //     entity.loadMainFromUser = loadMainFromUser;
+            // }
 
-            if (self._user === true && self._geofire === true) {
-                entity.createWithUserAndGeo = createWithUserAndGeo;
-            }
+            // if (self._user === true && self._geofire === true) {
+            //     entity.createWithUserAndGeo = createWithUserAndGeo;
+            // }
 
-            if (self._sessionAccess === true) {
-                entity.session = session;
-                entity.sessionId = sessionId;
-            }
+            // if (self._sessionAccess === true) {
+            //     entity.session = session;
+            //     entity.sessionId = sessionId;
+            // }
+
+						getCurrentRef();
 
             switch (self._nestedArrays) {
                 case []:
@@ -153,7 +156,7 @@
                 return self._pathMaster.currentParentRef();
             }
 
-            function getCurrentFirebase() {
+            function getCurrentBase() {
                 return self._pathMaster.currentBase();
             }
 
@@ -163,23 +166,6 @@
 
             /******************************/
 
-
-            /*******************
-             * Access to firebase
-             * *******************/
-
-
-            /* @return{Promise(fireStarter)} returns a configured firebaseObj, firebaseArray, or a Geofire object
-             */
-
-            function fullQueryPath(args) {
-
-                if (angular.isString(getCurrentPath())) {
-                    if (getCurrentPath() === path) {
-                        return getCurrentPath();
-                    }
-                }
-            }
 
 
             function mainArray() {
@@ -226,16 +212,24 @@
              * ***************/
 
             /*Queries*/
+            function load(id) {
+                if (angular.isUndefined(id)) {
+                    return loadMainArray();
+                } else {
+                    return loadMainRecord(id);
+                }
+            }
+
             function loadMainArray() {
                 return mainArray()
-                    .then(loadResult)
+                    .then(loaded)
                     .then(querySuccess)
                     .catch(standardError);
             }
 
             function loadMainRecord(id) {
                 return mainRecord(id)
-                    .then(loadResult)
+                    .then(loaded)
                     .then(querySuccess)
                     .catch(standardError);
             }
@@ -251,14 +245,14 @@
                 }
 
                 return qAll(mainArray(), data)
-                    .then(addTo)
+                    .then(add)
                     .then(commandSuccess)
                     .catch(standardError);
             }
 
             function removeMainRecord(key) {
                 return mainRecord(key)
-                    .then(removeResult)
+                    .then(remove)
                     .then(commandSuccess)
                     .catch(standardError);
             }
@@ -296,7 +290,7 @@
 
             function geofireRemove(k) {
                 return qAll(geofireArray(), k)
-                    .then(removeFrom)
+                    .then(remove)
                     .then(commandSuccess)
                     .catch(standardError);
             }
@@ -318,7 +312,7 @@
 
                 function addDataAndPass(res) {
                     //coords don't pass if send more than one record
-                    return qAll(addTo(res), {
+                    return qAll(add(res), {
                         lat: res[1].lat,
                         lon: res[1].lon
                     });
@@ -334,7 +328,7 @@
             function removeLocationRecord(key) {
 
                 return mainLocation(key)
-                    .then(removeResult)
+                    .then(remove)
                     .then(commandSuccess)
                     .catch(standardError);
 
@@ -348,13 +342,13 @@
 
             function loadUserRecords() {
                 return userNestedArray()
-                    .then(loadResult)
+                    .then(loaded)
                     .catch(standardError);
             }
 
             function loadUserRecord(id) {
                 return userNestedRecord(id)
-                    .then(loadResult)
+                    .then(loaded)
                     .catch(standardError);
             }
 
@@ -385,7 +379,7 @@
                 return qAll(userNestedArray(), {
                         mainArrayKey: d.key()
                     })
-                    .then(addTo)
+                    .then(add)
                     .then(commandSuccess)
                     .catch(standardError);
             }
@@ -394,7 +388,7 @@
             function removeUserRecord(key) {
 
                 return userNestedRecord(key)
-                    .then(removeResult)
+                    .then(remove)
                     .then(commandSuccess)
                     .catch(standardError);
             }
@@ -497,7 +491,7 @@
 
                 // function removeMainAndPassKey(res) {
 
-                // return qAll(removeFrom(res), res[1]);
+                // return qAll(remove(res), res[1]);
                 // }
 
                 // function removeCoords(res) {
@@ -543,7 +537,7 @@
 
                 newProp[addRec] = function(id, data) {
                     return qAll(newProp[arrName](id), data)
-                        .then(addTo)
+                        .then(add)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
@@ -558,27 +552,27 @@
 
                 newProp[removeRec] = function(mainRecId, key) {
                     return newProp[recName](mainRecId, key)
-                        .then(removeResult)
+                        .then(remove)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
                 newProp[loadRec] = function(id, idxOrRec) {
                     return newProp[recName](id, idxOrRec)
-                        .then(loadResult)
+                        .then(loaded)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
                 newProp[loadRecs] = function(id) {
                     return newProp[arrName](id)
-                        .then(loadResult)
+                        .then(loaded)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
                 newProp[saveRec] = function(id, idxOrRec) {
                     return qAll(newProp[arrName](id), idxOrRec)
-                        .then(saveTo)
+                        .then(save)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
@@ -591,60 +585,43 @@
             /****************
              **** Helpers ****/
 
-            /* 
-             * For processing request once
-             * firebaseArray|Object is accessible*/
 
-
-            /* @param{Array}[firebaseArray,data object or query params]
-             *@return{Promise(firebaseRef)}
-             */
-
-            function addTo(res) {
-                self._log.info(res);
-                return res[0].add(res[1]);
+            function add(res) {
+                return res[0].$add(res[1]);
             }
 
-            function removeFrom(res) {
-                return res[0].remove(res[1]);
+            function remove(res) {
+                if (Array.isArray(res)) {
+                    return res[0].$remove(res[1]);
+                } else {
+                    return res.$remove();
+                }
             }
 
-            function saveTo(res) {
-                return res[0].save(res[1]);
+            function save(res) {
+                if (Array.isArray(res)) {
+                    return res[0].$save(res[1]);
+                } else {
+                    return res.$save();
+                }
             }
-
 
             function getRecord(res) {
-                return res[0].getRecord(res[1]);
-            }
-
-            /* @param{fireBaseObject|firebaseArray}
-             * @return{Promise(firebaseRef)}
-             */
-
-
-            function loadResult(res) {
-                return res.loaded();
+                return res[0].$getRecord(res[1]);
             }
 
 
-            /* @param{fireBaseObject}
-             * @return{Promise(firebaseRef)}
-             */
-
-            function removeResult(res) {
-                return res.remove();
+            function loaded(res) {
+                return res.$loaded();
             }
 
-            function saveResult(res) {
-                return res.save();
-            }
 
             /*******************************/
 
+            //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
-                if (Array.isArray(res) && res[0].ref) {
+                if (Array.isArray(res)) {
                     self._pathMaster.setCurrentRef(res[0]);
                 } else {
                     self._pathMaster.setCurrentRef(res);

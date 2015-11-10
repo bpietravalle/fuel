@@ -19,6 +19,6 @@
 
     }
 
-    angular.module("fireStarter.services")
+    angular.module("firebase-fuel")
         .factory("logger", loggerFactory);
 })();

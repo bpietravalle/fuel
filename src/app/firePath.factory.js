@@ -2,38 +2,37 @@
     "use strict";
     var FirePath;
 
-    angular.module("fireStarter.services")
+    angular.module("firebase-fuel")
         .factory("firePath", firePathFactory);
 
     /** @ngInject */
-    function firePathFactory(utils, $window, $q, $log, $injector, FBURL, fireStarter) {
+    function firePathFactory(utils, $window, $q, $log, $injector, fireStarter) {
 
-        return function(path, options) {
-            var fb = new FirePath(utils, $window, $q, $log, $injector, fireStarter, path, options, FBURL);
+        return function(path, options, constant) {
+            var fb = new FirePath(utils, $window, $q, $log, $injector, fireStarter, path, options, constant);
             return fb.construct();
 
         };
 
     }
 
-    FirePath = function(utils, $window, $q, $log, $injector, fireStarter, path, options, FBURL) {
+    FirePath = function(utils, $window, $q, $log, $injector, fireStarter, path, options, constant) {
         this._utils = utils;
         this._window = $window;
-        this._FBURL = FBURL;
         this._q = $q;
         this._log = $log;
         this._injector = $injector;
         this._path = path;
         this._fireStarter = fireStarter;
         this._options = options || null;
-        if (!this._FBURL) {
-            if (this._options.root) {
-                this._rootPath = this._injector.get(this._options.root);
-            } else {
-                throw new Error("You must provide a root path, either by a constant 'FBURL' or by providing a service name to inject");
-            }
-        } else {
-            this._rootPath = this._FBURL;
+        this._constant = constant || "FBURL";
+        this._rootPath = this._injector.get(this._constant);
+        if (!angular.isString(this._rootPath)) {
+            throw new Error("You must provide a root path, either by a constant 'FBURL' or by providing a service name to inject");
+        }
+        this._const = undefined;
+        if (this._constant !== "FBURL") {
+            this._const = this._constant;
         }
         this._sessionAccess = false;
         this._geofire = false;
@@ -109,9 +108,10 @@
                 // fire.mainLocationsRecord = mainLocationsRecord;
             }
 
-            /*************** firebaseRefs ************/
-
+						//just trying this for now
 						setCurrentRef(root());
+
+            /*************** firebaseRefs ************/
 
             function checkPathParams(path, type) {
                 var ref, str = fullPath(path);
@@ -156,7 +156,7 @@
 
             function buildFire(type, path, flag) {
 
-                return self._q.when(self._fireStarter(type, path, flag))
+                return self._q.when(self._fireStarter(type, path, flag, self._const))
                     .then(setCurrentRefAndReturn)
                     .catch(standardError)
 
@@ -175,19 +175,19 @@
             }
 
             function mainArray() {
-                return checkPathParams(mainArrayPath(), "array");
+                return checkPathParams(mainArrayPath(), "ARRAY");
             }
 
             function mainRecord(id) {
-                return checkPathParams(mainRecordPath(id), "object");
+                return checkPathParams(mainRecordPath(id), "OBJECT");
             }
 
             function nestedArray(recId, name) {
-                return checkPathParams(nestedArrayPath(recId, name), "array");
+                return checkPathParams(nestedArrayPath(recId, name), "ARRAY");
             }
 
             function nestedRecord(mainRecId, arrName, recId) {
-                return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "object");
+                return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
             }
 
             //need test for type
@@ -197,11 +197,11 @@
 
             /* User Object refs */
             function userNestedArray() {
-                return checkPathParams(userNestedArrayPath(), "array");
+                return checkPathParams(userNestedArrayPath(), "ARRAY");
             }
 
             function userNestedRecord(id) {
-                return checkPathParams(userNestedRecordPath(id), "object");
+                return checkPathParams(userNestedRecordPath(id), "OBJECT");
             }
 
             /* Geofire refs */
@@ -215,11 +215,11 @@
 
             /* Main Location Array refs */
             function mainLocationsArray() {
-                return checkPathParams(mainLocationArrayPath(), "array");
+                return checkPathParams(mainLocationArrayPath(), "ARRAY");
             }
 
             function mainLocationsRecord(id) {
-                return checkPathParams(mainLocationRecordPath(id), "object");
+                return checkPathParams(mainLocationRecordPath(id), "OBJECT");
             }
 
             /************ Paths *************************/
@@ -385,15 +385,24 @@
                 return fire._currentBase;
             }
 
+            //simple object and array command returns ref;
+            //geofire commands do not return anything
+            //qAll command returns array; ref wil be first item;
+            //
+            //queries return fbobject or array - need to call $ref()
+            //geofire queries return the values but not a ref;
+
             function setCurrentRef(ref) {
                 var path;
                 return checkArray(ref)
                     .then(checkRefAndSet)
                     .catch(standardError);
 
+                //don't need this since taking care of in command success
+
                 function checkArray(ref) {
                     if (Array.isArray(ref)) {
-                        return self._q.when(ref[0])
+                        return self._q.when(ref[0].$ref())
                             .catch(function() {
                                 self._q.reject(("firebaseRef must be first item in the array"));
                             });
