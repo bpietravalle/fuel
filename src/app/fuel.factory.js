@@ -7,16 +7,17 @@
         .factory("fuel", FuelFactory);
 
     /** @ngInject */
-    function FuelFactory(utils, firePath, $q, $log, $injector) {
+    function FuelFactory($timeout, utils, firePath, $q, $log, $injector) {
 
         return function(path, options) {
-            var fb = new Fuel(utils, firePath, $q, $log, $injector, path, options);
+            var fb = new Fuel($timeout, utils, firePath, $q, $log, $injector, path, options);
             return fb.construct();
         };
 
     }
 
-    Fuel = function(utils, firePath, $q, $log, $injector, path, options) {
+    Fuel = function($timeout, utils, firePath, $q, $log, $injector, path, options) {
+        this._timeout = $timeout;
         this._utils = utils;
         this._firePath = firePath;
         this._q = $q;
@@ -89,6 +90,7 @@
 
             /*Queries*/
             entity.load = load;
+            entity.userRecordsByUID = userRecordsByUID;
             // entity.getRecord = getRecord;
 
             /*Commands*/
@@ -97,24 +99,30 @@
             entity.remove = removeMainRecord;
             entity.inspect = inspect;
 
-            // if (self._geofire === true) {
-            //     //four below should be private
-            //     entity.createLocationRecord = createLocationRecord;
-            //     entity.removeLocationRecord = removeLocationRecord;
+            if (self._geofire === true) {
+                entity.addLocationIndex = addLocationIndex;
+                entity.removeLocationIndex = removeLocationIndex;
 
-            //     entity.geofireSet = geofireSet;
-            //     entity.geofireGet = geofireGet;
-            //     entity.geofireRemove = geofireRemove;
+                //     entity.createLocationRecord = createLocationRecord;
+                //     entity.removeLocationRecord = removeLocationRecord;
 
-            //     entity.trackLocations = trackLocations;
-            //     entity.trackLocation = trackLocation;
-            //     entity.untrackLocations = untrackLocations;
-            //     entity.untrackLocation = untrackLocation;
-            // }
+                //     entity.geofireSet = geofireSet;
+                //     entity.geofireGet = geofireGet;
+                //     entity.geofireRemove = geofireRemove;
+
+                //     entity.trackLocations = trackLocations;
+                //     entity.trackLocation = trackLocation;
+                //     entity.untrackLocations = untrackLocations;
+                //     entity.untrackLocation = untrackLocation;
+            }
 
             if (self._user === true) {
-                entity.userNestedArray = userNestedArray;
-                entity.userNestedRecord = userNestedRecord;
+
+
+                entity.addUserIndex = addUserIndex;
+                entity.removeUserIndex = removeUserIndex;
+                // entity.userNestedArray = userNestedArray;
+                // entity.userNestedRecord = userNestedRecord;
                 entity.loadUserRecords = loadUserRecords;
                 entity.loadUserRecord = loadUserRecord;
                 entity.createWithUser = createWithUser;
@@ -198,13 +206,13 @@
                 return self._pathMaster.geofireArray();
             }
 
-            // /* User Object Interface */
-            function userNestedArray() {
-                return self._pathMaster.userNestedArray();
+            function locationsIndex(id) {
+                return self._pathMaster.locationsIndex(id);
             }
 
-            function userNestedRecord(id) {
-                return self._pathMaster.userNestedRecord(id);
+            // /* User Object Interface */
+            function userIndex() {
+                return self._pathMaster.userIndex();
             }
 
 
@@ -336,11 +344,39 @@
 
             }
 
+            function addLocationIndex(recId, key) {
+                return qAll(locationsIndex(recId), key)
+                    .then(addIndex)
+                    .then(commandSuccess)
+                    .catch(standardError);
+            }
+
+            function removeLocationIndex(recId, key) {
+                return qAll(locationsIndex(recId), key)
+                    .then(removeIndex)
+                    .then(commandSuccess)
+                    .catch(standardError);
+            }
+
 
             /* User Object Interface*/
 
             //TODO this needs to have option for saving as index
             //rather than firebaseArray.add()
+
+            function addUserIndex(key) {
+                return qAll(userIndex(), key)
+                    .then(addIndex)
+                    .then(commandSuccess)
+                    .catch(standardError);
+            }
+
+            function removeUserIndex(key) {
+                return qAll(userIndex(), key)
+                    .then(removeIndex)
+                    .then(commandSuccess)
+                    .catch(standardError);
+            }
 
             function loadUserRecords() {
                 return userNestedArray()
@@ -639,6 +675,67 @@
             function loaded(res) {
                 return res.$loaded();
             }
+
+            /* For Indices */
+
+            function addIndex(res) {
+                return self._timeout(function() {
+                        var data = {};
+                        data[res[1]] = true;
+                        return res[0].update(data);
+                    })
+                    .then(function() {
+                        return res[0];
+                    })
+                    .catch(standardError);
+            }
+
+            function removeIndex(res) {
+                return self._timeout(function() {
+                        var data = {};
+                        data[res[1]] = null;
+                        return res[0].update(data);
+                    })
+                    .then(function() {
+                        return res[0];
+                    })
+                    .catch(standardError);
+
+            }
+
+            /* For Queries */
+
+            function userRecordsByUID() {
+                return self._timeout(function() {
+                    return self._pathMaster.mainRef()
+                        .then(sortByUID)
+                        .catch(standardError);
+                });
+
+                function sortByUID(res) {
+                    return res.orderByChild("uid").once("value", function(snap) {
+                        return snap.val();
+                    });
+                }
+            }
+
+            function userRecordsByIndex() {
+                var keys = Object.keys(userIndex());
+                return self._q.all(keys.map(function(key) {
+                        return self._pathMaster.mainRef().orderByKey().equalTo(key).once("value", function(snap) {
+                            return snap.val();
+                        })
+                    }))
+                    .then(sendToArray)
+                    .catch(standardError);
+
+                function sendToArray(res) {
+
+                    self._log.info(res);
+                }
+
+            }
+
 
 
             /*******************************/

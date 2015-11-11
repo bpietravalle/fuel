@@ -70,6 +70,7 @@
             var fire = {};
 
             fire.rootRef = root;
+            fire.mainRef = mainRef;
             fire.mainArray = mainArray;
             fire.mainRecord = mainRecord;
             fire.nestedArray = nestedArray;
@@ -99,15 +100,13 @@
 
             if (self._sessionAccess === true) {
                 fire.userIndex = userIndex;
-                fire.userNestedArray = userNestedArray;
-                fire.userNestedRecord = userNestedRecord;
             }
             if (self._geofire = true) {
                 fire.geofireArray = geofireArray;
                 fire.geofireRecord = geofireRecord;
-								fire.locationsIndex = locationsIndex;
-                // fire.mainLocationsArray = mainLocationsArray;
-                // fire.mainLocationsRecord = mainLocationsRecord;
+                fire.locationsIndex = locationsIndex;
+                fire.mainLocationsArray = mainLocationsArray;
+                fire.mainLocationsRecord = mainLocationsRecord;
             }
 
             //just trying this for now
@@ -115,30 +114,37 @@
 
             /*************** firebaseRefs ************/
 
-            function checkPathParams(path, type) {
-                var ref, str = fullPath(path);
-                switch (getCurrentRef()) {
-                    case undefined:
-                        self._log.info("setting new firebase node");
-                        ref = setChild(relativePath(path));
+            function checkPathParams(path, type, flag) {
+                var ref, str;
+                switch (flag) {
+                    case true:
+                        ref = path;
                         break;
                     default:
-                        switch (str) {
-                            case getCurrentPath():
-                                self._log.info("Reusing currentRef");
-                                ref = getCurrentRef();
-                                break;
-                            case getCurrentParentPath():
-                                self._log.info("Using currentParentRef");
-                                ref = getCurrentParentRef();
+                        str = fullPath(path);
+                        switch (getCurrentRef()) {
+                            case undefined:
+                                self._log.info("setting new firebase node");
+                                ref = setChild(relativePath(path));
                                 break;
                             default:
-                                if (isCurrentChild(str)) {
-                                    self._log.info("Building childRef");
-                                    ref = buildChildRef(str);
-                                } else {
-                                    self._log.info("Setting new firebase node");
-                                    ref = setChild(relativePath(path));
+                                switch (str) {
+                                    case getCurrentPath():
+                                        self._log.info("Reusing currentRef");
+                                        ref = getCurrentRef();
+                                        break;
+                                    case getCurrentParentPath():
+                                        self._log.info("Using currentParentRef");
+                                        ref = getCurrentParentRef();
+                                        break;
+                                    default:
+                                        if (isCurrentChild(str)) {
+                                            self._log.info("Building childRef");
+                                            ref = buildChildRef(str);
+                                        } else {
+                                            self._log.info("Setting new firebase node");
+                                            ref = setChild(relativePath(path));
+                                        }
                                 }
                         }
                 }
@@ -180,6 +186,10 @@
                 return checkPathParams(mainArrayPath(), "ARRAY");
             }
 
+            function mainRef() {
+                return checkPathParams(mainArrayPath());
+            }
+
             function mainRecord(id) {
                 return checkPathParams(mainRecordPath(id), "OBJECT");
             }
@@ -198,16 +208,9 @@
             }
 
             /* User Object refs */
-            function userNestedArray() {
-                return checkPathParams(userNestedArrayPath(), "ARRAY");
-            }
 
             function userIndex() {
                 return checkPathParams(userNestedArrayPath());
-            }
-
-            function userNestedRecord(id) {
-                return checkPathParams(userNestedRecordPath(id), "OBJECT");
             }
 
             /* Geofire refs */
@@ -227,7 +230,8 @@
             function mainLocationsRecord(id) {
                 return checkPathParams(mainLocationRecordPath(id), "OBJECT");
             }
-						/* Locations Index */
+
+            /* Locations Index */
 
             function locationsIndex(recId) {
                 return checkPathParams(nestedArrayPath(recId, self._locationName));
@@ -346,8 +350,6 @@
                     return str.slice(rootPath().length).split('/');
                 }
             }
-
-
 
             function nodeIdx(path, str) {
                 return relativePathArray(path).indexOf(str);

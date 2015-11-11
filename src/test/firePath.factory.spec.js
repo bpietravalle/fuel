@@ -66,6 +66,7 @@
         });
 
         var paths = [
+            ["mainRef", "trips"],
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
@@ -74,12 +75,10 @@
             // ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
             ["userIndex", "users/1/trips"],
             ["locationsIndex", "trips/7/locations", "7"],
-            ["userNestedArray", "users/1/trips"],
-            ["userNestedRecord", "users/1/trips/5", "5"],
             ["geofireArray", "geofire/trips"],
             ["geofireRecord", "geofire/trips/5", "5"],
-            // ["mainLocationsArray", "locations/trips"],
-            // ["mainLocationsRecord", "locations/trips/5", "5"]
+            ["mainLocationsArray", "locations/trips"],
+            ["mainLocationsRecord", "locations/trips/5", "5"]
         ];
 
         function testPaths(y) {
@@ -94,7 +93,7 @@
                 it("should be a promise", function() {
                     expect(test).toBeAPromise();
                 });
-                if (y[0] !== "userIndex" && y[0] !== "locationsIndex") {
+                if (y[0] !== "userIndex" && y[0] !== "locationsIndex" && y[0] !== "mainRef") {
                     it("should be an angularfire object/array", function() {
                         expect(getPromValue(test).$ref()).toBeAFirebaseRef();
                     });
@@ -127,98 +126,6 @@
             it("should create the correct path", function() {
                 expect(subject.rootRef().path).toEqual(rootPath);
             });
-        });
-        describe("userIndex", function() {
-            beforeEach(function() {
-                test = subject.userIndex();
-                $rootScope.$digest();
-                subject.currentRef().update({
-                    "mainKey": true
-                });
-                subject.currentRef().flush();
-                $rootScope.$digest();
-                subject.currentRef().update({
-                    "secondKey": true
-                });
-                subject.currentRef().flush();
-                $rootScope.$digest();
-            });
-            describe("updating/saving index", function() {
-                it("should save keys correctly", function() {
-                    expect(getPromValue(test).getKeys()[0]).toEqual("mainKey");
-                    expect(getPromValue(test).getKeys()[1]).toEqual("secondKey");
-                    expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
-                });
-                it("should save value correctly", function() {
-                    expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
-                    expect(getPromValue(test).getData()["secondKey"]).toEqual(true);
-                });
-            });
-            describe("deleting/removing items", function() {
-                beforeEach(function() {
-                    this.before = subject.currentRef().getData();
-                    subject.currentRef().update({
-                        "mainKey": null
-                    });
-                    subject.currentRef().flush();
-                    $rootScope.$digest();
-                    this.after = subject.currentRef().getData();
-                });
-                it("should exist", function() {
-                    expect(this.after["mainKey"]).not.toBeDefined();
-                });
-            });
-
-
-        });
-        describe("locationsIndex", function() {
-            beforeEach(function() {
-                subject.mainArray()
-                $rootScope.$digest();
-                test = subject.currentRef();
-                flush();
-                flush();
-                // subject.currentRef().update({
-                //     "mainKey": true
-                // });
-                // subject.currentRef().flush();
-                // $rootScope.$digest();
-                // subject.currentRef().update({
-                //     "secondKey": true
-                // });
-                // subject.currentRef().flush();
-                // $rootScope.$digest();
-            });
-            it("should work", function() {
-                expect(test).toEqual("As");
-            });
-            // describe("updating/saving index", function() {
-            //     it("should save keys correctly", function() {
-            //         expect(getPromValue(test).getKeys()[0]).toEqual("mainKey");
-            //         expect(getPromValue(test).getKeys()[1]).toEqual("secondKey");
-            //         expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
-            //     });
-            //     it("should save value correctly", function() {
-            //         expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
-            //         expect(getPromValue(test).getData()["secondKey"]).toEqual(true);
-            //     });
-            // });
-            // describe("deleting/removing items", function() {
-            //     beforeEach(function() {
-            //         this.before = subject.currentRef().getData();
-            //         subject.currentRef().update({
-            //             "mainKey": null
-            //         });
-            // subject.currentRef().flush();
-            //         $rootScope.$digest();
-            //         this.after = subject.currentRef().getData();
-            //     });
-            //     it("should exist", function() {
-            //         expect(this.after["mainKey"]).not.toBeDefined();
-            //     });
-            // });
-
-
         });
 
         describe("setCurrentRef", function() {
@@ -291,6 +198,19 @@
                 });
             }
             params.forEach(checkPathTests);
+            describe("if passed a firebaseRef rather than path", function() {
+                beforeEach(function() {
+                    ref = ref.child("phones");
+                    subject.checkPathParams(ref, "ARRAY", true);
+                    $rootScope.$digest();
+                });
+                it("should work", function() {
+                    expect(subject.currentPath()).toEqual(rootPath + "phones");
+
+                });
+
+
+            });
         });
         describe("Invalid options", function() {
             describe("session", function() {
@@ -362,7 +282,6 @@
             $rootScope.$digest();
             subject.currentRef();
             $rootScope.$digest();
-
         }
 
         function logContains(message, flag) {
