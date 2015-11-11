@@ -91,6 +91,7 @@
             /*Queries*/
             entity.load = load;
             entity.userRecordsByUID = userRecordsByUID;
+            entity.userRecordsByIndex = userRecordsByIndex;
             // entity.getRecord = getRecord;
 
             /*Commands*/
@@ -103,12 +104,12 @@
                 entity.addLocationIndex = addLocationIndex;
                 entity.removeLocationIndex = removeLocationIndex;
 
-                //     entity.createLocationRecord = createLocationRecord;
-                //     entity.removeLocationRecord = removeLocationRecord;
+                entity.createLocationRecord = createLocationRecord;
+                entity.removeLocationRecord = removeLocationRecord;
 
-                //     entity.geofireSet = geofireSet;
-                //     entity.geofireGet = geofireGet;
-                //     entity.geofireRemove = geofireRemove;
+                entity.geofireSet = geofireSet;
+                entity.geofireGet = geofireGet;
+                entity.geofireRemove = geofireRemove;
 
                 //     entity.trackLocations = trackLocations;
                 //     entity.trackLocation = trackLocation;
@@ -121,24 +122,18 @@
 
                 entity.addUserIndex = addUserIndex;
                 entity.removeUserIndex = removeUserIndex;
-                // entity.userNestedArray = userNestedArray;
-                // entity.userNestedRecord = userNestedRecord;
-                entity.loadUserRecords = loadUserRecords;
-                entity.loadUserRecord = loadUserRecord;
                 entity.createWithUser = createWithUser;
-                entity.createUserRecord = createUserRecord;
-                entity.removeUserRecord = removeUserRecord;
-                entity.loadMainFromUser = loadMainFromUser;
+                entity.removeWithUser = removeWithUser;
             }
 
             // if (self._user === true && self._geofire === true) {
             //     entity.createWithUserAndGeo = createWithUserAndGeo;
             // }
 
-            // if (self._sessionAccess === true) {
-            //     entity.session = session;
-            //     entity.sessionId = sessionId;
-            // }
+            if (self._sessionAccess === true) {
+                entity.session = session;
+                entity.sessionId = sessionId;
+            }
 
             getCurrentRef();
 
@@ -300,9 +295,13 @@
 
             function geofireRemove(k) {
                 return qAll(geofireArray(), k)
-                    .then(remove)
+                    .then(removeGeo)
                     .then(commandSuccess)
                     .catch(standardError);
+
+                function removeGeo(res) {
+                    return res[0].remove(res[1]);
+                }
             }
 
 
@@ -327,6 +326,19 @@
                         lon: res[1].lon
                     });
                 }
+
+
+            }
+
+            function saveNestedLocationAndGeofireSet(res) {
+
+							//need id for mainArrayKey
+
+                return self._q.all([
+                    addLocationIndex(id, res[0].key()),
+                    geofireSet(res[0], res[1])
+                ]);
+
             }
 
 
@@ -378,28 +390,6 @@
                     .catch(standardError);
             }
 
-            function loadUserRecords() {
-                return userNestedArray()
-                    .then(loaded)
-                    .catch(standardError);
-            }
-
-            function loadUserRecord(id) {
-                return userNestedRecord(id)
-                    .then(loaded)
-                    .catch(standardError);
-            }
-
-            function loadMainFromUser(rec) {
-                return mainArray()
-                    .then(completeAction)
-                    .catch(standardError);
-
-                function completeAction(res) {
-                    return res.getRecord(rec.mainArrayKey);
-                }
-            }
-
             function session() {
                 return self._sessionStorage;
             }
@@ -416,34 +406,23 @@
             function createWithUser(data) {
 
                 return createMainRecord(data)
-                    .then(createUserRecord)
+                    .then(passKeyToUser)
                     .catch(standardError);
+
+                function passKeyToUser(res) {
+                    return qAll(addUserIndex(res.key()), res.key());
+                }
             }
 
-            function createUserRecord(d) {
-                return qAll(userNestedArray(), {
-                        mainArrayKey: d.key()
-                    })
-                    .then(add)
-                    .then(commandSuccess)
-                    .catch(standardError);
-            }
+            function removeWithUser(key) {
 
-
-            function removeWithUser(rec) {
-                return indexFor(rec.mainArrayKey)
-                    .then(remove)
-                    .then(passKeyAndRemoveUser)
+                return removeMainRecord(key)
+                    .then(passKeyToUser)
                     .catch(standardError);
 
-            }
-
-            function removeUserRecord(rec) {
-
-                return userNestedRecord(rec)
-                    .then(remove)
-                    .then(commandSuccess)
-                    .catch(standardError);
+                function passKeyToUser(res) {
+                    return removeUserIndex(res.key());
+                }
             }
 
 
@@ -720,19 +699,33 @@
             }
 
             function userRecordsByIndex() {
-                var keys = Object.keys(userIndex());
-                return self._q.all(keys.map(function(key) {
-                        return self._pathMaster.mainRef().orderByKey().equalTo(key).once("value", function(snap) {
-                            return snap.val();
-                        })
-                    }))
-                    .then(sendToArray)
-                    .catch(standardError);
+                // var keys = Object.keys(userIndex());
+                return self._timeout(function() {
+                    self._q.all([self._pathMaster.mainRef(), userIndex()])
+                        .then(sortByIdx)
+                        .then(sendToArray)
+                        .catch(standardError);
 
-                function sendToArray(res) {
+                    function sortByIdx(res) {
+                        // var keys = res[1].children
+                        // self._log.info(keys);
+                        return res[1];
 
-                    self._log.info(res);
-                }
+                        // return self._q.all(Object.keys(res[1]).map(function(key) {
+                        //     return res[0].once("value", function(snap) {
+                        //         if (snap.hasChild(key)) {
+                        //             return snap;
+                        //         }
+                        //     });
+                        // }));
+                    }
+
+                    function sendToArray(res) {
+                        self._log.info(res);
+                        return res;
+
+                    }
+                });
 
             }
 

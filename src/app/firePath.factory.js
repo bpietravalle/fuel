@@ -210,7 +210,7 @@
             /* User Object refs */
 
             function userIndex() {
-                return checkPathParams(userNestedArrayPath());
+                return checkPathParams(userIndexPath());
             }
 
             /* Geofire refs */
@@ -263,12 +263,8 @@
                 return extendPath(mainArrayPath(), extendPath(arrayify(parent), child));
             }
 
-            function userNestedArrayPath() {
+            function userIndexPath() {
                 return arrayify([self._userName, sessionId(), self._path]);
-            }
-
-            function userNestedRecordPath(id) {
-                return extendPath([self._userName, sessionId(), self._path], id);
             }
 
             function geofireArrayPath() {
