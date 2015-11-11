@@ -2,7 +2,7 @@
     "use strict";
 
     describe("FirePath factory", function() {
-        var path, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
+        var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
 
         beforeEach(function() {
             angular.module("firebase-fuel")
@@ -40,21 +40,21 @@
                 geofireName: "geofire"
             };
             spyOn($log, "info");
-            path = firePath("trips", options);
+            subject = firePath("trips", options);
             // fuel = fuel("trips");
         });
         afterEach(function() {
-            path = null;
+            subject = null;
             spy = null;
             $rootScope = null;
             firePath = null;
         });
         describe("Constructor", function() {
             it("should work", function() {
-                expect(path).toBeDefined();
+                expect(subject).toBeDefined();
             });
             it("should have correct methods", function() {
-                expect(path).toEqual(jasmine.objectContaining({
+                expect(subject).toEqual(jasmine.objectContaining({
                     mainArray: jasmine.any(Function),
                     mainRecord: jasmine.any(Function),
                     nestedArray: jasmine.any(Function),
@@ -72,8 +72,10 @@
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             // ["makeNestedRef", "trips/1/hotels/5/rooms/100", "1/hotels/5/rooms", "100"],
             // ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
-            // ["userNestedArray", "users/1/trips"],
-            // ["userNestedRecord", "users/1/trips/5", "5"],
+            ["userIndex", "users/1/trips"],
+            ["locationsIndex", "trips/7/locations", "7"],
+            ["userNestedArray", "users/1/trips"],
+            ["userNestedRecord", "users/1/trips/5", "5"],
             ["geofireArray", "geofire/trips"],
             ["geofireRecord", "geofire/trips/5", "5"],
             // ["mainLocationsArray", "locations/trips"],
@@ -83,21 +85,27 @@
         function testPaths(y) {
             describe(y[0] + "()", function() {
                 beforeEach(function() {
-                    path.setCurrentRef(ref);
+                    subject.setCurrentRef(ref);
                     $rootScope.$digest();
-                    test = path[y[0]](y[2], y[3], y[4]);
+                    test = subject[y[0]](y[2], y[3], y[4]);
                     $rootScope.$digest();
                 });
 
                 it("should be a promise", function() {
                     expect(test).toBeAPromise();
                 });
-                it("should be an angularfire object/array", function() {
-                    expect(getPromValue(test).$ref()).toBeAFirebaseRef();
-                });
+                if (y[0] !== "userIndex" && y[0] !== "locationsIndex") {
+                    it("should be an angularfire object/array", function() {
+                        expect(getPromValue(test).$ref()).toBeAFirebaseRef();
+                    });
+                } else {
+                    it("should be a firebaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                    });
+                }
 
                 it("should create the correct path", function() {
-                    expect(path.currentPath()).toEqual(rootPath + y[1]);
+                    expect(subject.currentPath()).toEqual(rootPath + y[1]);
                 });
             });
         }
@@ -106,7 +114,7 @@
 
         describe("currentRef", function() {
             it("shouoldn't be defined", function() {
-                expect(path.currentRef()).not.toBeDefined();
+                expect(subject.currentRef()).not.toBeDefined();
 
             });
 
@@ -114,11 +122,103 @@
 
         describe("rootRef", function() {
             it("is a firebaseRef", function() {
-                expect(path.rootRef()).toBeAFirebaseRef();
+                expect(subject.rootRef()).toBeAFirebaseRef();
             });
             it("should create the correct path", function() {
-                expect(path.rootRef().path).toEqual(rootPath);
+                expect(subject.rootRef().path).toEqual(rootPath);
             });
+        });
+        describe("userIndex", function() {
+            beforeEach(function() {
+                test = subject.userIndex();
+                $rootScope.$digest();
+                subject.currentRef().update({
+                    "mainKey": true
+                });
+                subject.currentRef().flush();
+                $rootScope.$digest();
+                subject.currentRef().update({
+                    "secondKey": true
+                });
+                subject.currentRef().flush();
+                $rootScope.$digest();
+            });
+            describe("updating/saving index", function() {
+                it("should save keys correctly", function() {
+                    expect(getPromValue(test).getKeys()[0]).toEqual("mainKey");
+                    expect(getPromValue(test).getKeys()[1]).toEqual("secondKey");
+                    expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
+                });
+                it("should save value correctly", function() {
+                    expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
+                    expect(getPromValue(test).getData()["secondKey"]).toEqual(true);
+                });
+            });
+            describe("deleting/removing items", function() {
+                beforeEach(function() {
+                    this.before = subject.currentRef().getData();
+                    subject.currentRef().update({
+                        "mainKey": null
+                    });
+                    subject.currentRef().flush();
+                    $rootScope.$digest();
+                    this.after = subject.currentRef().getData();
+                });
+                it("should exist", function() {
+                    expect(this.after["mainKey"]).not.toBeDefined();
+                });
+            });
+
+
+        });
+        describe("locationsIndex", function() {
+            beforeEach(function() {
+                subject.mainArray()
+                $rootScope.$digest();
+                test = subject.currentRef();
+                flush();
+                flush();
+                // subject.currentRef().update({
+                //     "mainKey": true
+                // });
+                // subject.currentRef().flush();
+                // $rootScope.$digest();
+                // subject.currentRef().update({
+                //     "secondKey": true
+                // });
+                // subject.currentRef().flush();
+                // $rootScope.$digest();
+            });
+            it("should work", function() {
+                expect(test).toEqual("As");
+            });
+            // describe("updating/saving index", function() {
+            //     it("should save keys correctly", function() {
+            //         expect(getPromValue(test).getKeys()[0]).toEqual("mainKey");
+            //         expect(getPromValue(test).getKeys()[1]).toEqual("secondKey");
+            //         expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
+            //     });
+            //     it("should save value correctly", function() {
+            //         expect(getPromValue(test).getData()["mainKey"]).toEqual(true);
+            //         expect(getPromValue(test).getData()["secondKey"]).toEqual(true);
+            //     });
+            // });
+            // describe("deleting/removing items", function() {
+            //     beforeEach(function() {
+            //         this.before = subject.currentRef().getData();
+            //         subject.currentRef().update({
+            //             "mainKey": null
+            //         });
+            // subject.currentRef().flush();
+            //         $rootScope.$digest();
+            //         this.after = subject.currentRef().getData();
+            //     });
+            //     it("should exist", function() {
+            //         expect(this.after["mainKey"]).not.toBeDefined();
+            //     });
+            // });
+
+
         });
 
         describe("setCurrentRef", function() {
@@ -126,10 +226,10 @@
                 ref = new MockFirebase("data").child("child");
             });
             it("should set ref if passed a firebaseRef", function() {
-                path.setCurrentRef(ref);
+                subject.setCurrentRef(ref);
                 $rootScope.$digest();
                 $rootScope.$digest();
-                expect(path.currentRef()).toEqual(ref);
+                expect(subject.currentRef()).toEqual(ref);
             });
 
         });
@@ -161,30 +261,30 @@
                     beforeEach(function() {
                         if (angular.isString(y[0])) {
                             ref = ref.child(y[0]);
-                            path.setCurrentRef(ref);
+                            subject.setCurrentRef(ref);
                             $rootScope.$digest();
                         }
                     });
                     if (y[0] === null) {
                         it("should have undefined currentRef beforehand", function() {
-                            expect(path.currentRef()).not.toBeDefined();
+                            expect(subject.currentRef()).not.toBeDefined();
                         });
                     } else {
                         it("should have a defined currentRef() beforehand", function() {
-                            expect(path.currentRef()).toBeDefined();
-                            expect(path.currentPath()).toEqual(rootPath + y[0]);
+                            expect(subject.currentRef()).toBeDefined();
+                            expect(subject.currentPath()).toEqual(rootPath + y[0]);
                         });
 
                     }
 
                     it("should set currentPath to: " + y[2], function() {
-                        path.checkPathParams(y[1]);
+                        subject.checkPathParams(y[1]);
                         $rootScope.$digest();
-                        expect(path.currentPath()).toEqual(rootPath + y[2]);
+                        expect(subject.currentPath()).toEqual(rootPath + y[2]);
                     });
 
                     it("call $log info with: " + y[3], function() {
-                        path.checkPathParams(y[1]);
+                        subject.checkPathParams(y[1]);
                         $rootScope.$digest();
                         logContains(y[3], true);
                     });
@@ -236,12 +336,12 @@
                     this.relativePath = "trips/100/hotels/5/rooms/1000";
                     this.fullPath = rootPath + this.relativePath;
                     ref = ref.child(this.relativePath);
-                    path.setCurrentRef(ref);
+                    subject.setCurrentRef(ref);
                     $rootScope.$digest();
                 });
 
                 it("should return correct value", function() {
-                    expect(path[y[0]](y[2])).toEqual(y[1]);
+                    expect(subject[y[0]](y[2])).toEqual(y[1]);
                 });
 
 
@@ -251,15 +351,22 @@
         currentPaths.forEach(testCurrentPath);
 
         function logCheck(x, flag) {
-					return testutils.logCheck(x,flag);
+            return testutils.logCheck(x, flag);
         }
 
         function getPromValue(obj, flag) {
-					return testutils.getPromValue(obj,flag);
+            return testutils.getPromValue(obj, flag);
+        }
+
+        function flush() {
+            $rootScope.$digest();
+            subject.currentRef();
+            $rootScope.$digest();
+
         }
 
         function logContains(message, flag) {
-					return testutils.logContains(message, flag);
+            return testutils.logContains(message, flag);
         }
     });
 

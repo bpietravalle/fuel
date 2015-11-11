@@ -218,7 +218,7 @@
                 describe("removeMainRecord", function() {
                     beforeEach(function() {
                         $rootScope.$digest();
-                        subject.currentRef().child("trips").set(arrData);
+                        subject.currentRef().child("trips").push(arrData);
                         $rootScope.$digest();
                         test = subject.remove(0);
                         $rootScope.$digest();
@@ -269,9 +269,9 @@
                                 $getRecord: jasmine.any(Function)
                             }));
                         });
-												it("should be an array",function(){
+                        it("should be an array", function() {
                             expect(Array.isArray(getPromValue(test))).toBeTruthy();
-												});
+                        });
                         it("should have length", function() {
                             expect(getPromValue(test)).toHaveLength(2);
                         });
@@ -298,8 +298,58 @@
                     });
 
                 });
+                describe("getRecord", function() {
+                    beforeEach(function() {
+                        $rootScope.$digest();
+                        subject.currentRef().child("trips").update({
+                            "string": true
+                        });
+                        subject.currentRef().flush();
+                        $rootScope.$digest();
+                        subject.currentRef().child("trips").update({
+                            "another": true
+                        });
+                        subject.currentRef().flush();
+                        $rootScope.$digest();
+												this.ref = subject.currentRef().child("trips");
+                    });
+                    it("should work", function() {
+                        expect(dataKeys(this.ref).length).toEqual(2)
+                    });
+                });
             });
         });
+        describe("With User Object access", function() {
+            beforeEach(function() {
+                options = {
+                    user: true
+                };
+                subject = fuel("trips", options);
+                $rootScope.$digest();
+                test = subject.createWithUser(newRecord);
+                $rootScope.$digest();
+                subject.currentRef().flush();
+                this.key = subject.currentRef();
+                $rootScope.$digest();
+                subject.currentRef().flush();
+                $rootScope.$digest();
+                this.key1 = subject.currentRef().key();
+            });
+            it("should set the currentRef to the userNestedRecord", function() {
+                expect(subject.currentPath()).toEqual(rootPath + "/users/1/trips/" + this.key1);
+                expect(dataKeys(this.key)[0]).toEqual(jasmine.any(String));
+            });
+            it("should add record to mainArray", function() {
+                expect(this.key.getData()[dataKeys(this.key)[0]]).toEqual(newRecord);
+            });
+            it("should add record to userNestedArray and set mainArrayKey to main array's primary key", function() {
+                expect(refData()).toEqual(jasmine.objectContaining({
+                    mainArrayKey: dataKeys(this.key)[0]
+                }));
+                expect(getPromValue(test).getData()).toEqual(refData());
+            });
+        });
+
         describe("Nested Arrays", function() {
             //     beforeEach(function() {
             //         options = {
@@ -454,10 +504,6 @@
 
 
             //     });
-        });
-        describe("With User Object access", function() {
-            beforeEach(function() {});
-
         });
         describe("With Geofire", function() {
             beforeEach(function() {});
@@ -936,7 +982,13 @@
             return obj.$$state.pending[0][0].promise.$$state.value; //.value;
         }
 
+        function refData() {
+            return subject.currentRef().getData();
+        }
 
+        function dataKeys(ref) {
+            return Object.keys(ref.getData());
+        }
 
     });
 

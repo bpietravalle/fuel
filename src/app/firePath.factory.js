@@ -57,7 +57,7 @@
             }
             if (this._options.geofire === true) {
                 this._geofire = true;
-                this._locationName = this._options.locationName;
+                this._locationName = this._options.locationName || "locations";
                 this._geofireName = this._options.geofireName;
             }
         }
@@ -98,18 +98,20 @@
             fire.inspect = inspect;
 
             if (self._sessionAccess === true) {
-                // fire.userNestedArray = userNestedArray;
-                // fire.userNestedRecord = userNestedRecord;
+                fire.userIndex = userIndex;
+                fire.userNestedArray = userNestedArray;
+                fire.userNestedRecord = userNestedRecord;
             }
             if (self._geofire = true) {
                 fire.geofireArray = geofireArray;
                 fire.geofireRecord = geofireRecord;
+								fire.locationsIndex = locationsIndex;
                 // fire.mainLocationsArray = mainLocationsArray;
                 // fire.mainLocationsRecord = mainLocationsRecord;
             }
 
-						//just trying this for now
-						setCurrentRef(root());
+            //just trying this for now
+            setCurrentRef(root());
 
             /*************** firebaseRefs ************/
 
@@ -200,6 +202,10 @@
                 return checkPathParams(userNestedArrayPath(), "ARRAY");
             }
 
+            function userIndex() {
+                return checkPathParams(userNestedArrayPath());
+            }
+
             function userNestedRecord(id) {
                 return checkPathParams(userNestedRecordPath(id), "OBJECT");
             }
@@ -220,6 +226,11 @@
 
             function mainLocationsRecord(id) {
                 return checkPathParams(mainLocationRecordPath(id), "OBJECT");
+            }
+						/* Locations Index */
+
+            function locationsIndex(recId) {
+                return checkPathParams(nestedArrayPath(recId, self._locationName));
             }
 
             /************ Paths *************************/

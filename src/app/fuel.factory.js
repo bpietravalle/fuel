@@ -89,10 +89,11 @@
 
             /*Queries*/
             entity.load = load;
+            // entity.getRecord = getRecord;
 
             /*Commands*/
             entity.add = createMainRecord;
-						entity.save = save;
+            entity.save = save;
             entity.remove = removeMainRecord;
             entity.inspect = inspect;
 
@@ -111,16 +112,16 @@
             //     entity.untrackLocation = untrackLocation;
             // }
 
-            // if (self._user === true) {
-            //     // entity.userNestedArray = userNestedArray;
-            //     // entity.userNestedRecord = userNestedRecord;
-            //     entity.loadUserRecords = loadUserRecords;
-            //     entity.loadUserRecord = loadUserRecord;
-            //     entity.createUserAndMain = createUserAndMain;
-            //     entity.createUserRecord = createUserRecord;
-            //     entity.removeUserRecord = removeUserRecord;
-            //     entity.loadMainFromUser = loadMainFromUser;
-            // }
+            if (self._user === true) {
+                entity.userNestedArray = userNestedArray;
+                entity.userNestedRecord = userNestedRecord;
+                entity.loadUserRecords = loadUserRecords;
+                entity.loadUserRecord = loadUserRecord;
+                entity.createWithUser = createWithUser;
+                entity.createUserRecord = createUserRecord;
+                entity.removeUserRecord = removeUserRecord;
+                entity.loadMainFromUser = loadMainFromUser;
+            }
 
             // if (self._user === true && self._geofire === true) {
             //     entity.createWithUserAndGeo = createWithUserAndGeo;
@@ -131,7 +132,7 @@
             //     entity.sessionId = sessionId;
             // }
 
-						getCurrentRef();
+            getCurrentRef();
 
             switch (self._nestedArrays) {
                 case []:
@@ -208,7 +209,7 @@
 
 
             /*****************
-             * Simple Methods
+             * Main Methods
              * ***************/
 
             /*Queries*/
@@ -219,6 +220,7 @@
                     return loadMainRecord(id);
                 }
             }
+
 
             function loadMainArray() {
                 return mainArray()
@@ -372,8 +374,15 @@
 
             /* save to user nested array 
              * @param{Object} data to save to user array - just saving key for now
-             *@return{Promise(fireBaseRef)}
+             *@return{Promise(fireBaseRef at userNestedArray)}
              */
+
+            function createWithUser(data) {
+
+                return createMainRecord(data)
+                    .then(createUserRecord)
+                    .catch(standardError);
+            }
 
             function createUserRecord(d) {
                 return qAll(userNestedArray(), {
@@ -385,9 +394,17 @@
             }
 
 
-            function removeUserRecord(key) {
+            function removeWithUser(rec) {
+                return indexFor(rec.mainArrayKey)
+                    .then(remove)
+                    .then(passKeyAndRemoveUser)
+                    .catch(standardError);
 
-                return userNestedRecord(key)
+            }
+
+            function removeUserRecord(rec) {
+
+                return userNestedRecord(rec)
                     .then(remove)
                     .then(commandSuccess)
                     .catch(standardError);
@@ -608,6 +625,14 @@
 
             function getRecord(res) {
                 return res[0].$getRecord(res[1]);
+            }
+
+            function indexFor(res) {
+                return res[0].$indexFor(res[1]);
+            }
+
+            function keyAt(res) {
+                return res[0].$ketAt(res[1]);
             }
 
 
