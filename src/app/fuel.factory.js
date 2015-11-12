@@ -38,8 +38,10 @@
             }
             if (this._geofire === true) {
                 this._locationName = "locations";
+                this._locationObject = this._injector.get("location");
                 this._geofireName = "geofire";
-                this._nestedArrays.push(this._locationName);
+								//below messes up methods to main location array- need another way
+                // this._nestedArrays.push(this._locationName);
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
                 this._pathOptions.geofire = true;
@@ -96,6 +98,8 @@
 
             /*Commands*/
             entity.add = createMainRecord;
+						entity.addIndex = addIndex;
+						entity.removeIndex = removeIndex;
             entity.save = save;
             entity.remove = removeMainRecord;
             entity.inspect = inspect;
@@ -104,8 +108,8 @@
                 entity.addLocationIndex = addLocationIndex;
                 entity.removeLocationIndex = removeLocationIndex;
 
-                entity.createLocationRecord = createLocationRecord;
-                entity.removeLocationRecord = removeLocationRecord;
+                entity.createLocation = createLocation;
+                entity.removeLocation = removeLocation;
 
                 entity.geofireSet = geofireSet;
                 entity.geofireGet = geofireGet;
@@ -126,9 +130,9 @@
                 entity.removeWithUser = removeWithUser;
             }
 
-            // if (self._user === true && self._geofire === true) {
-            //     entity.createWithUserAndGeo = createWithUserAndGeo;
-            // }
+            if (self._user === true && self._geofire === true) {
+                entity.createWithUserAndGeo = createWithUserAndGeo;
+            }
 
             if (self._sessionAccess === true) {
                 entity.session = session;
@@ -170,8 +174,6 @@
 
             /******************************/
 
-
-
             function mainArray() {
                 return self._pathMaster.mainArray();
             }
@@ -182,6 +184,9 @@
 
             function nestedArray(id, name) {
                 return self._pathMaster.nestedArray(id, name);
+            }
+            function nestedRef(id, name) {
+                return self._pathMaster.nestedRef(id, name);
             }
 
             function nestedRecord(mainId, name, recId) {
@@ -305,9 +310,21 @@
             }
 
 
+						//TODO add index with return key
+            function createLocation(data, geoFlag) {
+                return self._locationObject
+                    .add(data, geoFlag);
+            }
+
+            function removeLocation(key) {
+                return self._locationObject
+                    .remove(key);
+            }
+
+
             /* save to mainLocation array
              * @param{Object}
-             * @return{fireBaseRef}
+             * @return{Array}[fireBaseRef,Object(coords)]}
              */
 
             //just for single records for now
@@ -326,17 +343,18 @@
                         lon: res[1].lon
                     });
                 }
-
-
             }
 
-            function saveNestedLocationAndGeofireSet(res) {
+            /* save to Index and geoFireSet
+             * @param{String} key of MainArray Record
+             * @param{Array} [fireBaseRef of mainLocation REcord, Object(Coords)]
+             * @return{Array}[fireBaseRef of location Index, null]
+             */
 
-							//need id for mainArrayKey
-
+            function saveNestedLocationAndGeofireSet(recId, loc) {
                 return self._q.all([
-                    addLocationIndex(id, res[0].key()),
-                    geofireSet(res[0], res[1])
+                    addLocationIndex(recId, loc[0].key()),
+                    geofireSet(loc[0].key(), loc[1])
                 ]);
 
             }
@@ -377,8 +395,7 @@
             //rather than firebaseArray.add()
 
             function addUserIndex(key) {
-                return qAll(userIndex(), key)
-                    .then(addIndex)
+                return addIndex('userIndex', null, key,true)
                     .then(commandSuccess)
                     .catch(standardError);
             }
@@ -442,7 +459,7 @@
                  * 5.) updates main array record by adding nested locations array with mainLocation keys
                  */
 
-                return qAll(createMainRecord(data, true, true), loc)
+                return qAll(createMainRecord(data, null, true), loc)
                     .then(trackLocationAndAddUserRec)
                     .then(addNestedLocations)
                     .catch(standardError);
@@ -657,30 +674,66 @@
 
             /* For Indices */
 
-            function addIndex(res) {
-                return self._timeout(function() {
-                        var data = {};
-                        data[res[1]] = true;
-                        return res[0].update(data);
-                    })
-                    .then(function() {
-                        return res[0];
-                    })
-                    .catch(standardError);
-            }
 
-            function removeIndex(res) {
-                return self._timeout(function() {
-                        var data = {};
-                        data[res[1]] = null;
-                        return res[0].update(data);
-                    })
-                    .then(function() {
-                        return res[0];
-                    })
+            function addIndex(recId, arrName, key) {
+
+                return qAll(nestedRef(recId, arrName), key)
+                    .then(completeAction)
                     .catch(standardError);
 
+                function completeAction(res) {
+									// self._log.info(res);
+                    return self._timeout(function() {
+                            var data = {};
+                            data[res[1]] = true;
+                            return res[0].update(data);
+                        })
+                        .then(function() {
+                            return res[0];
+                        })
+                        .catch(standardError);
+                }
             }
+
+            function removeIndex(recId, arrName, key) {
+                return qAll(nestedRef(recId, arrName), key)
+                    .then(completeAction)
+                    .catch(standardError);
+
+                function completeAction(res) {
+                    return self._timeout(function() {
+                            var data = {};
+                            data[res[1]] = null;
+                            return res[0].update(data);
+                        })
+                        .then(function() {
+                            return res[0];
+                        })
+                        .catch(standardError);
+
+                }
+            }
+
+            function checkNestedParams(recId, arrName, flag) {
+                if (flag === true) {
+                    return qWrap(entity[recId]());
+                } else {
+                    return qWrap(nestedArray(recId, arrName));
+                }
+            }
+
+            // function removeIndex(res) {
+            //     return self._timeout(function() {
+            //             var data = {};
+            //             data[res[1]] = null;
+            //             return res[0].update(data);
+            //         })
+            //         .then(function() {
+            //             return res[0];
+            //         })
+            //         .catch(standardError);
+
+            // }
 
             /* For Queries */
 

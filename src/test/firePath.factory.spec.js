@@ -59,7 +59,7 @@
                     mainRecord: jasmine.any(Function),
                     nestedArray: jasmine.any(Function),
                     nestedRecord: jasmine.any(Function),
-                    makeNestedRef: jasmine.any(Function)
+                    nestedRef: jasmine.any(Function)
                 }));
 
             });

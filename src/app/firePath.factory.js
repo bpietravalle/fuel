@@ -75,7 +75,7 @@
             fire.mainRecord = mainRecord;
             fire.nestedArray = nestedArray;
             fire.nestedRecord = nestedRecord;
-            fire.makeNestedRef = makeNestedRef;
+            fire.nestedRef = nestedRef;
             //TODO make below private
             fire.checkPathParams = checkPathParams;
 
@@ -109,7 +109,6 @@
                 fire.mainLocationsRecord = mainLocationsRecord;
             }
 
-            //just trying this for now
             setCurrentRef(root());
 
             /*************** firebaseRefs ************/
@@ -194,6 +193,10 @@
                 return checkPathParams(mainRecordPath(id), "OBJECT");
             }
 
+						function nestedRef(recId, name){
+                return checkPathParams(nestedArrayPath(recId, name));
+						}
+						
             function nestedArray(recId, name) {
                 return checkPathParams(nestedArrayPath(recId, name), "ARRAY");
             }
@@ -202,10 +205,6 @@
                 return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
             }
 
-            //need test for type
-            function makeNestedRef(parent, child, type) {
-                return checkPathParams(makeNestedPath(parent, child), type);
-            }
 
             /* User Object refs */
 
