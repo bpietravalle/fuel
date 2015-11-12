@@ -28,6 +28,7 @@
         this._nestedArrays = [];
         this._pathOptions = {};
         if (this._options) {
+            this._gps = false || this._options.gps;
             this._geofire = false || this._options.geofire;
             if (this._options.nestedArrays) {
                 if (!Array.isArray(this._options.nestedArrays)) {
@@ -36,7 +37,7 @@
                     this._nestedArrays = this._options.nestedArrays;
                 }
             }
-            if (this._geofire === true) {
+            if (this._gps === true) {
                 this._locationName = "locations";
                 this._locationObject = this._injector.get("location");
                 this._geofireName = "geofire";
@@ -44,10 +45,12 @@
                 // this._nestedArrays.push(this._locationName);
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
+                this._geofireObject = this._injector.get("geofire");
                 this._pathOptions.geofire = true;
                 this._pathOptions.locationName = this._locationName;
                 this._pathOptions.geofireName = this._geofireName;
             }
+
             this._user = this._options.user || false;
             this._sessionAccess = this._options.sessionAccess || false;
             if (this._user === true) {
@@ -105,22 +108,22 @@
             entity.remove = removeMainRecord;
             entity.inspect = inspect;
 
-            if (self._geofire === true) {
+            if (self._gps === true) {
                 entity.addLocationIndex = addLocationIndex;
                 entity.removeLocationIndex = removeLocationIndex;
 
                 entity.createLocation = createLocation;
                 entity.removeLocation = removeLocation;
 
-                entity.geofireSet = geofireSet;
-                entity.geofireGet = geofireGet;
-                entity.geofireRemove = geofireRemove;
+            }
 
+            if (self._geofire === true) {
+                entity.get = getGf;
+                entity.remove = removeGf;
+                entity.set = setGf;
             }
 
             if (self._user === true) {
-
-
                 entity.addUserIndex = addUserIndex;
                 entity.removeUserIndex = removeUserIndex;
                 entity.createWithUser = createWithUser;
@@ -200,8 +203,8 @@
                 return self._pathMaster.mainLocationsRecord(id);
             }
 
-            function geofireArray() {
-                return self._pathMaster.geofireArray();
+            function makeGeo(path) {
+                return self._pathMaster.makeGeo(path);
             }
 
             function locationsIndex(id) {
@@ -268,36 +271,42 @@
 
             /* Geofire Interface */
 
-            /**
-             * Two Parts:
-             * 1.) provides access to store and retrieve coordinates in GeoFire
-             * 2.) Any addition location data(ie google place_id, reviews, etc. can be stored in a separate
-             * firebase node (currently called "locations" and refered to as the mainLocations array) **/
-
 
             function geofireSet(k, c) {
-                return qAll(geofireArray(), [k, c])
-                    .then(completeAction)
+                return self._geofireObject.set(self._geofirePath, k, c);
+            }
+
+            function geofireRemove(k) {
+                return self._geofireObject.remove(self._geofirePath, k);
+            }
+
+            function geofireGet(k) {
+                return self._geofireObject.get(self._geofirePath, k);
+            }
+
+            function setGf(path, key, coords) {
+                return qAll(makeGeo(path), [key, coords])
+                    .then(setGeo)
                     .catch(standardError);
 
-                function completeAction(res) {
+                function setGeo(res) {
                     return res[0].set(res[1][0], res[1][1]);
                 }
             }
 
-            function geofireGet(k) {
-                return qAll(geofireArray(), k)
-                    .then(getIn)
+            function getGf(path, key) {
+                return qAll(makeGeo(path), key)
+                    .then(getGeo)
                     .then(querySuccess)
                     .catch(standardError);
 
-                function getIn(res) {
+                function getGeo(res) {
                     return res[0].get(res[1]);
                 }
             }
 
-            function geofireRemove(k) {
-                return qAll(geofireArray(), k)
+            function removeGf(path, key) {
+                return qAll(makeGeo(path), key)
                     .then(removeGeo)
                     .then(commandSuccess)
                     .catch(standardError);
@@ -316,7 +325,7 @@
                     lat: data.lat,
                     lon: data.lon
                 };
-								//test geoflag
+                //test geoflag
                 return qAll(self._locationObject.add(data, geoFlag), [coords.lat, coords.lon])
                     .then(addGeofireAndPassLocKey)
                     // .then(commandSuccess)
@@ -416,11 +425,11 @@
             /*
              * Combo Methods */
 
-						/* @param{object} data to save to main array
-						 * @param{object} location data to save
-						 * @return{Array} [firebaseRef(location Index), firebaseRef of main record]
-						 *
-						 */
+            /* @param{object} data to save to main array
+             * @param{object} location data to save
+             * @return{Array} [firebaseRef(location Index), firebaseRef of main record]
+             *
+             */
 
             function createWithUserAndGeo(data, loc) {
 

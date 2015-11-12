@@ -75,8 +75,7 @@
             // ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
             ["userIndex", "users/1/trips"],
             ["locationsIndex", "trips/7/locations", "7"],
-            ["geofireArray", "geofire/trips"],
-            ["geofireRecord", "geofire/trips/5", "5"],
+            ["makeGeo", "geofire/trips","geofire","trips"],
             ["mainLocationsArray", "locations/trips"],
             ["mainLocationsRecord", "locations/trips/5", "5"]
         ];

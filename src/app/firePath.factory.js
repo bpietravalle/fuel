@@ -102,7 +102,7 @@
                 fire.userIndex = userIndex;
             }
             if (self._geofire = true) {
-                fire.geofireArray = geofireArray;
+                fire.makeGeo = makeGeo;
                 fire.geofireRecord = geofireRecord;
                 fire.locationsIndex = locationsIndex;
                 fire.mainLocationsArray = mainLocationsArray;
@@ -213,8 +213,8 @@
             }
 
             /* Geofire refs */
-            function geofireArray() {
-                return checkPathParams(geofireArrayPath(), "geo");
+            function makeGeo(path) {
+                return checkPathParams(geofireArrayPath(path), "geo");
             }
 
             function geofireRecord(id) {
@@ -266,8 +266,8 @@
                 return arrayify([self._userName, sessionId(), self._path]);
             }
 
-            function geofireArrayPath() {
-                return arrayify([self._geofireName, self._path]);
+            function geofireArrayPath(path) {
+                return arrayify(path);
             }
 
             function geofireRecordPath(id) {
