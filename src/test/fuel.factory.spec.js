@@ -59,6 +59,9 @@
                 .factory("location", function() {
                     return jasmine.createSpyObj("location", ["add", "remove"]);
                 })
+                .factory("user", function() {
+                    return jasmine.createSpyObj("user", ["addIndex", "removeIndex"]);
+                })
                 .factory("session", function() {
                     return {
                         getId: jasmine.createSpy("getId").and.callFake(function() {
@@ -70,7 +73,8 @@
             module("testutils");
             module("firebase-fuel");
 
-            inject(function(_testutils_, _location_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+            inject(function(_user_, _testutils_, _location_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+                user = _user_
                 $timeout = _$timeout_;
                 location = _location_;
                 testutils = _testutils_;
@@ -684,58 +688,66 @@
             });
         });
         describe("With User Object access", function() {
-            //     beforeEach(function() {
-            //         options = {
-            //             user: true
-            //         };
-            //         subject = fuel("trips", options);
-            //         $rootScope.$digest();
-            //         test = subject.createWithUser(newRecord);
-            //         $rootScope.$digest();
-            //         subject.currentRef().flush();
-            //         this.key = subject.currentRef();
-            //         $rootScope.$digest();
-            //         $timeout.flush();
-            //         $rootScope.$digest();
-            //         subject.currentRef().flush();
-            //         $rootScope.$digest();
-            //         this.key1 = subject.currentRef().key();
+            beforeEach(function() {
+                options = {
+                    user: true
+                };
+                subject = fuel("trips", options);
+                test = subject.createWithUser(locData[0]);
+                $rootScope.$digest();
+                flush();
+            });
+            // describe("addUserIndex", function() {
+            //     it("should call addIndex() on userObject", function() {
+            //         test = subject.addUserIndex("key");
+            //         expect(user.addIndex).toHaveBeenCalledWith("trips", "key");
             //     });
-            //     describe("createWithUser", function() {
-            //         it("should set the currentRef to the user Index", function() {
-            //             expect(subject.currentPath()).toEqual(rootPath + "/users/1/trips");
-            //             expect(dataKeys(this.key)[0]).toEqual(jasmine.any(String));
-            //         });
-            //         it("should add record to mainArray", function() {
-            //             expect(this.key.getData()[dataKeys(this.key)[0]]).toEqual(newRecord);
-            //         });
-            //         it("should add key to user Index", function() {
-            //             expect(subject.currentRef().child(dataKeys(this.key)[0]).getData()).toEqual(true);
-            //         });
+            // });
+            // describe("removeUserIndex", function() {
+            //     it("should call removeIndex() on userObject", function() {
+            //         test = subject.removeUserIndex("key");
+            //         expect(user.removeIndex).toHaveBeenCalledWith("trips", "key");
             //     });
-            //     describe("removeWithUser", function() {
-            //         beforeEach(function() {
-            //             this.beforeIdx = subject.currentRef();
-            //             test = subject.removeWithUser(dataKeys(this.key)[0]);
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush();
-            //             this.after = subject.currentRef();
-            //             $rootScope.$digest();
-            //             $timeout.flush();
-            //             $rootScope.$digest();
-            //         });
-            //         it("should set the currentRef to the user Index", function() {
-            //             expect(subject.currentPath()).toEqual(rootPath + "/users/1/trips");
-            //             expect(dataKeys(this.key)[0]).toEqual(jasmine.any(String));
-            //         });
-            //         it("should remove the record from the mainArray", function() {
-            //             expect(this.after.getData()).toEqual(null);
-            //             expect(this.after.getKeys()).toBeEmpty();
-            //         });
-            //         it("should remove the key from user Index", function() {
-            //             expect(subject.currentRef().child(dataKeys(this.key)[0]).getData()).toBe(null);
-            //         });
-            //     });
+            // });
+            describe("createWithUser", function() {
+                it("should call addIndex() on userObject", function() {
+                    test = subject.addUserIndex("key");
+                    expect(user.addIndex).toHaveBeenCalledWith("trips", "key");
+                });
+                it("should set the currentRef to the user Index", function() {
+                    expect(subject.currentPath()).toEqual(rootPath + "/users/1/trips");
+                    expect(dataKeys(this.key)[0]).toEqual(jasmine.any(String));
+                });
+                it("should add record to mainArray", function() {
+                    expect(this.key.getData()[dataKeys(this.key)[0]]).toEqual(newRecord);
+                });
+                it("should add key to user Index", function() {
+                    expect(subject.currentRef().child(dataKeys(this.key)[0]).getData()).toEqual(true);
+                });
+            });
+            describe("removeWithUser", function() {
+                beforeEach(function() {
+                    this.beforeIdx = subject.currentRef();
+                    test = subject.removeWithUser(dataKeys(this.key)[0]);
+                    $rootScope.$digest();
+                    subject.currentRef().flush();
+                    this.after = subject.currentRef();
+                    $rootScope.$digest();
+                    $timeout.flush();
+                    $rootScope.$digest();
+                });
+                it("should set the currentRef to the user Index", function() {
+                    expect(subject.currentPath()).toEqual(rootPath + "/users/1/trips");
+                    expect(dataKeys(this.key)[0]).toEqual(jasmine.any(String));
+                });
+                it("should remove the record from the mainArray", function() {
+                    expect(this.after.getData()).toEqual(null);
+                    expect(this.after.getKeys()).toBeEmpty();
+                });
+                it("should remove the key from user Index", function() {
+                    expect(subject.currentRef().child(dataKeys(this.key)[0]).getData()).toBe(null);
+                });
+            });
             describe("saveWithUser", function() {});
         });
 

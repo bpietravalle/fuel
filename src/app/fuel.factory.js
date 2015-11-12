@@ -40,7 +40,7 @@
                 this._locationName = "locations";
                 this._locationObject = this._injector.get("location");
                 this._geofireName = "geofire";
-								//below messes up methods to main location array- need another way
+                //below messes up methods to main location array- need another way
                 // this._nestedArrays.push(this._locationName);
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
@@ -52,6 +52,7 @@
             this._sessionAccess = this._options.sessionAccess || false;
             if (this._user === true) {
                 this._userPath = "users";
+                this._userObject = this._injector.get("user");
                 this._sessionAccess = true;
             }
             if (this._sessionAccess === true) {
@@ -98,8 +99,8 @@
 
             /*Commands*/
             entity.add = createMainRecord;
-						entity.addIndex = addIndex;
-						entity.removeIndex = removeIndex;
+            entity.addIndex = addIndex;
+            entity.removeIndex = removeIndex;
             entity.save = save;
             entity.remove = removeMainRecord;
             entity.inspect = inspect;
@@ -115,10 +116,6 @@
                 entity.geofireGet = geofireGet;
                 entity.geofireRemove = geofireRemove;
 
-                //     entity.trackLocations = trackLocations;
-                //     entity.trackLocation = trackLocation;
-                //     entity.untrackLocations = untrackLocations;
-                //     entity.untrackLocation = untrackLocation;
             }
 
             if (self._user === true) {
@@ -185,6 +182,7 @@
             function nestedArray(id, name) {
                 return self._pathMaster.nestedArray(id, name);
             }
+
             function nestedRef(id, name) {
                 return self._pathMaster.nestedRef(id, name);
             }
@@ -310,69 +308,42 @@
             }
 
 
-						//TODO add index with return key
-            function createLocation(data, geoFlag) {
-                return self._locationObject
-                    .add(data, geoFlag);
-            }
-
-            function removeLocation(key) {
-                return self._locationObject
-                    .remove(key);
-            }
-
-
-            /* save to mainLocation array
-             * @param{Object}
-             * @return{Array}[fireBaseRef,Object(coords)]}
+            /* @param{Object} location data to save
+             * @return{Array} [null, fireBaseRef of mainlocation]
              */
-
-            //just for single records for now
-            function createLocationRecord(data, geoFlag) {
-                return qAll(mainLocations(), data)
-                    .then(addDataAndPass)
-                    .then(qAllResult)
-                    .then(commandSuccess)
+            function createLocation(data, geoFlag) {
+                var coords = {
+                    lat: data.lat,
+                    lon: data.lon
+                };
+								//test geoflag
+                return qAll(self._locationObject.add(data, geoFlag), [coords.lat, coords.lon])
+                    .then(addGeofireAndPassLocKey)
+                    // .then(commandSuccess)
                     .catch(standardError);
 
 
-                function addDataAndPass(res) {
-                    //coords don't pass if send more than one record
-                    return qAll(add(res), {
-                        lat: res[1].lat,
-                        lon: res[1].lon
-                    });
+                function addGeofireAndPassLocKey(res) {
+                    return qAll(geofireSet(res[0].key(), res[1]), res[0]);
                 }
             }
 
-            /* save to Index and geoFireSet
-             * @param{String} key of MainArray Record
-             * @param{Array} [fireBaseRef of mainLocation REcord, Object(Coords)]
-             * @return{Array}[fireBaseRef of location Index, null]
+            /* @param{String} key of main location to remove
+             * @return{Array} [null, fireBaseRef of mainlocation]
              */
 
-            function saveNestedLocationAndGeofireSet(recId, loc) {
-                return self._q.all([
-                    addLocationIndex(recId, loc[0].key()),
-                    geofireSet(loc[0].key(), loc[1])
-                ]);
-
-            }
-
-
-            /* remove mainLocation record
-             * @param{string} id of mainArray record
-             * @return{fireBaseRef}
-             */
-
-            function removeLocationRecord(key) {
-
-                return mainLocation(key)
-                    .then(remove)
-                    .then(commandSuccess)
+            function removeLocation(key) {
+                return self._locationObject
+                    .remove(key)
+                    .then(removeGeofireAndPassLocKey)
+                    // .then(commandSuccess)
                     .catch(standardError);
 
+                function removeGeofireAndPassLocKey(res) {
+                    return qAll(geofireRemove(res.key()), res);
+                }
             }
+
 
             function addLocationIndex(recId, key) {
                 return qAll(locationsIndex(recId), key)
@@ -391,20 +362,14 @@
 
             /* User Object Interface*/
 
-            //TODO this needs to have option for saving as index
-            //rather than firebaseArray.add()
-
             function addUserIndex(key) {
-                return addIndex('userIndex', null, key,true)
-                    .then(commandSuccess)
-                    .catch(standardError);
+                return self._userObject
+                    .addIndex(sessionId(), self._path, key)
             }
 
             function removeUserIndex(key) {
-                return qAll(userIndex(), key)
-                    .then(removeIndex)
-                    .then(commandSuccess)
-                    .catch(standardError);
+                return self._userObject
+                    .removeIndex(sessionId(), self._path, key)
             }
 
             function session() {
@@ -415,14 +380,13 @@
                 return self._sessionStorage[self._sessionIdMethod]();
             }
 
-            /* save to user nested array 
+            /* save main record and to user index
              * @param{Object} data to save to user array - just saving key for now
-             *@return{Promise(fireBaseRef at userNestedArray)}
+             *@return{Array} [Promise(fireBaseRef at userIndex), String(main record key)]
              */
 
-            function createWithUser(data) {
-
-                return createMainRecord(data)
+            function createWithUser(data, geoFlag, userFlag) {
+                return createMainRecord(data, geoFlag, userFlag)
                     .then(passKeyToUser)
                     .catch(standardError);
 
@@ -431,14 +395,18 @@
                 }
             }
 
-            function removeWithUser(key) {
+            /* remove main record and user index
+             * @param{String}  key of main record to remove
+             *@return{Array} [Promise(fireBaseRef at userIndex), String(main record key)]
+             */
 
+            function removeWithUser(key) {
                 return removeMainRecord(key)
                     .then(passKeyToUser)
                     .catch(standardError);
 
                 function passKeyToUser(res) {
-                    return removeUserIndex(res.key());
+                    return qAll(removeUserIndex(res.key()), res.key());
                 }
             }
 
@@ -446,106 +414,26 @@
             /*********************************/
 
             /*
-             * Complex Methods */
+             * Combo Methods */
 
+						/* @param{object} data to save to main array
+						 * @param{object} location data to save
+						 * @return{Array} [firebaseRef(location Index), firebaseRef of main record]
+						 *
+						 */
 
-            //still needs more tests
             function createWithUserAndGeo(data, loc) {
 
-                /* 1.) adds main array record
-                 * 2.) adds user nested record,
-                 * 3.) adds records to main location array for each location
-                 * 4.) adds coordinates to geofire(key used is mainLocation key)
-                 * 5.) updates main array record by adding nested locations array with mainLocation keys
-                 */
-
-                return qAll(createMainRecord(data, null, true), loc)
-                    .then(trackLocationAndAddUserRec)
-                    .then(addNestedLocations)
-                    .catch(standardError);
-
-                function trackLocationAndAddUserRec(res) {
-                    return self._q.all([trackLocations(res[1], res[0].key()),
-                        createUserRecord(res[0]), qWrap(res[0])
-                    ]);
-                }
-
-                function addNestedLocations(res) {
-                    return self._q.all(res[0].map(function(loc) {
-                        return createNestedLocationRecord(res[2].key(), loc[1].key());
-                    }));
-
-                }
-
-            }
-
-            function createUserAndMain(data, geoFlag) {
-                return createMainRecord(data, geoFlag, true)
-                    .then(createUserRecord)
-                    .catch(standardError);
-            }
-
-            function trackLocations(data, key) {
-                return self._q.all(data.map(function(item) {
-                        return trackLocation(item, key);
-                    }))
-                    .catch(standardError);
-            }
-
-            function trackLocation(data, key) {
-                return createLocationRecord(addLocationKey(data, key))
-                    .then(sendToGeoFireAndPassLocationResults)
-                    .then(returnLocationResults)
+                return self._q.all([createWithUser(data, null, true), createLocationRecord(loc)])
+                    .then(addLocationIndexAndPassKey)
+                    .then(qAllResults)
                     .then(commandSuccess)
                     .catch(standardError);
 
-                function sendToGeoFireAndPassLocationResults(res) {
-                    return qAll(geofireSet(res[0].key(), [res[1].lat, res[1].lon]), res[0]);
+                function addLocationIndexAndPassKey(res) {
+                    return qAll(addLocationIndex(res[0][1].key(), res[1][1].key()), res[0][1]);
                 }
 
-                function returnLocationResults(res) {
-                    self._log.info('res+++');
-                    self._log.info(res);
-                    return res[1];
-                }
-
-                function addLocationKey(obj, key) {
-                    obj.mainArrayKey = key;
-                    return obj;
-                }
-            }
-
-            /*@param{Array} pass keys 
-             *@return{Array} [[null,fireBaseRef(main Location)]]
-             */
-
-            function untrackLocations(keys) {
-
-                return self._q.all(keys.map(function(key) {
-                        return untrackLocation(key)
-                            .catch(standardError);
-                    }))
-                    .catch(standardError);
-
-            }
-
-            function untrackLocation(key) {
-
-
-                return qAll(getIndex(mainLocations(), key), key)
-                    .then(removeMainAndPassKey)
-                    .then(removeCoords)
-                    .then(commandSuccess)
-                    .catch(standardError);
-
-                // function removeMainAndPassKey(res) {
-
-                // return qAll(remove(res), res[1]);
-                // }
-
-                // function removeCoords(res) {
-                // return geofireRemove(res[1]);
-                // }
             }
 
 
@@ -682,7 +570,7 @@
                     .catch(standardError);
 
                 function completeAction(res) {
-									// self._log.info(res);
+                    // self._log.info(res);
                     return self._timeout(function() {
                             var data = {};
                             data[res[1]] = true;
