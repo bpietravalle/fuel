@@ -68,8 +68,8 @@
                 .constant("FBURL", "https://your-firebase.firebaseio.com/")
                 .factory("location", function($q) {
                     var location = {
-                        add: keyMock("add", $q),
-                        remove: keyMock("remove", $q),
+                        addLoc: keyMock("add", $q),
+                        removeLoc: keyMock("remove", $q),
 
                     };
 
@@ -103,6 +103,7 @@
                         })
                     }
                 });
+
             module("testutils");
             module("firebase-fuel");
 
@@ -343,205 +344,6 @@
                     qReject(0);
                     useCurrentRef();
                 });
-                describe("With GPS option", function() {
-                    beforeEach(function() {
-                        options = {
-                            gps: true
-                        };
-                        subject = fuel("trips", options);
-                        $rootScope.$digest();
-                        test = subject.add(newRecord);
-                        flush();
-                        this.key = dataKeys(subject.currentRef())[0];
-                    });
-                    it("should equal", function() {
-                        expect(this.key).toEqual(jasmine.any(String));
-                    });
-                    describe("geo option", function() {
-                        describe("if true", function() {
-                            beforeEach(function() {
-                                var data = {
-                                    rec: newRecord,
-                                    geo: locData
-                                };
-
-                                test1 = subject.add(data, true);
-                                $rootScope.$digest();
-                                subject.currentRef().flush();
-                                $rootScope.$digest();
-                            });
-                            it("should not send full data object to mainArray if arg = true", function() {
-                                expect(getPromValue(test1, true).geo).not.toBeDefined();
-                                expect(getPromValue(test1, true)).toBeDefined();
-                            });
-                        });
-                        describe("if undefined", function() {
-                            beforeEach(function() {
-                                var data = {
-                                    rec: newRecord,
-                                    geo: locData
-                                };
-                                test1 = subject.add(data);
-                                $rootScope.$digest();
-                                subject.currentRef().flush();
-                                $rootScope.$digest();
-                            });
-                            it("should send full data object to mainArray if arg is undefined", function() {
-                                expect(getPromValue(test1).getData().geo).toBeDefined();
-                                expect(getPromValue(test1).getData()).toBeDefined();
-                            });
-                        });
-                        // describe("addLocationIndex", function() {
-                        //     beforeEach(function() {
-                        //         $rootScope.$digest();
-                        //         test = subject.addLocationIndex(this.key, "string");
-                        //         $rootScope.$digest();
-                        //         $timeout.flush();
-                        //         subject.currentRef().flush();
-                        //         $rootScope.$digest();
-                        //     });
-                        //     it("should be a promise", function() {
-                        //         expect(test).toBeAPromise();
-                        //     });
-                        //     it("should set currentRef to location Index", function() {
-                        //         expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key + "/locations");
-                        //     });
-                        //     it("should add data the location index", function() {
-                        //         expect(subject.currentRef().getData()).toEqual({
-                        //             "string": true
-                        //         });
-                        //     });
-                        //     it("should return the firebaseRef of the location index", function() {
-                        //         expect(getPromValue(test)).toBeAFirebaseRef();
-                        //         expect(getPromValue(test).path).toEqual(subject.currentPath());
-                        //     });
-                        //     qReject(0);
-
-                        //     describe("removeLocationIndex", function() {
-                        //         beforeEach(function() {
-                        //             $rootScope.$digest();
-                        //             test = subject.removeLocationIndex(this.key, "string");
-                        //             $rootScope.$digest();
-                        //             $timeout.flush();
-                        //             subject.currentRef().flush();
-                        //             $rootScope.$digest();
-                        //         });
-                        //         it("should be a promise", function() {
-                        //             expect(test).toBeAPromise();
-                        //         });
-                        //         it("should set currentRef to location Index", function() {
-                        //             expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key + "/locations");
-                        //         });
-                        //         it("should remove the key from the location index", function() {
-                        //             expect(getPromValue(test).getKeys()).toBeEmpty();
-                        //             expect(subject.currentRef().getData()).toBe(null);
-                        //         });
-                        //         it("should return the firebaseRef of the location index", function() {
-                        //             expect(getPromValue(test)).toBeAFirebaseRef();
-                        //             expect(getPromValue(test).path).toEqual(subject.currentPath());
-                        //         });
-                        //         qReject(0);
-                        //     });
-                        // });
-                        // describe("geofireSet", function() {
-                        //     beforeEach(function() {
-                        //         test = subject.geofireSet("myKey", [90, 100]);
-                        //         $rootScope.$digest();
-                        //         subject.currentRef().flush();
-                        //         $rootScope.$digest();
-                        //         $rootScope.$digest();
-                        //         this.ref = subject.currentRef();
-                        //     });
-                        //     it("should return a promise", function() {
-                        //         expect(test).toBeAPromise();
-                        //     });
-                        //     it("should add data to correct array", function() {
-                        //         expect(this.ref.getData()).toEqual({
-                        //             myKey: {
-                        //                 g: jasmine.any(String),
-                        //                 l: [90, 100]
-                        //             }
-                        //         });
-                        //     });
-                        //     it("should return null", function() {
-                        //         expect(getPromValue(test)).toEqual(undefined);
-                        //     });
-                        //     qReject(0);
-                        //     describe("geofireRemove", function() {
-                        //         beforeEach(function() {
-                        //             test = subject.geofireRemove("myKey");
-                        //             $rootScope.$digest();
-                        //             subject.currentRef().flush();
-                        //             $rootScope.$digest();
-                        //             this.ref = subject.currentRef();
-                        //         });
-                        //         it("should return a promise", function() {
-                        //             expect(test).toBeAPromise();
-                        //         });
-                        //         it("should return null", function() {
-                        //             expect(getPromValue(test)).toEqual(undefined);
-                        //         });
-                        //         it("should remove data correctly", function() {
-                        //             expect(this.ref.path).toEqual(rootPath + "/geofire/trips");
-                        //             expect(this.ref.getData()).toEqual(null);
-                        //         });
-                        //         qReject(0);
-                        //     });
-                        // });
-                        describe("createLocation", function() {
-                            beforeEach(function() {
-                                test = subject.createLocation(locData[0]);
-                                // flush();	
-                                // $rootScope.$digest();
-                                // this.ref = subject.currentRef();
-                                // this.key = this.ref.key().toString();
-                            });
-                            it("should call add() on location factory", function() {
-                                expect(location.add).toHaveBeenCalledWith(locData[0], undefined);
-                            });
-                            it("should return a promise", function() {
-                                expect(test).toBeAPromise();
-                            });
-                            it("should add data to correct array", function() {
-                                // expect(getPromValue(test)).toEqual(locData[0]);
-                            });
-                            // it("should return the correct firebaseRef", function() {
-                            //     expect(this.ref.path).toEqual("https://your-firebase.firebaseio.com/locations/trips/" + this.key);
-                            // });
-                            // it("should return an array with a firebaseRef and a object with coordinates", function() {
-                            //     expect(getPromValue(test).length).toEqual(2);
-                            //     expect(getPromValue(test)[0]).toBeAFirebaseRef();
-                            //     expect(getPromValue(test)[1]).toEqual({
-                            //         lat: 90,
-                            //         lon: 100
-                            //     });
-                            // });
-                            describe("removeLocation", function() {
-                                beforeEach(function() {
-                                    test = subject.removeLocation(0);
-                                    $rootScope.$digest();
-                                    // subject.currentRef().flush();
-                                    // $rootScope.$digest();
-                                });
-                                it("should call remove() on location factory", function() {
-                                    expect(location.remove).toHaveBeenCalledWith(0);
-                                });
-                                // it("should remove the record", function() {
-                                //     expect(this.arrLength).toEqual(1);
-                                //     expect(subject.currentRef().getData()).toEqual(null);
-                                //     expect(getRefData(subject.currentParentRef())).toEqual(null);
-                                // });
-                                // useParentRef();
-                                // it("should return the firebaseRef of the removed record", function() {
-                                //     expect(getPromValue(test)).toBeAFirebaseRef();
-                                //     expect(subject.currentPath()).toEqual(rootPath + "/locations/trips/0");
-                                // });
-
-                                // qReject(0);
-                            });
-                        });
-                    });
-                });
             });
             describe("Queries", function() {
                 // describe("userRecordsByIndex", function() {
@@ -680,7 +482,6 @@
                 });
             });
             describe("With User Option", function() {
-
                 beforeEach(function() {
                     options = {
                         user: true
@@ -741,7 +542,7 @@
 
                             });
                         });
-                        describe("removeWithUser", function() {
+                        describe("remove", function() {
                             beforeEach(function() {
                                 test = subject.remove(newRecord);
                                 flush();
@@ -768,105 +569,94 @@
                     });
                 });
             });
+            describe("With User And GPS Options", function() {
+                beforeEach(function() {
+                    options = {
+                        user: true,
+                        gps: true
+                    }
+                    subject = fuel("trips", options);
+                });
+                describe("Commands: ", function() {
+                    describe("add()", function() {
+                        beforeEach(function() {
+                            test = subject.add(newRecord, locData[0]);
+                            $rootScope.$digest();
+                            subject.currentRef().flush();
+                            $rootScope.$digest();
+                            this.key = subject.currentParentRef().key();
+                        });
+                        it("should be a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should add record to main array", function() {
+                            var mainRef = subject.currentRef().root().child("trips/" + this.key);
+                            expect(mainRef.getData()).toEqual(newRecord);
+                        });
+                        it("should add uid property to main record", function() {
+                            var mainRef = subject.currentRef().root().child("trips/" + this.key);
+                            expect(mainRef.getData().uid).toEqual(1);
+                        });
+                        it("should call user.addIndex with correct path and main record key", function() {
+                            expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.key);
+                        });
+                        it("should add record to main location array", function() {
+                            expect(location.addLoc).toHaveBeenCalledWith({
+                                    lat: 90,
+                                    lon: 100,
+                                    place_id: "string",
+                                    placeType: "a place",
+                                    distance: 1234,
+                                    closeBy: true
+                                },
+                                true);
+                        });
+                        it("should call geofire object with correct path, main location key and coordinates", function() {
+                            expect(geofire.set).toHaveBeenCalledWith(["geofire", "trips"], "addKey", [90, 100]);
+                        });
+                        it("should add location index to main record and set currentRef to main record", function() {
+                            expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key + "/locations");
+                            expect(subject.currentRef().getData()).toEqual(null);
+                            $timeout.flush();
+                            flush();
+                            expect(subject.currentRef().child("locations").getData()).toEqual({
+                                "addKey": true
+                            });
+                            expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
+                        });
+                        qReject(0);
+                        describe("remove()", function() {
+                            beforeEach(function() {
+                                $timeout.flush();
+                                flush();
+                                test = subject.remove(this.key);
+                                this.idxKey = Object.keys(subject.currentRef().child("locations").getData())[0];
+                                $rootScope.$digest();
+                                flush();
+                                flush();
+                            });
+                            it("should remove location with key from index", function() {
+                                expect(this.idxKey).toEqual("addKey");
+                                expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
+                            });
+                            it("should call remove on geofire with key from main location array", function() {
+                                expect(geofire.remove).toHaveBeenCalledWith(['geofire', 'trips'], "removeKey");
+                            });
+                            it("should remove the data from firebase", function() {
+                                expect(subject.currentRef().getData()).toEqual(null);
+                            });
+                            it("should return the firebaseRef from the removed record", function() {
+                                expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
+                            });
+                            it("should call user.removeIndex() with correct key", function() {
+                                expect(user.removeIndex).toHaveBeenCalledWith(1, 'trips', this.key);
+                            });
+                            qReject(0);
+                        });
 
-
-            // describe("User", function() {
-            //     describe("createUserRecord", function() {
-            //         beforeEach(function() {
-            //             test = subject.createUserRecord(newData);
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush();
-            //             $rootScope.$digest();
-            //         });
-            //         it("should return a promise", function() {
-            //             expect(test).toBeAPromise();
-            //         });
-            //         it("should add data to correct array", function() {
-            //             var arr = subject.currentRef();
-            //             var key = arr.key().toString();
-            //             expect(arr.parent().path).toEqual("https://your-firebase.firebaseio.com/users/1/trips");
-            //             expect(getRefData(arr)).toEqual(getRefData(subject.currentRef()));
-            //         });
-            //         it("should return the firebaseRef", function() {
-            //             $rootScope.$digest();
-            //             expect(getRefData(getPromValue(test))).toBeDefined();
-            //         });
-
-
-            //     });
-            //     describe("removeUserRecord", function() {
-            //         beforeEach(function() {
-            //             subject.userNestedArray();
-            //             $rootScope.$digest();
-            //             subject.currentRef().set(arrData);
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush();
-            //             $rootScope.$digest();
-            //             this.currentPath = subject.currentPath();
-            //             this.arrLength = subject.currentBase().length();
-            //             test = subject.removeUserRecord(0);
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush();
-            //             $rootScope.$digest();
-            //         });
-            //         it("should remove the record", function() {
-            //             expect(this.arrLength).toEqual(2);
-            //             expect(getRefData(subject.parentRef())).toEqual({
-            //                 1: arrData[1]
-            //             });
-            //         });
-            //         // logCheck();
-
-            //         useParentRef();
-            //         useCurrentRef();
-
-            //         it("should return the firebaseRef of the removed record", function() {
-            //             currentRefCheck("users/1/trips/0", true);
-            //         });
-
-            //         qReject(0);
-            //     });
-            // });
-
-            // // });
-            // //     describe("Simple Queries", function() {
-            // //         describe("loadMainArray", function() {});
-            // //         describe("loadMainRecord", function() {});
-            // //         describe("Geofire", function() {
-            // //             describe("geofireGet", function() {});
-            // //             describe("loadLocationRecord", function() {});
-            // //             describe("MainLocations", function() {});
-            // //             describe("MainLocation", function() {});
-            // //         });
-            // //         describe("Nested Arrays", function() {});
-            // describe("User", function() {
-            //     describe("loadUserRecords", function() {
-            //         //TODO add option for loading indexes
-            //         beforeEach(function() {
-            //             test = subject.loadUserRecords();
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush()
-            //             $rootScope.$digest();
-            //         });
-            //         it("should return a promise", function() {
-            //             expect(test).toBeAPromise();
-            //         });
-            //         it("should load correct firebaseRef", function() {
-            //             expect(getPromValue(test).$ref().path).toEqual("https://your-firebase.firebaseio.com/users/1/trips");
-            //         });
-            //         it("should return a fireBaseArray", function() {
-            //             expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-            //                 $keyAt: jasmine.any(Function),
-            //                 $indexFor: jasmine.any(Function),
-            //                 $remove: jasmine.any(Function),
-            //                 $getRecord: jasmine.any(Function),
-            //                 $add: jasmine.any(Function),
-            //                 $watch: jasmine.any(Function)
-            //             }));
-            //         });
-
-
-            //     });
+                    });
+                });
+            });
             //     describe("loadUserRecord", function() {
             //         //TODO add option for loading indexes
             //         beforeEach(function() {

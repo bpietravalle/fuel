@@ -69,15 +69,11 @@
             ["mainRef", "trips"],
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
+            ["nestedArray", "trips/hotels", "hotels"],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-            // ["makeNestedRef", "trips/1/hotels/5/rooms/100", "1/hotels/5/rooms", "100"],
-            // ["makeNestedRef", "trips/1/hotels/5/rooms/100", [1, 'hotels', 5, 'rooms'], "100"],
-            ["userIndex", "users/1/trips"],
-            ["locationsIndex", "trips/7/locations", "7"],
+            ["nestedRecord", "trips/hotels/5", "hotels", "5"],
             ["makeGeo", "geofire/trips",["geofire","trips"]],
-            ["mainLocationsArray", "locations/trips"],
-            ["mainLocationsRecord", "locations/trips/5", "5"]
         ];
 
         function testPaths(y) {
@@ -113,9 +109,7 @@
         describe("currentRef", function() {
             it("shouoldn't be defined", function() {
                 expect(subject.currentRef()).not.toBeDefined();
-
             });
-
         });
 
         describe("rootRef", function() {

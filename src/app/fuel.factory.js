@@ -92,6 +92,7 @@
             entity.currentRef = getCurrentRef;
             entity.currentPath = getCurrentPath;
             entity.currentParentRef = getCurrentParentRef;
+            entity.pathHistory = getPathHistory;
             entity.inspect = inspect;
 
             entity.addIndex = addIndex;
@@ -110,11 +111,7 @@
                 entity.remove = removeMainRecord;
             }
 
-            if (self._user !== true && self._gps === true) {
-                //make private
-                entity.createLocation = createLocation;
-                entity.removeLocation = removeLocation;
-            }
+            if (self._user !== true && self._gps === true) {}
 
             if (self._user === true && self._gps !== true) {
                 entity.add = createWithUser;
@@ -123,6 +120,7 @@
 
             if (self._user === true && self._gps === true) {
                 entity.add = createWithUserAndGeo;
+                entity.remove = removeWithUserAndGeo;
             }
 
             if (self._sessionAccess === true) {
@@ -134,6 +132,8 @@
                 entity.get = getGf;
                 entity.remove = removeGf;
                 entity.set = setGf;
+								entity.addLoc = addLoc;
+								entity.removeLoc = removeLoc;
             }
 
             getCurrentRef();
@@ -166,7 +166,7 @@
             }
 
             function getPathHistory() {
-                return self._pathMaster.getPathHistory();
+                return self._pathMaster.pathHistory();
             }
 
             /******************************/
@@ -187,28 +187,24 @@
                 return self._pathMaster.nestedRef(id, name);
             }
 
+            function indexAf(id, name, type) {
+                return self._pathMaster.indexAf(id, name, type);
+            }
+
             function nestedRecord(mainId, name, recId) {
                 return self._pathMaster.nestedRecord(mainId, name, recId);
             }
 
             /* Geofire Interface */
-            function mainLocations() {
-                return self._pathMaster.mainLocationsArray();
-            }
-
-            function mainLocation(id) {
-                return self._pathMaster.mainLocationsRecord(id);
-            }
+            //
+            //remove
 
             function makeGeo(path) {
                 return self._pathMaster.makeGeo(path);
             }
 
-            function locationsIndex(id) {
-                return self._pathMaster.locationsIndex(id);
-            }
-
             // /* User Object Interface */
+            //remove
             function userIndex() {
                 return self._pathMaster.userIndex();
             }
@@ -265,9 +261,7 @@
                     .catch(standardError);
             }
 
-
             /* Geofire Interface */
-
 
             function geofireSet(k, c) {
                 return self._geofireObject.set(self._geofirePath, k, c);
@@ -280,6 +274,24 @@
             function geofireGet(k) {
                 return self._geofireObject.get(self._geofirePath, k);
             }
+
+
+            /* Geofire api access */
+
+            function removeLoc(path, key) {
+                return nestedRecord(path, key)
+                    .then(remove)
+                    .catch(standardError);
+
+            }
+
+            function addLoc(path, data) {
+                return qAll(nestedArray(path), data)
+                    .then(add)
+                    .catch(standardError);
+
+            }
+
 
             function setGf(path, key, coords) {
                 return qAll(makeGeo(path), [key, coords])
@@ -322,10 +334,8 @@
                     lat: data.lat,
                     lon: data.lon
                 };
-                //test geoflag
-                return qAll(self._locationObject.add(data, geoFlag), [coords.lat, coords.lon])
+                return qAll(self._locationObject.addLoc(data, geoFlag), [coords.lat, coords.lon])
                     .then(addGeofireAndPassLocKey)
-                    // .then(commandSuccess)
                     .catch(standardError);
 
 
@@ -340,9 +350,8 @@
 
             function removeLocation(key) {
                 return self._locationObject
-                    .remove(key)
+                    .removeLoc(key)
                     .then(removeGeofireAndPassLocKey)
-                    // .then(commandSuccess)
                     .catch(standardError);
 
                 function removeGeofireAndPassLocKey(res) {
@@ -352,16 +361,13 @@
 
 
             function addLocationIndex(recId, key) {
-                return qAll(locationsIndex(recId), key)
-                    .then(addIndex)
-                    .then(commandSuccess)
+                return addIndex(recId, self._locationName, key)
                     .catch(standardError);
             }
 
+            //only need if updating a main record
             function removeLocationIndex(recId, key) {
-                return qAll(locationsIndex(recId), key)
-                    .then(removeIndex)
-                    .then(commandSuccess)
+                return removeIndex(recId, self._locationName, key)
                     .catch(standardError);
             }
 
@@ -399,6 +405,10 @@
                 function passKeyToUser(res) {
                     return qAll(addUserIndex(res.key()), res);
                 }
+
+                // function returnMainRec(res){
+                // 	return res[1];
+                // }
             }
 
             /* remove main record and user index
@@ -416,7 +426,6 @@
                 }
             }
 
-
             /*********************************/
 
             /*
@@ -430,9 +439,9 @@
 
             function createWithUserAndGeo(data, loc) {
 
-                return self._q.all([createWithUser(data, null, true), createLocationRecord(loc)])
+                return self._q.all([createWithUser(data, null, true), createLocation(loc, true)])
                     .then(addLocationIndexAndPassKey)
-                    .then(qAllResults)
+                    .then(setReturnValue)
                     .then(commandSuccess)
                     .catch(standardError);
 
@@ -440,7 +449,35 @@
                     return qAll(addLocationIndex(res[0][1].key(), res[1][1].key()), res[0][1]);
                 }
 
+                function setReturnValue(res) {
+                    return res[1];
+                }
             }
+
+            function removeWithUserAndGeo(mainRecId) {
+
+                return qAll(removeLocations(mainRecId), mainRecId)
+                    .then(removeMainRec)
+                    .catch(standardError);
+
+                function removeLocations(mainRecId) {
+                    return getIndexKeys(mainRecId, self._locationName)
+                        .then(completeRemove)
+
+                    function completeRemove(res) {
+                        return self._q.all(res.map(function(key) {
+                            return removeLocation(key);
+                        }));
+                    }
+
+                }
+
+                function removeMainRec(res) {
+                    return removeWithUser(res[1]);
+                }
+            }
+
+
 
 
             /*********************************/
@@ -524,10 +561,8 @@
             }
 
 
-
             /****************
              **** Helpers ****/
-
 
             function add(res) {
                 return res[0].$add(res[1]);
@@ -576,7 +611,6 @@
                     .catch(standardError);
 
                 function completeAction(res) {
-                    // self._log.info(res);
                     return self._timeout(function() {
                             var data = {};
                             data[res[1]] = true;
@@ -608,6 +642,31 @@
                 }
             }
 
+
+            /* @param{string} id of current record
+             * @param{string} index name
+             * @return{array} of index keys;
+             */
+
+            function getIndexKeys(recId, arrName) {
+                return indexAf(recId, arrName, "ARRAY")
+                    .then(getKeys)
+                    .then(setReturnValue)
+                    .catch(standardError);
+
+                function getKeys(res) {
+                    return qAll(res.$loaded(), [])
+
+                }
+
+                function setReturnValue(res) {
+                    self._q.all(res[0].map(function(item) {
+                        res[1].push(item.$id);
+                    }));
+                    return res[1];
+                }
+            }
+
             function checkNestedParams(recId, arrName, flag) {
                 if (flag === true) {
                     return qWrap(entity[recId]());
@@ -616,18 +675,6 @@
                 }
             }
 
-            // function removeIndex(res) {
-            //     return self._timeout(function() {
-            //             var data = {};
-            //             data[res[1]] = null;
-            //             return res[0].update(data);
-            //         })
-            //         .then(function() {
-            //             return res[0];
-            //         })
-            //         .catch(standardError);
-
-            // }
 
             /* For Queries */
 
@@ -648,7 +695,7 @@
             function userRecordsByIndex() {
                 // var keys = Object.keys(userIndex());
                 return self._timeout(function() {
-                    self._q.all([self._pathMaster.mainRef(), userIndex()])
+                    self._q.all([self._pathMaster.mainRef(), /*userIndex()*/ ])
                         .then(sortByIdx)
                         .then(sendToArray)
                         .catch(standardError);

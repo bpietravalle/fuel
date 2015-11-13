@@ -76,6 +76,8 @@
             fire.nestedArray = nestedArray;
             fire.nestedRecord = nestedRecord;
             fire.nestedRef = nestedRef;
+						fire.indexAf = indexAf;
+
             //TODO make below private
             fire.checkPathParams = checkPathParams;
 
@@ -103,11 +105,6 @@
             }
             if (self._geofire = true) {
                 fire.makeGeo = makeGeo;
-
-								//think can remove
-                fire.locationsIndex = locationsIndex;
-                fire.mainLocationsArray = mainLocationsArray;
-                fire.mainLocationsRecord = mainLocationsRecord;
             }
 
             setCurrentRef(root());
@@ -142,6 +139,7 @@
                                             self._log.info("Building childRef");
                                             ref = buildChildRef(str);
                                         } else {
+																					// throw new Error("You cannot switch to a new main node");
                                             self._log.info("Setting new firebase node");
                                             ref = setChild(relativePath(path));
                                         }
@@ -206,6 +204,10 @@
                 return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
             }
 
+						function indexAf(recId, name, type){
+                return checkPathParams(nestedArrayPath(recId, name),type);
+
+						}
 
             /* User Object refs */
 
@@ -218,20 +220,9 @@
                 return checkPathParams(geofireArrayPath(path), "geo");
             }
 
-            /* Main Location Array refs */
-            function mainLocationsArray() {
-                return checkPathParams(mainLocationArrayPath(), "ARRAY");
-            }
-
-            function mainLocationsRecord(id) {
-                return checkPathParams(mainLocationRecordPath(id), "OBJECT");
-            }
 
             /* Locations Index */
 
-            function locationsIndex(recId) {
-                return checkPathParams(nestedArrayPath(recId, self._locationName));
-            }
 
             /************ Paths *************************/
 
@@ -354,7 +345,7 @@
             }
 
             function buildChildRef(path) {
-                return getCurrentRef().child(path.slice(getCurrentPath().length));
+                return getCurrentRef().child(removeSlash(path.slice(getCurrentPath().length)));
             }
 
             function getCurrentPath() {
