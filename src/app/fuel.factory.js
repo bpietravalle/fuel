@@ -17,6 +17,8 @@
     }
 
     Fuel = function($timeout, utils, firePath, $q, $log, $injector, path, options) {
+        //TODO: error messages for invalid entires for user , geofire, or gps
+        //only except true...
         this._timeout = $timeout;
         this._utils = utils;
         this._firePath = firePath;
@@ -85,14 +87,15 @@
             var self = this;
             var entity = {};
 
-            // entity.mainArray = mainArray;
-            // entity.mainRecord = mainRecord;
-
             /* fireBaseRef Mngt */
             entity.currentBase = getCurrentBase;
             entity.currentRef = getCurrentRef;
             entity.currentPath = getCurrentPath;
             entity.currentParentRef = getCurrentParentRef;
+            entity.inspect = inspect;
+
+            entity.addIndex = addIndex;
+            entity.removeIndex = removeIndex;
 
             /*Queries*/
             entity.load = load;
@@ -101,42 +104,36 @@
             // entity.getRecord = getRecord;
 
             /*Commands*/
-            entity.add = createMainRecord;
-            entity.addIndex = addIndex;
-            entity.removeIndex = removeIndex;
-            entity.save = save;
-            entity.remove = removeMainRecord;
-            entity.inspect = inspect;
+            if (self._user !== true && self._gps !== true) {
+                entity.add = createMainRecord;
+                entity.save = save;
+                entity.remove = removeMainRecord;
+            }
 
-            if (self._gps === true) {
-                entity.addLocationIndex = addLocationIndex;
-                entity.removeLocationIndex = removeLocationIndex;
-
+            if (self._user !== true && self._gps === true) {
+                //make private
                 entity.createLocation = createLocation;
                 entity.removeLocation = removeLocation;
+            }
 
+            if (self._user === true && self._gps !== true) {
+                entity.add = createWithUser;
+                entity.remove = removeWithUser;
+            }
+
+            if (self._user === true && self._gps === true) {
+                entity.add = createWithUserAndGeo;
+            }
+
+            if (self._sessionAccess === true) {
+                entity.session = session;
+                entity.sessionId = sessionId;
             }
 
             if (self._geofire === true) {
                 entity.get = getGf;
                 entity.remove = removeGf;
                 entity.set = setGf;
-            }
-
-            if (self._user === true) {
-                entity.addUserIndex = addUserIndex;
-                entity.removeUserIndex = removeUserIndex;
-                entity.createWithUser = createWithUser;
-                entity.removeWithUser = removeWithUser;
-            }
-
-            if (self._user === true && self._geofire === true) {
-                entity.createWithUserAndGeo = createWithUserAndGeo;
-            }
-
-            if (self._sessionAccess === true) {
-                entity.session = session;
-                entity.sessionId = sessionId;
             }
 
             getCurrentRef();
@@ -391,7 +388,7 @@
 
             /* save main record and to user index
              * @param{Object} data to save to user array - just saving key for now
-             *@return{Array} [Promise(fireBaseRef at userIndex), String(main record key)]
+             *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record created)]
              */
 
             function createWithUser(data, geoFlag, userFlag) {
@@ -400,13 +397,13 @@
                     .catch(standardError);
 
                 function passKeyToUser(res) {
-                    return qAll(addUserIndex(res.key()), res.key());
+                    return qAll(addUserIndex(res.key()), res);
                 }
             }
 
             /* remove main record and user index
              * @param{String}  key of main record to remove
-             *@return{Array} [Promise(fireBaseRef at userIndex), String(main record key)]
+             *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
              */
 
             function removeWithUser(key) {
@@ -415,7 +412,7 @@
                     .catch(standardError);
 
                 function passKeyToUser(res) {
-                    return qAll(removeUserIndex(res.key()), res.key());
+                    return qAll(removeUserIndex(res.key()), res);
                 }
             }
 

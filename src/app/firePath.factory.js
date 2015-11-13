@@ -103,7 +103,8 @@
             }
             if (self._geofire = true) {
                 fire.makeGeo = makeGeo;
-                fire.geofireRecord = geofireRecord;
+
+								//think can remove
                 fire.locationsIndex = locationsIndex;
                 fire.mainLocationsArray = mainLocationsArray;
                 fire.mainLocationsRecord = mainLocationsRecord;
@@ -217,10 +218,6 @@
                 return checkPathParams(geofireArrayPath(path), "geo");
             }
 
-            function geofireRecord(id) {
-                return checkPathParams(geofireRecordPath(id), "geo");
-            }
-
             /* Main Location Array refs */
             function mainLocationsArray() {
                 return checkPathParams(mainLocationArrayPath(), "ARRAY");
@@ -268,10 +265,6 @@
 
             function geofireArrayPath(path) {
                 return arrayify(path);
-            }
-
-            function geofireRecordPath(id) {
-                return extendPath([self._geofireName, self._path], id);
             }
 
             function mainLocationArrayPath() {
