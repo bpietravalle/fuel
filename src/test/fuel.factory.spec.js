@@ -669,9 +669,9 @@
                 describe("set", function() {
                     beforeEach(function() {
                         test = subject.set("trips", "key", [90, 100]);
-                        flush();
-                        test = subject.set("trips", "key2", [50, 100]);
-                        flush();
+                        flushTime();
+                        test1 = subject.set("trips", "key2", [50, 100]);
+                        flushTime();
                     });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
@@ -692,7 +692,7 @@
                     describe("remove", function() {
                         beforeEach(function() {
                             test = subject.remove("trips", "key");
-                            flush();
+                            flushTime();
                         });
                         it("should be a promise", function() {
                             expect(test).toBeAPromise();
@@ -706,23 +706,18 @@
                             });
                         });
                     });
-
-
                     describe("get", function() {
                         beforeEach(function() {
-                            // test = subject.set("trips", "key2", [50, 90]);
-                            // flush();
 
                             test = subject.get("trips", "key");
-                            flush();
+                            flushTime();
+                            $rootScope.$digest();
                         });
                         it("should be a promise", function() {
                             expect(test).toBeAPromise();
                         });
                         it("should retrieve the correct record", function() {
                             expect(subject.currentPath()).toEqual(rootPath + "/geofire/trips");
-
-                            // expect(getPromValue(test)).toEqual("as");
                             // expect(subject.currentRef().getData()).toEqual({
                             //     key: {
                             //         g: jasmine.any(String),
@@ -730,14 +725,67 @@
                             //     }
                             // });
                         });
-                        // logCheck();
 
                     });
+                });
+            });
+            describe("Main Location Array", function() {
+                beforeEach(function() {
+                    options = {
+                        geofire: true
+                    };
+                    subject = fuel("locations", options);
+                });
+                describe("addLoc", function() {
+                    beforeEach(function() {
+                        test = subject.addLoc("trips", locData[0]);
+                        flush();
+                        this.key = subject.currentRef().key();
+                        test1 = subject.addLoc("trips", locData[1]);
+                        flush();
+                        this.key1 = subject.currentRef().key();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                        expect(test1).toBeAPromise();
+                    });
+                    it("should return correct ref", function() {
+                        expect(getPromValue(test).path).toEqual(rootPath + "/locations/trips/" + this.key);
+                        expect(subject.currentPath()).toEqual(rootPath + "/locations/trips/" + this.key1);
+                    });
+                    it("should add the data to firebase", function() {
+                        expect(getPromValue(test).getData()).toEqual(locData[0]);
+                        expect(getPromValue(test1).getData()).toEqual(locData[1]);
+                    });
+										qReject(0);
+
+                });
+                describe("removeLoc", function() {
+                    beforeEach(function() {
+                        subject.addLoc("trips", locData[0]);
+                        flush();
+                        this.key = subject.currentRef().key();
+                        subject.addLoc("trips", locData[1]);
+                        flush();
+                        this.key1 = subject.currentRef().key();
+												test = subject.removeLoc("trips",this.key);
+                        flush();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should return correct ref", function() {
+                        expect(subject.currentPath()).toEqual(rootPath + "/locations/trips/" + this.key);
+                    });
+                    it("should remove the data to firebase", function() {
+											expect(subject.currentRef().getData()).toEqual(null);
+											expect(subject.currentParentRef().children).toEqual("as");
+                    });
+										qReject(0);
 
                 });
 
             });
-
 
         });
         //     describe("loadUserRecord", function() {
@@ -1173,6 +1221,13 @@
 
         function flush() {
             $rootScope.$digest();
+            subject.currentRef().flush();
+            $rootScope.$digest();
+        }
+
+        function flushTime() {
+            $rootScope.$digest();
+            $timeout.flush();
             subject.currentRef().flush();
             $rootScope.$digest();
         }

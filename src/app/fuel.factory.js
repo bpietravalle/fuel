@@ -46,7 +46,7 @@
                 this._geofireObject = this._injector.get("geofire");
                 this._locationName = "locations";
                 this._geofireName = "geofire";
-								//shouldn't need to know below 5
+                //shouldn't need to know below 5
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
                 this._pathOptions.geofire = true;
@@ -54,8 +54,7 @@
                 this._pathOptions.geofireName = this._geofireName;
             }
 
-						if(this._gps === true || this._geofire === true){
-						}
+            if (this._gps === true || this._geofire === true) {}
 
             this._user = this._options.user || false;
             this._sessionAccess = this._options.sessionAccess || false;
@@ -136,8 +135,8 @@
                 entity.get = getGf;
                 entity.remove = removeGf;
                 entity.set = setGf;
-								entity.addLoc = addLoc;
-								entity.removeLoc = removeLoc;
+                entity.addLoc = addLoc;
+                entity.removeLoc = removeLoc;
             }
 
             getCurrentRef();
@@ -285,12 +284,14 @@
             function removeLoc(path, key) {
                 return nestedRecord(path, key)
                     .then(remove)
+                    .then(commandSuccess)
                     .catch(standardError);
             }
 
             function addLoc(path, data) {
                 return qAll(nestedArray(path), data)
                     .then(add)
+                    .then(commandSuccess)
                     .catch(standardError);
             }
 
@@ -298,11 +299,13 @@
             function setGf(path, key, coords) {
                 return qAll(makeGeo(path), [key, coords])
                     .then(setGeo)
+                    .then(commandSuccess)
                     .catch(standardError);
 
                 function setGeo(res) {
-                    return res[0].set(res[1][0], res[1][1]);
+                    return res[0].set(res[1][0], res[1][1])
                 }
+
             }
 
             function getGf(path, key) {
@@ -323,7 +326,6 @@
                     .catch(standardError);
 
                 function removeGeo(res) {
-									self._log.info(res)
                     return res[0].remove(res[1]);
                 }
             }
@@ -743,7 +745,6 @@
 
             function querySuccess(res) {
                 self._log.info('query success');
-                self._log.info(res);
                 self._pathMaster.setCurrentRef(res.$ref());
                 return res;
             }
