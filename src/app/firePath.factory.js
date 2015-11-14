@@ -2,7 +2,7 @@
     "use strict";
     var FirePath;
 
-    angular.module("firebase-fuel")
+    angular.module("firebase.fuel")
         .factory("firePath", firePathFactory);
 
     /** @ngInject */
@@ -58,7 +58,7 @@
             if (this._options.geofire === true) {
                 this._geofire = true;
                 this._locationName = this._options.locationName || "locations";
-                this._geofireName = this._options.geofireName;
+                this._geofireName = this._options.geofireName || "geofire";
             }
         }
     };
@@ -76,7 +76,7 @@
             fire.nestedArray = nestedArray;
             fire.nestedRecord = nestedRecord;
             fire.nestedRef = nestedRef;
-						fire.indexAf = indexAf;
+            fire.indexAf = indexAf;
 
             //TODO make below private
             fire.checkPathParams = checkPathParams;
@@ -103,7 +103,7 @@
             if (self._sessionAccess === true) {
                 fire.userIndex = userIndex;
             }
-            if (self._geofire = true) {
+            if (self._geofire === true) {
                 fire.makeGeo = makeGeo;
             }
 
@@ -139,7 +139,7 @@
                                             self._log.info("Building childRef");
                                             ref = buildChildRef(str);
                                         } else {
-																					// throw new Error("You cannot switch to a new main node");
+                                            // throw new Error("You cannot switch to a new main node");
                                             self._log.info("Setting new firebase node");
                                             ref = setChild(relativePath(path));
                                         }
@@ -164,7 +164,7 @@
 
                 return self._q.when(self._fireStarter(type, path, flag, self._const))
                     .then(setCurrentRefAndReturn)
-                    .catch(standardError)
+                    .catch(standardError);
 
                 function setCurrentRefAndReturn(res) {
                     setCurrentFirebase(res);
@@ -192,10 +192,10 @@
                 return checkPathParams(mainRecordPath(id), "OBJECT");
             }
 
-						function nestedRef(recId, name){
+            function nestedRef(recId, name) {
                 return checkPathParams(nestedArrayPath(recId, name));
-						}
-						
+            }
+
             function nestedArray(recId, name) {
                 return checkPathParams(nestedArrayPath(recId, name), "ARRAY");
             }
@@ -204,10 +204,10 @@
                 return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
             }
 
-						function indexAf(recId, name, type){
-                return checkPathParams(nestedArrayPath(recId, name),type);
+            function indexAf(recId, name, type) {
+                return checkPathParams(nestedArrayPath(recId, name), type);
 
-						}
+            }
 
             /* User Object refs */
 
@@ -256,14 +256,6 @@
 
             function geofireArrayPath(path) {
                 return arrayify(path);
-            }
-
-            function mainLocationArrayPath() {
-                return arrayify([self._locationName, self._path]);
-            }
-
-            function mainLocationRecordPath(id) {
-                return extendPath([self._locationName, self._path], id);
             }
 
             function sessionId() {
@@ -452,7 +444,7 @@
             }
 
             function relativePath(path) {
-                return stringify(arrayify(removeSlash(path)))
+                return stringify(arrayify(removeSlash(path)));
             }
 
             function fullPath(path) {

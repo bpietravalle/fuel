@@ -5,7 +5,7 @@
         var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
 
         beforeEach(function() {
-            angular.module("firebase-fuel")
+            angular.module("firebase.fuel")
                 .constant("FBURL", "https://your-firebase.firebaseio.com/")
                 .factory("session", function() {
                     return {
@@ -16,7 +16,7 @@
                     }
                 });
             module("testutils");
-            module("firebase-fuel");
+            module("firebase.fuel");
             MockFirebase.override();
             inject(function(_fuel_, _$window_, _utils_, _testutils_, _firePath_, _$rootScope_, _$q_, _$log_, _$injector_) {
                 testutils = _testutils_;

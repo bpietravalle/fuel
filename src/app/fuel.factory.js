@@ -3,7 +3,7 @@
     var Fuel;
 
 
-    angular.module("firebase-fuel")
+    angular.module("firebase.fuel")
         .factory("fuel", FuelFactory);
 
     /** @ngInject */
@@ -40,21 +40,21 @@
                 }
             }
             if (this._gps === true) {
-                this._locationObject = this._injector.get("location");
                 //below messes up methods to main location array- need another way
                 // this._nestedArrays.push(this._locationName);
+                this._locationObject = this._injector.get("location");
                 this._geofireObject = this._injector.get("geofire");
+            }
+
+            if (this._gps === true || this._geofire === true) {
+                this._pathOptions.geofire = true;
                 this._locationName = "locations";
                 this._geofireName = "geofire";
-                //shouldn't need to know below 5
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
-                this._pathOptions.geofire = true;
                 this._pathOptions.locationName = this._locationName;
                 this._pathOptions.geofireName = this._geofireName;
             }
-
-            if (this._gps === true || this._geofire === true) {}
 
             this._user = this._options.user || false;
             this._sessionAccess = this._options.sessionAccess || false;
@@ -201,15 +201,10 @@
             }
 
             /* Geofire Interface */
-            //
-            //remove
 
             function makeGeo(path) {
                 return self._pathMaster.makeGeo(path);
             }
-
-            // /* User Object Interface */
-            //remove
 
             /*****************
              * Main Methods
@@ -223,7 +218,6 @@
                     return loadMainRecord(id);
                 }
             }
-
 
             function loadMainArray() {
                 return mainArray()
@@ -248,7 +242,7 @@
                 function loadRecs(arr) {
 
                     return self._q.all(arr.map(function(key) {
-                        return load(key)
+                        return load(key);
                     }));
 
 
@@ -259,7 +253,7 @@
 
             function createMainRecord(data, geoFlag, userFlag) {
                 if (geoFlag === true && data.geo) {
-                    delete data["geo"]
+                    delete data.geo
                 }
                 if (userFlag === true) {
                     data.uid = sessionId();
@@ -317,7 +311,7 @@
                     .catch(standardError);
 
                 function setGeo(res) {
-                    return res[0].set(res[1][0], res[1][1])
+                    return res[0].set(res[1][0], res[1][1]);
                 }
 
             }
@@ -395,12 +389,12 @@
 
             function addUserIndex(key) {
                 return self._userObject
-                    .addIndex(sessionId(), self._path, key)
+                    .addIndex(sessionId(), self._path, key);
             }
 
             function removeUserIndex(key) {
                 return self._userObject
-                    .removeIndex(sessionId(), self._path, key)
+                    .removeIndex(sessionId(), self._path, key);
             }
 
             function session() {
@@ -481,7 +475,7 @@
 
                 function removeLocations(mainRecId) {
                     return getIndexKeys(mainRecId, self._locationName)
-                        .then(completeRemove)
+                        .then(completeRemove);
 
                     function completeRemove(res) {
                         return self._q.all(res.map(function(key) {
@@ -509,11 +503,12 @@
 
                 self._q.all(arr.map(function(item) {
                     angular.extend(newProperties, addNestedArray(obj, item));
-                }))
+                }));
 
                 return angular.merge({}, obj, newProperties);
             }
 
+						//untested/unused
             function addNestedArray(obj, arr) {
                 var arrName, recName, addRec, getRec, removeRec, loadRec, loadRecs, saveRec, saveRecs, newProp;
                 arrName = self._utils.pluralize(arr);
@@ -528,18 +523,18 @@
 
                 newProp[arrName] = function(id) {
                     return nestedArray(id, arrName);
-                }
+                };
 
                 newProp[recName] = function(mainRecId, nestedRecId) {
                     return nestedRecord(mainRecId, arrName, nestedRecId);
-                }
+                };
 
                 newProp[addRec] = function(id, data) {
                     return qAll(newProp[arrName](id), data)
                         .then(add)
                         .then(commandSuccess)
                         .catch(standardError);
-                }
+                };
 
                 newProp[getRec] = function(mainRecId, key) {
 
@@ -547,34 +542,34 @@
                         .then(getRecord)
                         .then(querySuccess)
                         .catch(standardError);
-                }
+                };
 
                 newProp[removeRec] = function(mainRecId, key) {
                     return newProp[recName](mainRecId, key)
                         .then(remove)
                         .then(commandSuccess)
                         .catch(standardError);
-                }
+                };
                 newProp[loadRec] = function(id, idxOrRec) {
                     return newProp[recName](id, idxOrRec)
                         .then(loaded)
                         .then(querySuccess)
                         .catch(standardError);
-                }
+                };
 
                 newProp[loadRecs] = function(id) {
                     return newProp[arrName](id)
                         .then(loaded)
                         .then(querySuccess)
                         .catch(standardError);
-                }
+                };
 
                 newProp[saveRec] = function(id, idxOrRec) {
                     return qAll(newProp[arrName](id), idxOrRec)
                         .then(save)
                         .then(commandSuccess)
                         .catch(standardError);
-                }
+                };
 
                 return newProp;
             }
@@ -674,7 +669,7 @@
                     .catch(standardError);
 
                 function getKeys(res) {
-                    return qAll(res.$loaded(), [])
+                    return qAll(res.$loaded(), []);
 
                 }
 
@@ -697,7 +692,7 @@
 
             /* For Queries */
 
-						//untested/unused
+            //untested/unused
             function userRecordsByUID() {
                 return self._timeout(function() {
                     return self._pathMaster.mainRef()
@@ -711,7 +706,6 @@
                     });
                 }
             }
-
 
 
             /*******************************/

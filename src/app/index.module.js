@@ -2,6 +2,6 @@
   'use strict';
 
   angular
-    .module('firebase-fuel', ['firebase-starter','platanus.inflector']);
+    .module('firebase.fuel', ['firebase.starter','platanus.inflector']);
 
 })();

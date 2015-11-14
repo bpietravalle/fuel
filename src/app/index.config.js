@@ -2,7 +2,7 @@
   'use strict';
 
   angular
-    .module('firebase-fuel')
+    .module('firebase.fuel')
     .config(config);
 
   /** @ngInject */

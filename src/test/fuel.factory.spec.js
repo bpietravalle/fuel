@@ -64,7 +64,7 @@
                     return q.when(mock);
                 });
             };
-            angular.module("firebase-fuel")
+            angular.module("firebase.fuel")
                 .constant("FBURL", "https://your-firebase.firebaseio.com/")
                 .factory("location", function($q) {
                     var location = {
@@ -108,7 +108,7 @@
                 });
 
             module("testutils");
-            module("firebase-fuel");
+            module("firebase.fuel");
 
             inject(function(_user_, _testutils_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
                 geofire = _geofire_;

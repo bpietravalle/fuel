@@ -6,13 +6,12 @@
       "email": "bpietravalle@gmail.com"
     }
   ],
-  "version": "0.0.1",
   "license": "MIT",
   "description": "experimental constructor with common firebase/geofire tasks",
   "dependencies": {
     "angular": "~1.4.0",
     "angular-inflector": "~0.2.3",
-    "firebase-starter": "~0.1.1"
+    "firebase.starter": "~0.1.2"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0",
