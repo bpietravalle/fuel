@@ -91,6 +91,9 @@
                     var user = {
                         addIndex: keyMock("addIndex", $q),
                         removeIndex: keyMock("removeIndex", $q),
+                        getIndexKeys: function() {
+                            return "spy";
+                        }
                     };
 
                     return user;
@@ -336,6 +339,7 @@
                     });
                     it("should remove the record and return a firebaseRef", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();
+                        expect(getPromValue(test).getData()).toEqual(null);
                         expect(getPromValue(test).path).toEqual("https://your-firebase.firebaseio.com/trips/0");
                     });
                     it("should change the currentRef() to the removed record's ref", function() {
@@ -346,40 +350,6 @@
                 });
             });
             describe("Queries", function() {
-                // describe("userRecordsByIndex", function() {
-                //     beforeEach(function() {
-                //         $rootScope.$digest();
-                //         subject.currentRef().child("trips").push(arrData[0]);
-                //         subject.currentRef().flush();
-                //         $rootScope.$digest();
-                //         subject.currentRef().child("trips").push(arrData[1]);
-                //         subject.currentRef().flush();
-                //         $rootScope.$digest();
-                //         subject.currentRef().child("trips").push(arrData[2]);
-                //         subject.currentRef().flush();
-                //         $rootScope.$digest();
-                //         subject.currentRef().child("trips").push(arrData[3]);
-                //         subject.currentRef().flush();
-                //         $rootScope.$digest();
-                //         this.keys = dataKeys(subject.currentRef().child("trips"));
-                //         test = subject.userRecordsByIndex();
-                //         $rootScope.$digest();
-                //         // subject.currentRef().flush();
-                //         $rootScope.$digest();
-                //         $timeout.flush();
-                //     });
-                //     it("should return a promise", function() {
-                //         expect(this.keys.length).toEqual(4);
-                //         expect(test).toBeAPromise();
-                //     });
-                //     it("should get correct records", function() {
-
-                //     });
-
-                //     // logCheck();
-
-
-                // });
                 describe("load", function() {
                     beforeEach(function() {
                         $rootScope.$digest();
@@ -458,27 +428,6 @@
                     it("should work", function() {
                         expect(dataKeys(this.ref).length).toEqual(2)
                     });
-                });
-                describe("geofireGet", function() {
-                    // beforeEach(function() {
-                    //     $rootScope.$digest();
-                    //     subject.geofireSet("key", [90, 100]);
-                    //     flush();
-                    //     test = subject.geofireGet("key");
-                    //     flush();
-                    // });
-                    // it("should be a promise", function() {
-                    //     expect(test).toBeAPromise();
-                    // });
-                    // it("should set currentRef to correct firebaseRef", function() {
-                    //     expect(subject.currentPath()).toEqual(rootPath + "/geofire/trips");
-                    // });
-                    // it("should get correct data", function() {
-                    //     expect(subject.currentRef().getData()["key"]).toEqual({
-                    //         g: jasmine.any(String),
-                    //         l: [90, 100]
-                    //     });
-                    // });
                 });
             });
         });
@@ -567,6 +516,44 @@
                         });
                     });
                     describe("saveWithUser", function() {});
+                });
+            });
+            describe("Queries", function() {
+                function pushTime(y) {
+                    subject.currentRef().child("trips").push(y);
+                    subject.currentRef().flush();
+                }
+                beforeEach(function() {
+                    $rootScope.$digest();
+                    arrData.forEach(pushTime)
+                    this.keys = Object.keys(subject.currentRef().child("trips").children);
+                    spyOn(user, "getIndexKeys").and.returnValue($q.when(this.keys));
+                    test = subject.loadUserRecords();
+                    flush();
+                });
+                it("should exist", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should call user.getIndexKeys() with sessionid and path name", function() {
+                    expect(user.getIndexKeys).toHaveBeenCalledWith(1, "trips");
+                });
+                it("should return array of firebaseObjects", function() {
+                    expect(getPromValue(test)).toBeAn("array");
+                    expect(getPromValue(test).length).toEqual(4);
+
+                    function checkFb(y) {
+                        expect(y.$ref()).toBeAFirebaseRef();
+                        var meths = ["$id", "$priority", "$bindTo"];
+
+                        function checkMeths(x) {
+                            expect(y[x]).toBeDefined();
+                        }
+                        meths.forEach(checkMeths);
+                    }
+                    getPromValue(test).forEach(checkFb)
+                });
+                it("should set the currentRef() with each loaded item", function() {
+                    expect(subject.currentRef().key()).toEqual(this.keys[3]);
                 });
             });
         });
@@ -757,80 +744,32 @@
                         expect(getPromValue(test).getData()).toEqual(locData[0]);
                         expect(getPromValue(test1).getData()).toEqual(locData[1]);
                     });
-										qReject(0);
-
+                    qReject(0);
                 });
                 describe("removeLoc", function() {
                     beforeEach(function() {
-                        subject.addLoc("trips", locData[0]);
-                        flush();
-                        this.key = subject.currentRef().key();
-                        subject.addLoc("trips", locData[1]);
-                        flush();
-                        this.key1 = subject.currentRef().key();
-												test = subject.removeLoc("trips",this.key);
+                        $rootScope.$digest();
+                        subject.currentRef().child("locations/trips").push(locData[0]);
+                        subject.currentRef().child("locations/trips").push(locData[1]);
+                        subject.currentRef().flush();
+                        this.keys = Object.keys(subject.currentRef().child("locations/trips").children);
+                        test = subject.removeLoc("trips", this.keys[0]);
                         flush();
                     });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
                     });
                     it("should return correct ref", function() {
-                        expect(subject.currentPath()).toEqual(rootPath + "/locations/trips/" + this.key);
+                        expect(subject.currentPath()).toEqual(rootPath + "/locations/trips/" + this.keys[0]);
                     });
                     it("should remove the data to firebase", function() {
-											expect(subject.currentRef().getData()).toEqual(null);
-											expect(subject.currentParentRef().children).toEqual("as");
+                        expect(getPromValue(test).getData()).toEqual(null);
+                        expect(subject.currentRef().getData()).toEqual(null);
                     });
-										qReject(0);
-
+                    qReject(0);
                 });
-
             });
-
         });
-        //     describe("loadUserRecord", function() {
-        //         //TODO add option for loading indexes
-        //         beforeEach(function() {
-        //             test = subject.loadUserRecord(1);
-        //             $rootScope.$digest();
-        //             subject.currentRef().flush()
-        //             $rootScope.$digest();
-        //         });
-        //         it("should return a promise", function() {
-        //             expect(test).toBeAPromise();
-        //         });
-        //         it("should load correct firebaseRef", function() {
-        //             expect(getPromValue(test).$ref().path).toEqual("https://your-firebase.firebaseio.com/users/1/trips/1");
-        //         });
-        //         it("should return a fireBaseObject", function() {
-        //             expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-        //                 $id: "1",
-        //                 $priority: null,
-        //                 $ref: jasmine.any(Function),
-        //                 $value: null
-        //             }));
-        //         });
-        //         it("should have a $ref() property equal to currentRef()", function() {
-        //             expect(getPromValue(test).$ref()).toEqual(subject.currentRef());
-        //         });
-        //     });
-        // });
-
-        // // });
-        // describe("Complex Commands", function() {
-        // describe("Geofire", function() {
-        //     describe("trackLocation", function() {});
-        //     describe("untrackLocation", function() {});
-        //     describe("trackLocations", function() {});
-        //     describe("untrackLocations", function() {});
-        // });
-        // });
-        // describe("Complex Queries", function() {
-        // describe("loadMainFromUser", function() {
-
-        // });
-
-        // });
 
         describe("Nested Arrays", function() {
             beforeEach(function() {

@@ -1,7 +1,14 @@
 {
-  "name": "fuel",
+  "name": "firebase-fuel",
+  "authors": [
+    {
+      "name": "Brian Pietravalle",
+      "email": "bpietravalle@gmail.com"
+    }
+  ],
   "version": "0.0.0",
   "license": "MIT",
+  "description": "experimental constructor with common firebase/geofire tasks",
   "dependencies": {
     "angular": "~1.4.0",
     "angular-inflector": "~0.2.3",
@@ -11,11 +18,20 @@
     "angular-mocks": "~1.4.0",
     "mockfirebase": "~0.11.0"
   },
+  "main": "src/app/index.module.js",
+  "ignore": [
+    "**/.*",
+    "coverage",
+    "node_modules",
+    "bower_components",
+    "src/test",
+    "src/testutils"
+  ],
   "resolutions": {
     "angular": "~1.4.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bpietravalle/fuel.git"
+    "url": "git://github.com/bpietravalle/fuel.git"
   }
 }

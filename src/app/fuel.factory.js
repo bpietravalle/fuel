@@ -100,11 +100,11 @@
 
             entity.addIndex = addIndex;
             entity.removeIndex = removeIndex;
+            entity.getIndexKeys = getIndexKeys;
 
             /*Queries*/
             entity.load = load;
             entity.userRecordsByUID = userRecordsByUID;
-            entity.userRecordsByIndex = userRecordsByIndex;
             // entity.getRecord = getRecord;
 
             /*Commands*/
@@ -117,6 +117,7 @@
             if (self._user !== true && self._gps === true) {}
 
             if (self._user === true && self._gps !== true) {
+                entity.loadUserRecords = loadUserRecords;
                 entity.add = createWithUser;
                 entity.remove = removeWithUser;
             }
@@ -124,6 +125,7 @@
             if (self._user === true && self._gps === true) {
                 entity.add = createWithUserAndGeo;
                 entity.remove = removeWithUserAndGeo;
+                entity.loadUserRecords = loadUserRecords;
             }
 
             if (self._sessionAccess === true) {
@@ -208,10 +210,6 @@
 
             // /* User Object Interface */
             //remove
-            function userIndex() {
-                return self._pathMaster.userIndex();
-            }
-
 
             /*****************
              * Main Methods
@@ -239,6 +237,22 @@
                     .then(loaded)
                     .then(querySuccess)
                     .catch(standardError);
+            }
+
+            function loadUserRecords() {
+                return self._userObject
+                    .getIndexKeys(sessionId(), self._path)
+                    .then(loadRecs)
+                    .catch(standardError);
+
+                function loadRecs(arr) {
+
+                    return self._q.all(arr.map(function(key) {
+                        return load(key)
+                    }));
+
+
+                }
             }
 
             /*Commands*/
@@ -683,6 +697,7 @@
 
             /* For Queries */
 
+						//untested/unused
             function userRecordsByUID() {
                 return self._timeout(function() {
                     return self._pathMaster.mainRef()
@@ -697,37 +712,6 @@
                 }
             }
 
-            function userRecordsByIndex() {
-                // var keys = Object.keys(userIndex());
-                return self._timeout(function() {
-                    self._q.all([self._pathMaster.mainRef(), /*userIndex()*/ ])
-                        .then(sortByIdx)
-                        .then(sendToArray)
-                        .catch(standardError);
-
-                    function sortByIdx(res) {
-                        // var keys = res[1].children
-                        // self._log.info(keys);
-                        return res[1];
-
-                        // return self._q.all(Object.keys(res[1]).map(function(key) {
-                        //     return res[0].once("value", function(snap) {
-                        //         if (snap.hasChild(key)) {
-                        //             return snap;
-                        //         }
-                        //     });
-                        // }));
-                    }
-
-                    function sendToArray(res) {
-                        self._log.info(res);
-                        return res;
-
-                    }
-                });
-
-            }
-
 
 
             /*******************************/
@@ -735,6 +719,7 @@
             //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
+                // self._log.info(res);
                 if (Array.isArray(res)) {
                     self._pathMaster.setCurrentRef(res[0]);
                 } else {
