@@ -670,6 +670,8 @@
                     beforeEach(function() {
                         test = subject.set("trips", "key", [90, 100]);
                         flush();
+                        test = subject.set("trips", "key2", [50, 100]);
+                        flush();
                     });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
@@ -680,15 +682,36 @@
                             key: {
                                 g: jasmine.any(String),
                                 l: [90, 100]
+                            },
+                            key2: {
+                                g: jasmine.any(String),
+                                l: [50, 100]
                             }
+                        });
+                    });
+                    describe("remove", function() {
+                        beforeEach(function() {
+                            test = subject.remove("trips", "key");
+                            flush();
+                        });
+                        it("should be a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should remove the record", function() {
+                            expect(subject.currentRef().getData()).toEqual({
+                                key2: {
+                                    g: jasmine.any(String),
+                                    l: [50, 100]
+                                }
+                            });
                         });
                     });
 
 
                     describe("get", function() {
                         beforeEach(function() {
-                            test = subject.set("trips", "key2", [50, 90]);
-                            flush();
+                            // test = subject.set("trips", "key2", [50, 90]);
+                            // flush();
 
                             test = subject.get("trips", "key");
                             flush();
@@ -696,14 +719,16 @@
                         it("should be a promise", function() {
                             expect(test).toBeAPromise();
                         });
-                        it("should add data to correct node", function() {
+                        it("should retrieve the correct record", function() {
                             expect(subject.currentPath()).toEqual(rootPath + "/geofire/trips");
-                            expect(subject.currentRef().getData()).toEqual({
-                                key: {
-                                    g: jasmine.any(String),
-                                    l: [90, 100]
-                                }
-                            });
+
+                            // expect(getPromValue(test)).toEqual("as");
+                            // expect(subject.currentRef().getData()).toEqual({
+                            //     key: {
+                            //         g: jasmine.any(String),
+                            //         l: [90, 100]
+                            //     }
+                            // });
                         });
                         // logCheck();
 

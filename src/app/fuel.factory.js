@@ -323,6 +323,7 @@
                     .catch(standardError);
 
                 function removeGeo(res) {
+									self._log.info(res)
                     return res[0].remove(res[1]);
                 }
             }
