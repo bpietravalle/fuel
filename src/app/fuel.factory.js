@@ -40,18 +40,22 @@
                 }
             }
             if (this._gps === true) {
-                this._locationName = "locations";
                 this._locationObject = this._injector.get("location");
-                this._geofireName = "geofire";
                 //below messes up methods to main location array- need another way
                 // this._nestedArrays.push(this._locationName);
+                this._geofireObject = this._injector.get("geofire");
+                this._locationName = "locations";
+                this._geofireName = "geofire";
+								//shouldn't need to know below 5
                 this._locationPath = [this._locationName, this._path];
                 this._geofirePath = [this._geofireName, this._path];
-                this._geofireObject = this._injector.get("geofire");
                 this._pathOptions.geofire = true;
                 this._pathOptions.locationName = this._locationName;
                 this._pathOptions.geofireName = this._geofireName;
             }
+
+						if(this._gps === true || this._geofire === true){
+						}
 
             this._user = this._options.user || false;
             this._sessionAccess = this._options.sessionAccess || false;
@@ -264,32 +268,30 @@
             /* Geofire Interface */
 
             function geofireSet(k, c) {
-                return self._geofireObject.set(self._geofirePath, k, c);
+                return self._geofireObject.set(self._path, k, c);
             }
 
             function geofireRemove(k) {
-                return self._geofireObject.remove(self._geofirePath, k);
+                return self._geofireObject.remove(self._path, k);
             }
 
             function geofireGet(k) {
-                return self._geofireObject.get(self._geofirePath, k);
+                return self._geofireObject.get(self._path, k);
             }
 
 
-            /* Geofire api access */
+            /* Geofire API access */
 
             function removeLoc(path, key) {
                 return nestedRecord(path, key)
                     .then(remove)
                     .catch(standardError);
-
             }
 
             function addLoc(path, data) {
                 return qAll(nestedArray(path), data)
                     .then(add)
                     .catch(standardError);
-
             }
 
 
@@ -740,6 +742,7 @@
 
             function querySuccess(res) {
                 self._log.info('query success');
+                self._log.info(res);
                 self._pathMaster.setCurrentRef(res.$ref());
                 return res;
             }

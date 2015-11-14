@@ -217,7 +217,7 @@
 
             /* Geofire refs */
             function makeGeo(path) {
-                return checkPathParams(geofireArrayPath(path), "geo");
+                return checkPathParams(geofireArrayPath([self._path, path]), "geo");
             }
 
 

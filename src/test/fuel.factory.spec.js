@@ -152,7 +152,7 @@
                 });
             });
         });
-        describe("Main methods", function() {
+        describe("Without Options", function() {
             beforeEach(function() {
                 options = {};
                 subject = fuel("trips", options);
@@ -481,17 +481,71 @@
                     // });
                 });
             });
-            describe("With User Option", function() {
-                beforeEach(function() {
-                    options = {
-                        user: true
-                    };
-                    subject = fuel("trips", options);
-                });
-                describe("Commands: ", function() {
-                    describe("add", function() {
+        });
+        describe("With User Option", function() {
+            beforeEach(function() {
+                options = {
+                    user: true
+                };
+                subject = fuel("trips", options);
+            });
+            describe("Commands: ", function() {
+                describe("add", function() {
+                    beforeEach(function() {
+                        test = subject.add(newRecord);
+                        flush();
+                        this.mainKey = getPromValue(test)[1].key();
+                    });
+                    it("should return an array with two items", function() {
+                        expect(getPromValue(test)).toHaveLength(2);
+                        expect(getPromValue(test)).toEqual(jasmine.any(Array));
+                    });
+                    it("should call user addIndex with main array key", function() {
+                        expect(this.mainKey).toEqual(jasmine.any(String));
+                        expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.mainKey);
+
+                    });
+                    it("array item #1 = firebaseRef of userIndex", function() {
+                        expect(getPromValue(test)[0].key()).toEqual("addIndexKey");
+                    });
+                    it("array item #2 = firebaseRef of main Record", function() {
+                        expect(getPromValue(test)[1]).toBeAFirebaseRef();
+                        expect(getPromValue(test)[1].key()).toEqual(this.mainKey);
+                    });
+                    describe("user option", function() {
+                        describe("if true", function() {
+                            beforeEach(function() {
+                                var data = {
+                                    rec: newRecord,
+                                    geo: locData
+                                };
+                                test = subject.add(data, null, true);
+                                flush();
+                            });
+                            it("should add uid property to record", function() {
+                                expect(getPromValue(test)[1].getData().uid).toEqual(1);
+                                expect(getPromValue(test)[1].getData()).toBeDefined();
+                            });
+                        });
+                        describe("if undefined", function() {
+                            beforeEach(function() {
+                                var data = {
+                                    rec: newRecord,
+                                    geo: locData
+                                };
+                                test = subject.add(data);
+                                flush();
+                            });
+                            it("should not add uid property to record", function() {
+                                expect(getPromValue(test)[1].getData().uid).not.toBeDefined();
+                                expect(getPromValue(test)[1].getData()).toBeDefined();
+                            });
+
+                        });
+                    });
+                    describe("remove", function() {
                         beforeEach(function() {
-                            test = subject.add(newRecord);
+                            test = subject.remove(newRecord);
                             flush();
                             this.mainKey = getPromValue(test)[1].key();
                         });
@@ -501,359 +555,362 @@
                         });
                         it("should call user addIndex with main array key", function() {
                             expect(this.mainKey).toEqual(jasmine.any(String));
-                            expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.mainKey);
+                            expect(user.removeIndex).toHaveBeenCalledWith(1, "trips", this.mainKey);
 
                         });
                         it("array item #1 = firebaseRef of userIndex", function() {
-                            expect(getPromValue(test)[0].key()).toEqual("addIndexKey");
+                            expect(getPromValue(test)[0].key()).toEqual("removeIndexKey");
                         });
                         it("array item #2 = firebaseRef of main Record", function() {
                             expect(getPromValue(test)[1]).toBeAFirebaseRef();
                             expect(getPromValue(test)[1].key()).toEqual(this.mainKey);
                         });
-                        describe("user option", function() {
-                            describe("if true", function() {
-                                beforeEach(function() {
-                                    var data = {
-                                        rec: newRecord,
-                                        geo: locData
-                                    };
-                                    test = subject.add(data, null, true);
-                                    flush();
-                                });
-                                it("should add uid property to record", function() {
-                                    expect(getPromValue(test)[1].getData().uid).toEqual(1);
-                                    expect(getPromValue(test)[1].getData()).toBeDefined();
-                                });
-                            });
-                            describe("if undefined", function() {
-                                beforeEach(function() {
-                                    var data = {
-                                        rec: newRecord,
-                                        geo: locData
-                                    };
-                                    test = subject.add(data);
-                                    flush();
-                                });
-                                it("should not add uid property to record", function() {
-                                    expect(getPromValue(test)[1].getData().uid).not.toBeDefined();
-                                    expect(getPromValue(test)[1].getData()).toBeDefined();
-                                });
-
-                            });
-                        });
-                        describe("remove", function() {
-                            beforeEach(function() {
-                                test = subject.remove(newRecord);
-                                flush();
-                                this.mainKey = getPromValue(test)[1].key();
-                            });
-                            it("should return an array with two items", function() {
-                                expect(getPromValue(test)).toHaveLength(2);
-                                expect(getPromValue(test)).toEqual(jasmine.any(Array));
-                            });
-                            it("should call user addIndex with main array key", function() {
-                                expect(this.mainKey).toEqual(jasmine.any(String));
-                                expect(user.removeIndex).toHaveBeenCalledWith(1, "trips", this.mainKey);
-
-                            });
-                            it("array item #1 = firebaseRef of userIndex", function() {
-                                expect(getPromValue(test)[0].key()).toEqual("removeIndexKey");
-                            });
-                            it("array item #2 = firebaseRef of main Record", function() {
-                                expect(getPromValue(test)[1]).toBeAFirebaseRef();
-                                expect(getPromValue(test)[1].key()).toEqual(this.mainKey);
-                            });
-                        });
-                        describe("saveWithUser", function() {});
                     });
+                    describe("saveWithUser", function() {});
                 });
             });
-            describe("With User And GPS Options", function() {
+        });
+        describe("With User And GPS Options", function() {
+            beforeEach(function() {
+                options = {
+                    user: true,
+                    gps: true
+                }
+                subject = fuel("trips", options);
+            });
+            describe("Commands: ", function() {
+                describe("add()", function() {
+                    beforeEach(function() {
+                        test = subject.add(newRecord, locData[0]);
+                        $rootScope.$digest();
+                        subject.currentRef().flush();
+                        $rootScope.$digest();
+                        this.key = subject.currentParentRef().key();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should add record to main array", function() {
+                        var mainRef = subject.currentRef().root().child("trips/" + this.key);
+                        expect(mainRef.getData()).toEqual(newRecord);
+                    });
+                    it("should add uid property to main record", function() {
+                        var mainRef = subject.currentRef().root().child("trips/" + this.key);
+                        expect(mainRef.getData().uid).toEqual(1);
+                    });
+                    it("should call user.addIndex with correct path and main record key", function() {
+                        expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.key);
+                    });
+                    it("should add record to main location array", function() {
+                        expect(location.addLoc).toHaveBeenCalledWith({
+                                lat: 90,
+                                lon: 100,
+                                place_id: "string",
+                                placeType: "a place",
+                                distance: 1234,
+                                closeBy: true
+                            },
+                            true);
+                    });
+                    it("should call geofire object with correct path, main location key and coordinates", function() {
+                        expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
+                    });
+                    it("should add location index to main record and set currentRef to main record", function() {
+                        expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key + "/locations");
+                        expect(subject.currentRef().getData()).toEqual(null);
+                        $timeout.flush();
+                        flush();
+                        expect(subject.currentRef().child("locations").getData()).toEqual({
+                            "addKey": true
+                        });
+                        expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
+                    });
+                    qReject(0);
+                    describe("remove()", function() {
+                        beforeEach(function() {
+                            $timeout.flush();
+                            flush();
+                            test = subject.remove(this.key);
+                            this.idxKey = Object.keys(subject.currentRef().child("locations").getData())[0];
+                            $rootScope.$digest();
+                            flush();
+                            flush();
+                        });
+                        it("should remove location with key from index", function() {
+                            expect(this.idxKey).toEqual("addKey");
+                            expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
+                        });
+                        it("should call remove on geofire with key from main location array", function() {
+                            expect(geofire.remove).toHaveBeenCalledWith('trips', "removeKey");
+                        });
+                        it("should remove the data from firebase", function() {
+                            expect(subject.currentRef().getData()).toEqual(null);
+                        });
+                        it("should return the firebaseRef from the removed record", function() {
+                            expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
+                        });
+                        it("should call user.removeIndex() with correct key", function() {
+                            expect(user.removeIndex).toHaveBeenCalledWith(1, 'trips', this.key);
+                        });
+                        qReject(0);
+                    });
+
+                });
+            });
+        });
+        describe("With Geofire Option", function() {
+            describe("Geofire API", function() {
                 beforeEach(function() {
                     options = {
-                        user: true,
-                        gps: true
-                    }
-                    subject = fuel("trips", options);
+                        geofire: true
+                    };
+                    subject = fuel("geofire", options);
                 });
-                describe("Commands: ", function() {
-                    describe("add()", function() {
+                describe("set", function() {
+                    beforeEach(function() {
+                        test = subject.set("trips", "key", [90, 100]);
+                        flush();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should add data to correct node", function() {
+                        expect(subject.currentPath()).toEqual(rootPath + "/geofire/trips");
+                        expect(subject.currentRef().getData()).toEqual({
+                            key: {
+                                g: jasmine.any(String),
+                                l: [90, 100]
+                            }
+                        });
+                    });
+
+
+                    describe("get", function() {
                         beforeEach(function() {
-                            test = subject.add(newRecord, locData[0]);
-                            $rootScope.$digest();
-                            subject.currentRef().flush();
-                            $rootScope.$digest();
-                            this.key = subject.currentParentRef().key();
+                            test = subject.set("trips", "key2", [50, 90]);
+                            flush();
+
+                            test = subject.get("trips", "key");
+                            flush();
                         });
                         it("should be a promise", function() {
                             expect(test).toBeAPromise();
                         });
-                        it("should add record to main array", function() {
-                            var mainRef = subject.currentRef().root().child("trips/" + this.key);
-                            expect(mainRef.getData()).toEqual(newRecord);
-                        });
-                        it("should add uid property to main record", function() {
-                            var mainRef = subject.currentRef().root().child("trips/" + this.key);
-                            expect(mainRef.getData().uid).toEqual(1);
-                        });
-                        it("should call user.addIndex with correct path and main record key", function() {
-                            expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.key);
-                        });
-                        it("should add record to main location array", function() {
-                            expect(location.addLoc).toHaveBeenCalledWith({
-                                    lat: 90,
-                                    lon: 100,
-                                    place_id: "string",
-                                    placeType: "a place",
-                                    distance: 1234,
-                                    closeBy: true
-                                },
-                                true);
-                        });
-                        it("should call geofire object with correct path, main location key and coordinates", function() {
-                            expect(geofire.set).toHaveBeenCalledWith(["geofire", "trips"], "addKey", [90, 100]);
-                        });
-                        it("should add location index to main record and set currentRef to main record", function() {
-                            expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key + "/locations");
-                            expect(subject.currentRef().getData()).toEqual(null);
-                            $timeout.flush();
-                            flush();
-                            expect(subject.currentRef().child("locations").getData()).toEqual({
-                                "addKey": true
+                        it("should add data to correct node", function() {
+                            expect(subject.currentPath()).toEqual(rootPath + "/geofire/trips");
+                            expect(subject.currentRef().getData()).toEqual({
+                                key: {
+                                    g: jasmine.any(String),
+                                    l: [90, 100]
+                                }
                             });
-                            expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
                         });
-                        qReject(0);
-                        describe("remove()", function() {
-                            beforeEach(function() {
-                                $timeout.flush();
-                                flush();
-                                test = subject.remove(this.key);
-                                this.idxKey = Object.keys(subject.currentRef().child("locations").getData())[0];
-                                $rootScope.$digest();
-                                flush();
-                                flush();
-                            });
-                            it("should remove location with key from index", function() {
-                                expect(this.idxKey).toEqual("addKey");
-                                expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
-                            });
-                            it("should call remove on geofire with key from main location array", function() {
-                                expect(geofire.remove).toHaveBeenCalledWith(['geofire', 'trips'], "removeKey");
-                            });
-                            it("should remove the data from firebase", function() {
-                                expect(subject.currentRef().getData()).toEqual(null);
-                            });
-                            it("should return the firebaseRef from the removed record", function() {
-                                expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.key);
-                            });
-                            it("should call user.removeIndex() with correct key", function() {
-                                expect(user.removeIndex).toHaveBeenCalledWith(1, 'trips', this.key);
-                            });
-                            qReject(0);
-                        });
+                        // logCheck();
 
                     });
+
                 });
+
             });
-            //     describe("loadUserRecord", function() {
-            //         //TODO add option for loading indexes
-            //         beforeEach(function() {
-            //             test = subject.loadUserRecord(1);
-            //             $rootScope.$digest();
-            //             subject.currentRef().flush()
-            //             $rootScope.$digest();
-            //         });
-            //         it("should return a promise", function() {
-            //             expect(test).toBeAPromise();
-            //         });
-            //         it("should load correct firebaseRef", function() {
-            //             expect(getPromValue(test).$ref().path).toEqual("https://your-firebase.firebaseio.com/users/1/trips/1");
-            //         });
-            //         it("should return a fireBaseObject", function() {
-            //             expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-            //                 $id: "1",
-            //                 $priority: null,
-            //                 $ref: jasmine.any(Function),
-            //                 $value: null
-            //             }));
-            //         });
-            //         it("should have a $ref() property equal to currentRef()", function() {
-            //             expect(getPromValue(test).$ref()).toEqual(subject.currentRef());
-            //         });
-            //     });
-            // });
 
-            // // });
-            // describe("Complex Commands", function() {
-            // describe("Geofire", function() {
-            //     describe("trackLocation", function() {});
-            //     describe("untrackLocation", function() {});
-            //     describe("trackLocations", function() {});
-            //     describe("untrackLocations", function() {});
-            // });
-            // });
-            // describe("Complex Queries", function() {
-            // describe("loadMainFromUser", function() {
 
-            // });
+        });
+        //     describe("loadUserRecord", function() {
+        //         //TODO add option for loading indexes
+        //         beforeEach(function() {
+        //             test = subject.loadUserRecord(1);
+        //             $rootScope.$digest();
+        //             subject.currentRef().flush()
+        //             $rootScope.$digest();
+        //         });
+        //         it("should return a promise", function() {
+        //             expect(test).toBeAPromise();
+        //         });
+        //         it("should load correct firebaseRef", function() {
+        //             expect(getPromValue(test).$ref().path).toEqual("https://your-firebase.firebaseio.com/users/1/trips/1");
+        //         });
+        //         it("should return a fireBaseObject", function() {
+        //             expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+        //                 $id: "1",
+        //                 $priority: null,
+        //                 $ref: jasmine.any(Function),
+        //                 $value: null
+        //             }));
+        //         });
+        //         it("should have a $ref() property equal to currentRef()", function() {
+        //             expect(getPromValue(test).$ref()).toEqual(subject.currentRef());
+        //         });
+        //     });
+        // });
 
-            // });
+        // // });
+        // describe("Complex Commands", function() {
+        // describe("Geofire", function() {
+        //     describe("trackLocation", function() {});
+        //     describe("untrackLocation", function() {});
+        //     describe("trackLocations", function() {});
+        //     describe("untrackLocations", function() {});
+        // });
+        // });
+        // describe("Complex Queries", function() {
+        // describe("loadMainFromUser", function() {
 
-            describe("Nested Arrays", function() {
-                beforeEach(function() {
-                    //         options = {
-                    //             nestedArrays: ["phones"],
-                    //             geofire: true
+        // });
 
-                    //         };
-                    //         subject = fuel("trips", options);
-                    //         $rootScope.$digest();
-                    //         subject.createMainRecord({
-                    //             // $rootScope.$digest();
-                    //             // subject.currentRef().push({
-                    //             name: "bill",
-                    //             age: 100
-                    //         });
-                    //         $rootScope.$digest();
-                    //         subject.currentRef().flush();
-                    //         $rootScope.$digest();
-                    //         this.tripId = subject.currentRef().key();
-                });
-                //     var methods = ["addPhone", "removePhone", "loadPhone", "savePhone", "getPhone", "loadPhones", "phone", "phones"];
+        // });
 
-                //     function nestedArr(x) {
-                //         it(x + " should be defined", function() {
-                //             expect(subject[x]).toBeDefined();
-                //         });
-                //     }
-                //     methods.forEach(nestedArr);
-                //     it("simple checks on setup", function() {
-                //         expect(getRefData(subject.currentRef())).toEqual({
+        describe("Nested Arrays", function() {
+            beforeEach(function() {
+                //         options = {
+                //             nestedArrays: ["phones"],
+                //             geofire: true
+
+                //         };
+                //         subject = fuel("trips", options);
+                //         $rootScope.$digest();
+                //         subject.createMainRecord({
+                //             // $rootScope.$digest();
+                //             // subject.currentRef().push({
                 //             name: "bill",
                 //             age: 100
                 //         });
-                //         expect(this.tripId).not.toEqual("trips");
-                //         expect(this.tripId).toEqual(jasmine.any(String));
-
-                //     });
-
-                //     describe("add", function() {
-                //         beforeEach(function() {
-                //             subject.addPhone(this.tripId, {
-                //                 type: "cell",
-                //                 number: 123456789
-                //             });
-                //             $rootScope.$digest();
-                //             subject.currentRef().flush();
-                //             $rootScope.$digest();
-                //             this.key = subject.currentRef().key();
-                //         });
-                //         it("should add data to correct node", function() {
-                //             expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-                //             expect(getRefData(subject.parentRef())[this.key]).toEqual({
-                //                 type: "cell",
-                //                 number: 123456789
-                //             });
-                //         });
-                //         qReject(0);
-                //         describe("remove", function() {
-                //             beforeEach(function() {
-                //                 subject.removePhone(this.tripId, this.key);
-                //                 $rootScope.$digest();
-                //                 subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //             });
-                //             it("should remove the correct record", function() {
-                //                 $rootScope.$digest();
-                //                 expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-                //                 expect(getRefData(subject.parentRef())).toEqual(null);
-                //             });
-                //             qReject(0);
-                //         });
-                //         describe("load", function() {
-                //             beforeEach(function() {
-                //                 subject.loadPhone(this.tripId, this.key);
-                //                 $rootScope.$digest();
-                //                 $timeout.flush();
-                //                 subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //             });
-                //             it("should load the correct record", function() {
-                //                 expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones/" + this.key);
-                //                 expect(getRefData(subject.parentRef())[this.key]).toEqual({
-                //                     type: "cell",
-                //                     number: 123456789
-                //                 });
-                //             });
-                //             qReject(0);
-                //         });
-                //         describe("load All", function() {
-                //             beforeEach(function() {
-                //                 test = subject.loadPhones(this.tripId);
-                //                 $rootScope.$digest();
-                //                 $timeout.flush();
-                //                 subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //             });
-                //             it("should load the correct record", function() {
-                //                 expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-                //                 expect(getPromValue(test)).not.toEqual(null);
-                //                 expect(getRefData(subject.currentRef())[this.key]).toEqual({
-                //                     type: "cell",
-                //                     number: 123456789
-                //                 });
-                //             });
-                //             qReject(0);
-                //         });
-                //         describe("getRecord", function() {
-                //             //returns null
-                //             beforeEach(function() {
-                // // subject.mainArray();
-                // // $rootScope.$digest();
-                // // subject.currentRef().flush();
-                // // $rootScope.$digest();
-                //                 test = subject.getPhone(this.tripId, this.key);
-                //                 $rootScope.$digest();
-                // // $timeout.flush();
-                //                 // subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //             });
-                //             it("should return current record", function() {
-                //                 // expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-                //                 // expect(getRefData(subject.parentRef())).toBe(null);
-                //                 // expect(getPromValue(test)).toEqual(null);
-                //             });
-                //             // returnsArray();
-                //             // logCheck();
-                //             // qReject(0);
-                //         });
-                //         describe("save", function() {
-                //             beforeEach(function() {
-                //                 test = subject.loadPhone(this.tripId, this.key);
-                //                 $rootScope.$digest();
-                //                 subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //                 getRefData(subject.currentRef()).type = "fax";
-                //                 test1 = subject.savePhone(this.tripId, 0);
-                //                 $rootScope.$digest();
-                // $timeout.flush();
-                //                 // subject.currentRef().flush();
-                //                 $rootScope.$digest();
-                //             });
-                //             it("should load it", function() {
-                //                 expect(getPromValue(test).type).toEqual("cell");
-                //                 // expect(test1).toEqual("fax");
-                //             });
-                //             // qReject(0);
-                //             // logCheck();
-
-
-                //         });
+                //         $rootScope.$digest();
+                //         subject.currentRef().flush();
+                //         $rootScope.$digest();
+                //         this.tripId = subject.currentRef().key();
             });
+            //     var methods = ["addPhone", "removePhone", "loadPhone", "savePhone", "getPhone", "loadPhones", "phone", "phones"];
 
+            //     function nestedArr(x) {
+            //         it(x + " should be defined", function() {
+            //             expect(subject[x]).toBeDefined();
+            //         });
+            //     }
+            //     methods.forEach(nestedArr);
+            //     it("simple checks on setup", function() {
+            //         expect(getRefData(subject.currentRef())).toEqual({
+            //             name: "bill",
+            //             age: 100
+            //         });
+            //         expect(this.tripId).not.toEqual("trips");
+            //         expect(this.tripId).toEqual(jasmine.any(String));
+
+            //     });
+
+            //     describe("add", function() {
+            //         beforeEach(function() {
+            //             subject.addPhone(this.tripId, {
+            //                 type: "cell",
+            //                 number: 123456789
+            //             });
+            //             $rootScope.$digest();
+            //             subject.currentRef().flush();
+            //             $rootScope.$digest();
+            //             this.key = subject.currentRef().key();
+            //         });
+            //         it("should add data to correct node", function() {
+            //             expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //             expect(getRefData(subject.parentRef())[this.key]).toEqual({
+            //                 type: "cell",
+            //                 number: 123456789
+            //             });
+            //         });
+            //         qReject(0);
+            //         describe("remove", function() {
+            //             beforeEach(function() {
+            //                 subject.removePhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should remove the correct record", function() {
+            //                 $rootScope.$digest();
+            //                 expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 expect(getRefData(subject.parentRef())).toEqual(null);
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("load", function() {
+            //             beforeEach(function() {
+            //                 subject.loadPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 $timeout.flush();
+            //                 subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load the correct record", function() {
+            //                 expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones/" + this.key);
+            //                 expect(getRefData(subject.parentRef())[this.key]).toEqual({
+            //                     type: "cell",
+            //                     number: 123456789
+            //                 });
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("load All", function() {
+            //             beforeEach(function() {
+            //                 test = subject.loadPhones(this.tripId);
+            //                 $rootScope.$digest();
+            //                 $timeout.flush();
+            //                 subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load the correct record", function() {
+            //                 expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 expect(getPromValue(test)).not.toEqual(null);
+            //                 expect(getRefData(subject.currentRef())[this.key]).toEqual({
+            //                     type: "cell",
+            //                     number: 123456789
+            //                 });
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("getRecord", function() {
+            //             //returns null
+            //             beforeEach(function() {
+            // // subject.mainArray();
+            // // $rootScope.$digest();
+            // // subject.currentRef().flush();
+            // // $rootScope.$digest();
+            //                 test = subject.getPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            // // $timeout.flush();
+            //                 // subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should return current record", function() {
+            //                 // expect(subject.currentPath()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 // expect(getRefData(subject.parentRef())).toBe(null);
+            //                 // expect(getPromValue(test)).toEqual(null);
+            //             });
+            //             // returnsArray();
+            //             // logCheck();
+            //             // qReject(0);
+            //         });
+            //         describe("save", function() {
+            //             beforeEach(function() {
+            //                 test = subject.loadPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //                 getRefData(subject.currentRef()).type = "fax";
+            //                 test1 = subject.savePhone(this.tripId, 0);
+            //                 $rootScope.$digest();
+            // $timeout.flush();
+            //                 // subject.currentRef().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load it", function() {
+            //                 expect(getPromValue(test).type).toEqual("cell");
+            //                 // expect(test1).toEqual("fax");
+            //             });
+            //             // qReject(0);
+            //             // logCheck();
+
+
+            //         });
         });
+
 
         function wrapPromise(p) {
             return p.then(success, failure);

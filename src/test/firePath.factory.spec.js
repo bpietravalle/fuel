@@ -73,7 +73,7 @@
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeo", "geofire/trips",["geofire","trips"]],
+            ["makeGeo", "trips/hotels",["hotels"]],
         ];
 
         function testPaths(y) {
