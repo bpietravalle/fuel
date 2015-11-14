@@ -4,7 +4,7 @@
     "name": "Brian Pietravalle",
     "email": "bpietravalle@gmail.com"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "dependencies": {
     "angular": "~1.4.0",
     "angular-inflector": "~0.2.3",
