@@ -26,9 +26,9 @@
     "src/test",
     "src/testutils"
   ],
-  "main": "src/app/index.module.js",
+  "main": "dist/scripts/app.js",
   "files": [
-    "src/app/"
+    "dist/scripts/"
   ],
   "devDependencies": {
     "gulp": "~3.9.0",

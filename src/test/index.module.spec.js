@@ -17,14 +17,11 @@
             beforeEach(function() {
                 deps = module.value('firebase.fuel').requires;
             });
-            it("should depend on fuelMod", function() {
-                expect(hasModule("fuelMod")).toBeTruthy();
+            it("should depend on firebase.starter", function() {
+                expect(hasModule("firebase.starter")).toBeTruthy();
             });
-            it("should depend on pathMod", function() {
-                expect(hasModule("pathMod")).toBeTruthy();
-            });
-            it("should depend on utilsMod", function() {
-                expect(hasModule("utilsMod")).toBeTruthy();
+            it("should depend on platanus.inflector", function() {
+                expect(hasModule("platanus.inflector")).toBeTruthy();
             });
         });
     });
