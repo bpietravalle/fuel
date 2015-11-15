@@ -2,6 +2,10 @@
     "use strict";
 
 
+    angular.module("utilsMod",["platanus.inflector"])
+        .factory("utils", utilsFactory);
+
+
     /** @ngInject */
     function utilsFactory($log, $q, inflector) {
 
@@ -99,7 +103,5 @@
     }
 
 
-    angular.module("firebase.fuel")
-        .factory("utils", utilsFactory);
 
 })();

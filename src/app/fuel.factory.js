@@ -3,7 +3,7 @@
     var Fuel;
 
 
-    angular.module("firebase.fuel")
+    angular.module("fuelMod",["pathMod","utilsMod","firebase"])
         .factory("fuel", FuelFactory);
 
     /** @ngInject */

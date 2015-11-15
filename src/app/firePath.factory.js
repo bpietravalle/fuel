@@ -2,7 +2,7 @@
     "use strict";
     var FirePath;
 
-    angular.module("firebase.fuel")
+    angular.module("pathMod",["utilsMod","firebase.starter"])
         .factory("firePath", firePathFactory);
 
     /** @ngInject */
