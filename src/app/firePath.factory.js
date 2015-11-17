@@ -102,7 +102,7 @@
                     case true:
                         switch (type) {
                             case undefined:
-                                return nextRef(path, true);
+                                return nextRef(path);
                             default:
                                 return buildFire(type, nextRef(path), true);
                         }
@@ -116,10 +116,7 @@
 
 
 
-            function nextRef(param, flag) {
-                if (flag === true) {
-                    return setCurrentRef(param);
-                }
+            function nextRef(param) {
                 switch (nodeComp(param) < 0) {
                     case true:
                         return setCurrentRef(getCurrentRef().child(setChild(param)));
@@ -181,19 +178,19 @@
             /*************** angularFire ************/
 
             function mainArray() {
-                return build(self._path, "ARRAY");
+                return build(self._path, "array");
             }
 
             function mainRecord(id) {
-                return build(mainRecordPath(id), "OBJECT");
+                return build(mainRecordPath(id), "object");
             }
 
             function nestedArray(recId, name) {
-                return build(nestedArrayPath(recId, name), "ARRAY");
+                return build(nestedArrayPath(recId, name), "array");
             }
 
             function nestedRecord(mainRecId, arrName, recId) {
-                return build(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
+                return build(nestedRecordPath(mainRecId, arrName, recId), "object");
             }
 
             function indexAf(recId, name, type) {
@@ -274,8 +271,7 @@
                 return fire._ref;
             }
 
-            function setCurrentPath(ref) {
-                var path;
+            function setCurrentPath(path) {
                 if (angular.isString(fire._path)) {
                     setPathHistory(fire._path);
                 }
@@ -312,6 +308,9 @@
             }
 
 
+						function resetRef(){
+							return setCurrentRef(main());
+						}
             function fullPath(path) {
                 return rootPath() + self._utils.relativePath(path);
             }

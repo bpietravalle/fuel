@@ -102,16 +102,16 @@
             /*Queries*/
             entity.load = load;
             entity.userRecordsByUID = userRecordsByUID;
-            // entity.getRecord = getRecord;
+            entity.getRecord = getRecord;
+            entity.save = saveMainRecord;
 
             /*Commands*/
             if (self._user !== true && self._gps !== true) {
                 entity.add = createMainRecord;
-                entity.save = save;
                 entity.remove = removeMainRecord;
             }
 
-            if (self._user !== true && self._gps === true) {}
+            // if (self._user !== true && self._gps === true) {}
 
             if (self._user === true && self._gps !== true) {
                 entity.loadUserRecords = loadUserRecords;
@@ -263,10 +263,37 @@
             }
 
             function removeMainRecord(key) {
-                return mainRecord(key)
-                    .then(remove)
+                return checkParam(key)
                     .then(commandSuccess)
                     .catch(standardError);
+
+                //TODO add specs for below
+                function checkParam(param) {
+                    if (angular.isString(param)) {
+                        return mainRecord(key)
+                            .then(remove);
+                    } else {
+                        return remove(key);
+                    }
+                }
+
+            }
+
+            function saveMainRecord(key) {
+                return checkParam(key)
+                    .then(commandSuccess)
+                    .catch(standardError);
+
+                //TODO add specs for below
+                function checkParam(param) {
+                    if (angular.isString(param)) {
+                        return mainRecord(key)
+                            .then(save);
+                    } else {
+                        return save(key);
+                    }
+                }
+
             }
 
             /* Geofire Interface */
@@ -331,7 +358,7 @@
                     .catch(standardError);
 
                 function removeGeo(res) {
-									self._log.info(res);
+                    self._log.info(res);
                     return res[0].remove(res[1]);
                 }
             }
@@ -419,14 +446,14 @@
                 return removeMainRecord(key)
                     .then(passKeyToUser)
                     .catch(standardError);
-							 
+
                 function passKeyToUser(res) {
                     return qAll(removeUserIndex(res.key()), res);
                 }
 
-								function setReturnValue(res){
-									return res[1];
-								}
+                function setReturnValue(res) {
+                    return res[1];
+                }
             }
 
             /*********************************/
@@ -498,7 +525,7 @@
                 return angular.merge({}, obj, newProperties);
             }
 
-						//untested/unused
+            //untested/unused
             function addNestedArray(obj, arr) {
                 var arrName, recName, addRec, getRec, removeRec, loadRec, loadRecs, saveRec, saveRecs, newProp;
                 arrName = self._utils.pluralize(arr);
@@ -653,7 +680,7 @@
              */
 
             function getIndexKeys(recId, arrName) {
-                return indexAf(recId, arrName, "ARRAY")
+                return indexAf(recId, arrName, "array")
                     .then(getKeys)
                     .then(setReturnValue)
                     .catch(standardError);
@@ -704,15 +731,16 @@
             function commandSuccess(res) {
                 self._log.info('command success');
                 // if (Array.isArray(res)) {
-                    // self._pathMaster.setCurrentRef(res[0]);
+                // self._pathMaster.setCurrentRef(res[0]);
                 // } else {
-                    self._pathMaster.setCurrentRef(res);
+                self._pathMaster.setCurrentRef(res);
                 // }
                 return res;
             }
 
             function querySuccess(res) {
                 self._log.info('query success');
+                self._log.info(res.$ref().key());
                 self._pathMaster.setCurrentRef(res.$ref());
                 return res;
             }

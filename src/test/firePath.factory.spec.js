@@ -66,6 +66,7 @@
         var paths = [
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
+            ["nestedRef", "trips/1", "1"],
             ["nestedArray", "trips/hotels", "hotels", undefined],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
@@ -81,16 +82,22 @@
                     test = subject[y[0]](y[2], y[3], y[4]);
                     $rootScope.$digest();
                 });
+                if (y[0] === "nestedRef") {
+                    it("should be a firebaseRef", function() {
+                        expect(test).toBeAFirebaseRef();
+                    });
+                } else {
 
-                it("should be a promise", function() {
-                    expect(test).toBeAPromise();
-                });
-                it("should be an angularfire object/array", function() {
-                    expect(getPromValue(test).$ref()).toBeAFirebaseRef();
-                });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should be an angularfire object/array", function() {
+                        expect(getPromValue(test).$ref()).toBeAFirebaseRef();
+                    });
+                }
 
                 it("should create the correct path", function() {
-                    expect(subject.path()).toEqual(rootPath + "/"+ y[1]);
+                    expect(subject.path()).toEqual(rootPath + "/" + y[1]);
                 });
             });
         }
