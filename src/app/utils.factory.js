@@ -11,18 +11,21 @@
 
         var utils = {
 
-            arrayify: arrayify,
+            toArray: toArray,
             camelize: camelize,
             extendPath: extendPath,
             flatten: flatten,
             removeSlash: removeSlash,
             stringify: stringify,
             pluralize: pluralize,
-						relativePath: relativePath,
+            relativePath: relativePath,
             qWrap: qWrap,
             qAll: qAll,
             qAllResult: qAllResult,
             singularize: singularize,
+						paramNodeIdx: removeMainPath,
+            nodeIdx: setNodeIdx,
+            nextPath: nextPath,
             standardError: standardError,
 
         };
@@ -64,7 +67,7 @@
         }
 
         function relativePath(path) {
-            return stringify(arrayify(removeSlash(path)));
+            return stringify(toArray(removeSlash(path)));
         }
 
         function removeSlash(path) {
@@ -84,7 +87,7 @@
             return flatResults;
         }
 
-        function arrayify(param) {
+        function toArray(param) {
             if (Array.isArray(param)) {
                 return flatten(param);
             } else {
@@ -111,7 +114,54 @@
             return arr;
         }
 
+        function setNodeIdx(path, main) {
+            path = removeSlash(path).slice(removeSlash(main).length);
+            path = path.split('/');
+						if(path[0]===""){
+							path.shift();
+						}
+						return path;
+        }
 
+
+
+        /* @param {array} ["currentpath","relative","to","main"]
+         * @param {array} ["pathParm","relative","to","main"]
+         * @return {array} [Int - idx of deepest shared node, string - remaining childpath if any]
+         *
+         */
+			
+
+        function nextPath(current, param) {
+
+            var parent = [];
+            var child = [];
+
+            param.forEach(function(val, idx) {
+                if (val === current[idx]) {
+                    parent.push(val);
+                } else {
+                    child.push(val);
+                }
+            });
+
+
+            if (child.length > 0) {
+                child = stringify(child);
+            }
+
+            return child;
+
+        }
+
+        function removeMainPath(path, main) {
+            path = toArray(path);
+            if (path[0] === main) {
+                path.shift();
+            }
+            return path;
+
+        }
     }
 
 

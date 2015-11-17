@@ -28,7 +28,7 @@
                 $q = _$q_;
                 $log = _$log_;
             });
-            rootPath = "https://your-firebase.firebaseio.com/";
+            rootPath = "https://your-firebase.firebaseio.com";
             ref = new MockFirebase(rootPath);
             options = {
                 sessionAccess: true,
@@ -49,7 +49,7 @@
         describe("Constructor", function() {
             it("should work", function() {
                 expect(subject).toBeDefined();
-                expect(subject.currentRef()).toBeDefined();
+                expect(subject.ref()).toBeDefined();
             });
             it("should have correct methods", function() {
                 expect(subject).toEqual(jasmine.objectContaining({
@@ -64,7 +64,6 @@
         });
 
         var paths = [
-            ["mainRef", "trips"],
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
             ["nestedArray", "trips/hotels", "hotels", undefined],
@@ -77,39 +76,30 @@
         function testPaths(y) {
             describe(y[0] + "()", function() {
                 beforeEach(function() {
-                    subject.setCurrentRef(ref);
+                    subject.setCurrentRef(ref.child("trips"));
                     $rootScope.$digest();
                     test = subject[y[0]](y[2], y[3], y[4]);
                     $rootScope.$digest();
                 });
 
-                if (y[0] !== "mainRef") {
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should be an angularfire object/array", function() {
-                        expect(getPromValue(test).$ref()).toBeAFirebaseRef();
-                    });
-                } else {
-                    it("shouldn't be a promise", function() {
-                        expect(test).not.toBeAPromise();
-                    });
-                    it("should be a firebaseRef", function() {
-                        expect(test).toBeAFirebaseRef();
-                    });
-                }
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should be an angularfire object/array", function() {
+                    expect(getPromValue(test).$ref()).toBeAFirebaseRef();
+                });
 
                 it("should create the correct path", function() {
-                    expect(subject.currentPath()).toEqual(rootPath + y[1]);
+                    expect(subject.path()).toEqual(rootPath + "/"+ y[1]);
                 });
             });
         }
 
         paths.forEach(testPaths);
 
-        describe("currentRef", function() {
+        describe("ref", function() {
             it("shouold be defined", function() {
-                expect(subject.currentRef()).toBeDefined();
+                expect(subject.ref()).toBeDefined();
             });
         });
 
@@ -118,7 +108,7 @@
                 expect(subject.rootRef()).toBeAFirebaseRef();
             });
             it("should create the correct path", function() {
-                expect(subject.rootRef().path).toEqual(rootPath);
+                expect(subject.rootRef().path).toEqual(rootPath + "/");
             });
         });
 
@@ -130,7 +120,7 @@
                 subject.setCurrentRef(ref);
                 $rootScope.$digest();
                 $rootScope.$digest();
-                expect(subject.currentRef()).toEqual(ref);
+                expect(subject.ref()).toEqual(ref);
             });
 
         });
@@ -138,85 +128,51 @@
 
 
             var params = [
-                // current, args, expected path, log call
 
                 [
-                    "trips/1", ["trips"], "trips", "Using currentParentRef"
+                    "trips/1", ["trips"], "trips"
                 ],
                 [
-                    "trips/1", ["trips", "1", "hotels", "5", "rooms"], "trips/1/hotels/5/rooms", "Building childRef"
+                    "trips/1", ["trips", "1", "hotels", "5", "rooms"], "trips/1/hotels/5/rooms"
                 ],
                 [
-                    "trips/1", ["trips", "1"], "trips/1", "Reusing currentRef"
+                    "trips/1", ["trips", "1"], "trips/1"
+                ],
+                [
+                    "trips/1/hotels", ["trips", "1"], "trips/1"
+                ],
+                [
+                    "trips/1/rooms/53/floor", ["trips", "1", "rooms"], "trips/1/rooms"
+                ],
+                [
+                    "trips/1/rooms/53/floor", ["trips"], "trips"
                 ],
             ];
 
             function checkPathTests(y) {
-                describe("when currentPath is: " + y[0], function() {
+                describe("when path is: " + y[0], function() {
                     beforeEach(function() {
-                        if (angular.isString(y[0])) {
-                            ref = ref.child(y[0]);
-                            subject.setCurrentRef(ref);
-                            $rootScope.$digest();
-                        }
-                    });
-                    if (y[0] === null) {
-                        it("should have undefined currentRef beforehand", function() {
-                            expect(subject.currentRef()).not.toBeDefined();
-                        });
-                    } else {
-                        it("should have a defined currentRef() beforehand", function() {
-                            expect(subject.currentRef()).toBeDefined();
-                            expect(subject.currentPath()).toEqual(rootPath + y[0]);
-                        });
-
-                    }
-
-                    it("should set currentPath to: " + y[2], function() {
-                        subject.build(y[1]);
+                        ref = ref.child(y[0]);
+                        subject.setCurrentRef(ref);
                         $rootScope.$digest();
-                        expect(subject.currentPath()).toEqual(rootPath + y[2]);
+                    });
+                    it("should have a defined ref() beforehand", function() {
+                        expect(subject.ref()).toBeDefined();
+                        expect(subject.path()).toEqual(rootPath + "/" + y[0]);
                     });
 
-                    // it("call $log info with: " + y[3], function() {
-                    //     subject.build(y[1]);
-                    //     $rootScope.$digest();
-                    //     logContains(y[3], true);
-                    // });
+                    it("should set path to: " + y[2], function() {
+                        subject.build(y[1], "object");
+                        $rootScope.$digest();
+                        subject.ref().flush();
+                        $rootScope.$digest();
+                        expect(subject.path()).toEqual(rootPath + "/" + y[2]);
+                    });
+
                 });
             }
-            // params.forEach(checkPathTests);
-            describe("if passed a firebaseRef rather than path", function() {
-                beforeEach(function() {
-                    ref = ref.child("phones");
-                    subject.build(ref, "ARRAY", true);
-                    $rootScope.$digest();
-                });
-                it("should work", function() {
-                    expect(subject.currentPath()).toEqual(rootPath + "phones");
-                });
-            });
+            params.forEach(checkPathTests);
         });
-				describe("isInMainNode",function(){
-					beforeEach(function(){
-						subject = firePath("trips",{
-							user: true,
-							geofire: true
-						});
-					});
-					it("should work",function(){
-						var path = rootPath +"trips/stuff";
-						expect(subject.isInMainNode(path)).toBeTruthy();
-					});
-					it("setChild()",function(){
-						var t = ["trips","boom"];
-					subject.build(t)
-					$rootScope.$digest();
-					expect(subject.currentPath()).toEqual(rootPath + "trips/boom");	
-					});
-
-
-				});
         describe("Invalid options", function() {
             describe("session", function() {
                 it("should throw error if no sessionLocation is present", function() {
@@ -245,48 +201,24 @@
 
         });
 
-        var currentPaths = [
-            ["currentRecord", "100"],
-            ["currentParentNode", "rooms"],
-            ["currentNode", "1000"],
-            ["currentNestedArray", "hotels"],
-            ["currentNestedRecord", "5"],
-            ["currentDepth", 6],
-            ["currentNodeIdx", 4, "rooms"],
-        ];
-
-        function testCurrentPath(y) {
-                describe(y[0], function() {
-                    beforeEach(function() {
-                        this.relativePath = "trips/100/hotels/5/rooms/1000";
-                        this.fullPath = rootPath + this.relativePath;
-                        ref = ref.child(this.relativePath);
-                        subject.setCurrentRef(ref);
-                        $rootScope.$digest();
-                    });
-
-                    it("should return correct value", function() {
-                        expect(subject[y[0]](y[2])).toEqual(y[1]);
-                    });
-
-
-
-                });
-            }
-            // currentPaths.forEach(testCurrentPath);
-
-        function logCheck(x, flag) {
-            return testutils.logCheck(x, flag);
-        }
-
         function getPromValue(obj, flag) {
             return testutils.getPromValue(obj, flag);
         }
 
         function flush() {
             $rootScope.$digest();
-            subject.currentRef();
+            subject.ref();
             $rootScope.$digest();
+        }
+
+        function logCheck(x, flag) {
+            if (flag === true) {
+                return expect($log.info.calls.allArgs()).toEqual(x);
+            } else {
+                it("should log:" + x, function() {
+                    expect($log.info.calls.allArgs()).toEqual(x);
+                });
+            }
         }
 
         function logContains(message, flag) {

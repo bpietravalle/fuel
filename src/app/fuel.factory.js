@@ -63,7 +63,6 @@
             }
             if (this._sessionAccess === true) {
                 this._pathOptions.sessionAccess = true;
-                this._pathOptions.userName = this._userPath;
                 if (!this._options.sessionLocation) {
                     this._sessionName = "session";
                     this._pathOptions.sessionLocation = this._sessionName;
@@ -89,10 +88,10 @@
             var entity = {};
 
             /* fireBaseRef Mngt */
-            entity.currentBase = getCurrentBase;
-            entity.currentRef = getCurrentRef;
-            entity.currentPath = getCurrentPath;
-            entity.currentParentRef = getCurrentParentRef;
+            entity.base = getCurrentBase;
+            entity.ref = getCurrentRef;
+            entity.path = getCurrentPath;
+            entity.parent = getCurrentParentRef;
             entity.pathHistory = getPathHistory;
             entity.inspect = inspect;
 
@@ -153,19 +152,19 @@
              * *******************/
 
             function getCurrentPath() {
-                return self._pathMaster.currentPath();
+                return self._pathMaster.path();
             }
 
             function getCurrentRef() {
-                return self._pathMaster.currentRef();
+                return self._pathMaster.ref();
             }
 
             function getCurrentParentRef() {
-                return self._pathMaster.currentParentRef();
+                return self._pathMaster.parent();
             }
 
             function getCurrentBase() {
-                return self._pathMaster.currentBase();
+                return self._pathMaster.base();
             }
 
             function getPathHistory() {
@@ -332,6 +331,7 @@
                     .catch(standardError);
 
                 function removeGeo(res) {
+									self._log.info(res);
                     return res[0].remove(res[1]);
                 }
             }
@@ -368,18 +368,6 @@
                 function removeGeofireAndPassLocKey(res) {
                     return qAll(geofireRemove(res.key()), res);
                 }
-            }
-
-
-            function addLocationIndex(recId, key) {
-                return addIndex(recId, self._locationName, key)
-                    .catch(standardError);
-            }
-
-            //only need if updating a main record
-            function removeLocationIndex(recId, key) {
-                return removeIndex(recId, self._locationName, key)
-                    .catch(standardError);
             }
 
 
@@ -461,7 +449,7 @@
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
-                    return qAll(addLocationIndex(res[0][1].key(), res[1][1].key()), res[0][1]);
+                    return qAll(addIndex(res[0][1].key(), self._locationName, res[1][1].key()), res[0][1]);
                 }
 
                 function setReturnValue(res) {
@@ -715,11 +703,11 @@
             //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
-                if (Array.isArray(res)) {
-                    self._pathMaster.setCurrentRef(res[0]);
-                } else {
+                // if (Array.isArray(res)) {
+                    // self._pathMaster.setCurrentRef(res[0]);
+                // } else {
                     self._pathMaster.setCurrentRef(res);
-                }
+                // }
                 return res;
             }
 
