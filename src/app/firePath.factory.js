@@ -307,12 +307,12 @@
                 return nodeIdx().length - paramNodeIdx(param).length;
             }
 
+            function resetRef() {
+                return setCurrentRef(main());
+            }
 
-						function resetRef(){
-							return setCurrentRef(main());
-						}
             function fullPath(path) {
-                return rootPath() + self._utils.relativePath(path);
+                return self._utils.stringify([rootPath(), self._utils.relativePath(path)]);
             }
 
             function inspect() {

@@ -115,7 +115,7 @@
                 expect(subject.rootRef()).toBeAFirebaseRef();
             });
             it("should create the correct path", function() {
-                expect(subject.rootRef().path).toEqual(rootPath + "/");
+                expect(subject.rootRef().path).toEqual(rootPath);
             });
         });
 

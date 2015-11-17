@@ -27,6 +27,13 @@
             expect(utils.nodeIdx(path, main)).toEqual(["stuff", "hotels", "rooms"]);
 
         });
+				describe("removeSlash",function(){
+					it("should remove trailing",function(){
+						var t = rootPath + "/";
+						expect(utils.removeSlash(t)).toEqual(rootPath);
+					});
+
+				})
         describe("nextPath", function() {
             describe("when current === param", function() {
                 beforeEach(function() {
