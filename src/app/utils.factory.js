@@ -18,6 +18,7 @@
             removeSlash: removeSlash,
             stringify: stringify,
             pluralize: pluralize,
+						relativePath: relativePath,
             qWrap: qWrap,
             qAll: qAll,
             qAllResult: qAllResult,
@@ -62,6 +63,10 @@
             return $q.reject(err);
         }
 
+        function relativePath(path) {
+            return stringify(arrayify(removeSlash(path)));
+        }
+
         function removeSlash(path) {
             if (path[-1] === "/") {
                 path = path.substring(0, -1);
@@ -94,11 +99,18 @@
             return arr;
         }
 
+        //TODO this only works if undefined is last item in array
         function extendPath(arr, id) {
             arr.push(id);
-            //should be able to get rid of flatten
-            return flatten(arr);
+            arr = flatten(arr);
+            var un = arr.indexOf(undefined);
+            if (un > -1) {
+                arr.splice(un, 1);
+            }
+
+            return arr;
         }
+
 
     }
 

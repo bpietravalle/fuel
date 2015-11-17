@@ -50,8 +50,6 @@
                 this._pathOptions.geofire = true;
                 this._locationName = "locations";
                 this._geofireName = "geofire";
-                this._locationPath = [this._locationName, this._path];
-                this._geofirePath = [this._geofireName, this._path];
                 this._pathOptions.locationName = this._locationName;
                 this._pathOptions.geofireName = this._geofireName;
             }
@@ -342,12 +340,12 @@
             /* @param{Object} location data to save
              * @return{Array} [null, fireBaseRef of mainlocation]
              */
-            function createLocation(data, geoFlag) {
+            function createLocation(data) {
                 var coords = {
                     lat: data.lat,
                     lon: data.lon
                 };
-                return qAll(self._locationObject.addLoc(data, geoFlag), [coords.lat, coords.lon])
+                return qAll(self._locationObject.addLoc(self._path, data), [coords.lat, coords.lon])
                     .then(addGeofireAndPassLocKey)
                     .catch(standardError);
 
@@ -433,10 +431,14 @@
                 return removeMainRecord(key)
                     .then(passKeyToUser)
                     .catch(standardError);
-
+							 
                 function passKeyToUser(res) {
                     return qAll(removeUserIndex(res.key()), res);
                 }
+
+								function setReturnValue(res){
+									return res[1];
+								}
             }
 
             /*********************************/
@@ -713,7 +715,6 @@
             //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
-                // self._log.info(res);
                 if (Array.isArray(res)) {
                     self._pathMaster.setCurrentRef(res[0]);
                 } else {

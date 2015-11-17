@@ -77,16 +77,10 @@
             fire.nestedRecord = nestedRecord;
             fire.nestedRef = nestedRef;
             fire.indexAf = indexAf;
+            fire.main = main;
 
             //TODO make below private
-            fire.checkPathParams = checkPathParams;
-
-            fire.currentNode = currentNode;
-            fire.currentParentNode = currentParentNode;
-            fire.currentRecord = currentRecord;
-            fire.currentNestedArray = currentNestedArray;
-            fire.currentNestedRecord = currentNestedRecord;
-            fire.currentNodeIdx = currentNodeIdx;
+            fire.build = build;
 
             fire._pathHistory = [];
             fire.currentBase = getCurrentFirebase;
@@ -95,69 +89,71 @@
             fire.currentParentRef = getCurrentParentRef;
             fire.currentParentPath = getCurrentParentPath;
             fire.pathHistory = getPathHistory;
-            fire.currentDepth = currentDepth;
+            fire.setChild = setChild;
+            fire.isInMainNode = isInMainNode;
 
             fire.setCurrentRef = setCurrentRef;
             fire.inspect = inspect;
 
-            if (self._sessionAccess === true) {
-                fire.userIndex = userIndex;
-            }
             if (self._geofire === true) {
                 fire.makeGeo = makeGeo;
             }
 
-            setCurrentRef(root());
+            setCurrentRef(main())
 
             /*************** firebaseRefs ************/
 
-            function checkPathParams(path, type, flag) {
+            function build(path, type, flag) {
                 var ref, str;
                 switch (flag) {
                     case true:
-                        ref = path;
+                        ref = setFire(type, path);
                         break;
                     default:
-                        str = fullPath(path);
-                        switch (getCurrentRef()) {
-                            case undefined:
-                                self._log.info("setting new firebase node");
-                                ref = setChild(relativePath(path));
-                                break;
-                            default:
-                                switch (str) {
-                                    case getCurrentPath():
-                                        self._log.info("Reusing currentRef");
-                                        ref = getCurrentRef();
-                                        break;
-                                    case getCurrentParentPath():
-                                        self._log.info("Using currentParentRef");
-                                        ref = getCurrentParentRef();
-                                        break;
-                                    default:
-                                        if (isCurrentChild(str)) {
-                                            self._log.info("Building childRef");
-                                            ref = buildChildRef(str);
-                                        } else {
-                                            // throw new Error("You cannot switch to a new main node");
-                                            self._log.info("Setting new firebase node");
-                                            ref = setChild(relativePath(path));
-                                        }
-                                }
+                        switch (isInMainNode(path)) {
+                            case true:
+                                return setFire(type, setChild(path));
+                            case false:
+                                throw new Error("You cannot switch to a new main node");
                         }
                 }
 
-                return setCurrentRef(ref)
-                    .then(setFire)
-                    .catch(standardError);
+                // case getCurrentPath():
+                //     self._log.info("Reusing currentRef");
+                //     ref = getCurrentRef();
+                //     break;
+                // case getCurrentParentPath():
+                //     self._log.info("Using currentParentRef");
+                //     ref = getCurrentParentRef();
+                //     self._log.info(nodeIdx(str));
+                //     break;
+                // default:
+                //     if (isCurrentChild(str)) {
+                //         self._log.info("Building childRef");
+                // ref = buildChildRef(str);
+                // } else if (isInMainNode(str)) {
 
-                function setFire(res) {
-                    if (type) {
-                        return buildFire(type, res, true);
-                    } else {
-                        return res;
-                    }
+            }
+
+            function setFire(type, res) {
+                if (angular.isDefined(type)) {
+                    return buildFire(type, setCurrentRef(res), true);
+                } else {
+                    return setCurrentRef(res);
                 }
+            }
+
+            function isInMainNode(path) {
+                return fullPath(path).search(mainPath()) > -1;
+            }
+
+            function isChild(path) {
+                return fullPath(path).length > mainPath().length;
+            }
+
+            function setChild(path) {
+                path = path.slice(mainPath().length);
+                return main().child(relativePath(path));
             }
 
             function buildFire(type, path, flag) {
@@ -176,52 +172,47 @@
                 return new self._window.Firebase(rootPath());
             }
 
-            function setChild(path) {
-                return root().child(stringify(path));
+            function main() {
+                return root().child(relativePath(self._path));
+            }
+
+            function mainPath() {
+                return main().toString();
             }
 
             function mainArray() {
-                return checkPathParams(mainArrayPath(), "ARRAY");
+                return build(mainPath(), "ARRAY");
             }
 
             function mainRef() {
-                return checkPathParams(mainArrayPath());
+                return build(mainPath());
             }
 
             function mainRecord(id) {
-                return checkPathParams(mainRecordPath(id), "OBJECT");
+                return build(mainRecordPath(id), "OBJECT");
             }
 
             function nestedRef(recId, name) {
-                return checkPathParams(nestedArrayPath(recId, name));
+                return build(nestedArrayPath(recId, name));
             }
 
             function nestedArray(recId, name) {
-                return checkPathParams(nestedArrayPath(recId, name), "ARRAY");
+                return build(nestedArrayPath(recId, name), "ARRAY");
             }
 
             function nestedRecord(mainRecId, arrName, recId) {
-                return checkPathParams(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
+                return build(nestedRecordPath(mainRecId, arrName, recId), "OBJECT");
             }
 
             function indexAf(recId, name, type) {
-                return checkPathParams(nestedArrayPath(recId, name), type);
+                return build(nestedArrayPath(recId, name), type);
 
-            }
-
-            /* User Object refs */
-
-            function userIndex() {
-                return checkPathParams(userIndexPath());
             }
 
             /* Geofire refs */
             function makeGeo(path) {
-                return checkPathParams(geofireArrayPath([self._path, path]), "geo");
+                return build(geofireArrayPath([self._path, path]), "geo");
             }
-
-
-            /* Locations Index */
 
 
             /************ Paths *************************/
@@ -323,22 +314,26 @@
             }
 
             function nodeIdx(path, str) {
-                return relativePathArray(path).indexOf(str);
-            }
-
-            function isCurrentChild(path) {
-                var pathSub;
-                pathSub = path.substring(0, getCurrentPath().length);
-                if (path.length > getCurrentPath().length) {
-                    return pathSub === getCurrentPath();
+                if (angular.isUndefined(str)) {
+                    return relativePathArray(path);
                 } else {
-                    return false;
+                    return relativePathArray(path).indexOf(str);
                 }
             }
 
-            function buildChildRef(path) {
-                return getCurrentRef().child(removeSlash(path.slice(getCurrentPath().length)));
-            }
+            // function isCurrentChild(path) {
+            //     var pathSub;
+            //     pathSub = path.substring(0, getCurrentPath().length);
+            //     if (path.length >= getCurrentPath().length) {
+            //         return pathSub === getCurrentPath();
+            //     } else {
+            //         return false;
+            //     }
+            // }
+
+            // function buildChildRef(path) {
+            //     return getCurrentRef().child(removeSlash(path.slice(getCurrentPath().length)));
+            // }
 
             function getCurrentPath() {
                 if (getCurrentRef()) {
@@ -376,38 +371,37 @@
             //queries return fbobject or array - need to call $ref()
             //geofire queries return the values but not a ref;
 
-            function setCurrentRef(ref) {
-                var path;
-                return checkArray(ref)
-                    .then(checkRefAndSet)
-                    .catch(standardError);
+            // function setCurrentRef(ref) {
+            // var path;
+            // return checkArray(ref)
+            //     .then(checkRefAndSet)
+            //     .then(setPathAndRef)
+            //     .catch(standardError);
 
-                //don't need this since taking care of in command success
+            // function checkArray(res) {
+            //     if (Array.isArray(res)) {
+            //         // return self._q.when(res[0].$ref())
+            //         //     .catch(function() {
+            //         //         self._q.reject(("firebaseRef must be first item in the array"));
+            //         //     });
+            //     } else {
+            //         return self._q.when(res);
+            //     }
+            // }
 
-                function checkArray(ref) {
-                    if (Array.isArray(ref)) {
-                        return self._q.when(ref[0].$ref())
-                            .catch(function() {
-                                self._q.reject(("firebaseRef must be first item in the array"));
-                            });
-                    } else {
-                        return self._q.when(ref);
-                    }
-                }
+            // function checkRefAndSet(res) {
+            //     return self._q.when(res)
+            //         .catch(function() {
+            //             self._q.reject(("argument is not a firebaseRef"));
+            //         });
 
-                function checkRefAndSet(res) {
-                    return self._q.when(res.path)
-                        .then(setPathAndRef)
-                        .catch(function() {
-                            self._q.reject(("argument is not a firebaseRef"));
-                        });
+            // }
 
-                    function setPathAndRef(path) {
-                        fire._currentRef = res;
-                        setCurrentPath(path);
-                        return fire._currentRef;
-                    }
-                }
+            function setCurrentRef(res) {
+                fire._currentRef = res;
+                setCurrentPath(res.toString());
+                return fire._currentRef;
+                // }
             }
 
             function setCurrentPath(ref) {
@@ -431,6 +425,10 @@
                 return fire._pathHistory;
             }
 
+            function qWrap(obj) {
+                return self._q.when(obj);
+            }
+
             function extendPath(arr, id) {
                 return self._utils.extendPath(arr, id);
             }
@@ -444,7 +442,7 @@
             }
 
             function relativePath(path) {
-                return stringify(arrayify(removeSlash(path)));
+                return self._utils.relativePath(path);
             }
 
             function fullPath(path) {

@@ -35,12 +35,10 @@
                 geofire: true,
                 sessionLocation: "session",
                 sessionIdMethod: "getId",
-                locationName: "locations",
                 geofireName: "geofire"
             };
             spyOn($log, "info");
             subject = firePath("trips", options);
-            // fuel = fuel("trips");
         });
         afterEach(function() {
             subject = null;
@@ -51,6 +49,7 @@
         describe("Constructor", function() {
             it("should work", function() {
                 expect(subject).toBeDefined();
+                expect(subject.currentRef()).toBeDefined();
             });
             it("should have correct methods", function() {
                 expect(subject).toEqual(jasmine.objectContaining({
@@ -68,11 +67,11 @@
             ["mainRef", "trips"],
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
-            ["nestedArray", "trips/hotels", "hotels"],
+            ["nestedArray", "trips/hotels", "hotels", undefined],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeo", "trips/hotels",["hotels"]],
+            ["makeGeo", "trips/hotels", ["hotels"]],
         ];
 
         function testPaths(y) {
@@ -84,16 +83,19 @@
                     $rootScope.$digest();
                 });
 
-                it("should be a promise", function() {
-                    expect(test).toBeAPromise();
-                });
-                if (y[0] !== "userIndex" && y[0] !== "locationsIndex" && y[0] !== "mainRef") {
+                if (y[0] !== "mainRef") {
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
                     it("should be an angularfire object/array", function() {
                         expect(getPromValue(test).$ref()).toBeAFirebaseRef();
                     });
                 } else {
+                    it("shouldn't be a promise", function() {
+                        expect(test).not.toBeAPromise();
+                    });
                     it("should be a firebaseRef", function() {
-                        expect(getPromValue(test)).toBeAFirebaseRef();
+                        expect(test).toBeAFirebaseRef();
                     });
                 }
 
@@ -106,8 +108,8 @@
         paths.forEach(testPaths);
 
         describe("currentRef", function() {
-            it("shouoldn't be defined", function() {
-                expect(subject.currentRef()).not.toBeDefined();
+            it("shouold be defined", function() {
+                expect(subject.currentRef()).toBeDefined();
             });
         });
 
@@ -132,23 +134,17 @@
             });
 
         });
-        describe("checkPathParams", function() {
+        describe("build", function() {
 
 
             var params = [
                 // current, args, expected path, log call
-                [
-                    null, ["trips", "1"], "trips/1", "setting new firebase node"
-                ],
 
                 [
                     "trips/1", ["trips"], "trips", "Using currentParentRef"
                 ],
                 [
                     "trips/1", ["trips", "1", "hotels", "5", "rooms"], "trips/1/hotels/5/rooms", "Building childRef"
-                ],
-                [
-                    "trips/1", ["geofire", "trips", "1"], "geofire/trips/1", "Setting new firebase node"
                 ],
                 [
                     "trips/1", ["trips", "1"], "trips/1", "Reusing currentRef"
@@ -177,33 +173,50 @@
                     }
 
                     it("should set currentPath to: " + y[2], function() {
-                        subject.checkPathParams(y[1]);
+                        subject.build(y[1]);
                         $rootScope.$digest();
                         expect(subject.currentPath()).toEqual(rootPath + y[2]);
                     });
 
-                    it("call $log info with: " + y[3], function() {
-                        subject.checkPathParams(y[1]);
-                        $rootScope.$digest();
-                        logContains(y[3], true);
-                    });
+                    // it("call $log info with: " + y[3], function() {
+                    //     subject.build(y[1]);
+                    //     $rootScope.$digest();
+                    //     logContains(y[3], true);
+                    // });
                 });
             }
-            params.forEach(checkPathTests);
+            // params.forEach(checkPathTests);
             describe("if passed a firebaseRef rather than path", function() {
                 beforeEach(function() {
                     ref = ref.child("phones");
-                    subject.checkPathParams(ref, "ARRAY", true);
+                    subject.build(ref, "ARRAY", true);
                     $rootScope.$digest();
                 });
                 it("should work", function() {
                     expect(subject.currentPath()).toEqual(rootPath + "phones");
-
                 });
-
-
             });
         });
+				describe("isInMainNode",function(){
+					beforeEach(function(){
+						subject = firePath("trips",{
+							user: true,
+							geofire: true
+						});
+					});
+					it("should work",function(){
+						var path = rootPath +"trips/stuff";
+						expect(subject.isInMainNode(path)).toBeTruthy();
+					});
+					it("setChild()",function(){
+						var t = ["trips","boom"];
+					subject.build(t)
+					$rootScope.$digest();
+					expect(subject.currentPath()).toEqual(rootPath + "trips/boom");	
+					});
+
+
+				});
         describe("Invalid options", function() {
             describe("session", function() {
                 it("should throw error if no sessionLocation is present", function() {
@@ -243,24 +256,24 @@
         ];
 
         function testCurrentPath(y) {
-            describe(y[0], function() {
-                beforeEach(function() {
-                    this.relativePath = "trips/100/hotels/5/rooms/1000";
-                    this.fullPath = rootPath + this.relativePath;
-                    ref = ref.child(this.relativePath);
-                    subject.setCurrentRef(ref);
-                    $rootScope.$digest();
+                describe(y[0], function() {
+                    beforeEach(function() {
+                        this.relativePath = "trips/100/hotels/5/rooms/1000";
+                        this.fullPath = rootPath + this.relativePath;
+                        ref = ref.child(this.relativePath);
+                        subject.setCurrentRef(ref);
+                        $rootScope.$digest();
+                    });
+
+                    it("should return correct value", function() {
+                        expect(subject[y[0]](y[2])).toEqual(y[1]);
+                    });
+
+
+
                 });
-
-                it("should return correct value", function() {
-                    expect(subject[y[0]](y[2])).toEqual(y[1]);
-                });
-
-
-
-            });
-        }
-        currentPaths.forEach(testCurrentPath);
+            }
+            // currentPaths.forEach(testCurrentPath);
 
         function logCheck(x, flag) {
             return testutils.logCheck(x, flag);
