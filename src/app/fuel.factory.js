@@ -53,7 +53,6 @@
                 this._pathOptions.locationName = this._locationName;
                 this._pathOptions.geofireName = this._geofireName;
             }
-
             this._user = this._options.user || false;
             this._sessionAccess = this._options.sessionAccess || false;
             if (this._user === true) {
@@ -65,16 +64,16 @@
                 this._pathOptions.sessionAccess = true;
                 if (!this._options.sessionLocation) {
                     this._sessionName = "session";
-                    this._pathOptions.sessionLocation = this._sessionName;
-                    this._sessionStorage = this._injector.get(this._sessionName);
                 } else {
-                    this._sessionStorage = this._injector.get(this._options.sessionLocation);
+                    this._sessionName = this._options.sessionLocation;
                 }
+                this._sessionStorage = this._injector.get(this._sessionName);
                 if (this._options.sessionIdMethod) {
                     this._sessionIdMethod = this._options.sessionIdMethod;
                 } else {
                     this._sessionIdMethod = "getId";
                 }
+                this._pathOptions.sessionLocation = this._sessionName;
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
         }
@@ -104,17 +103,30 @@
             entity.userRecordsByUID = userRecordsByUID;
             entity.getRecord = getRecord;
             entity.save = saveMainRecord;
+            entity.bindTo = bindTo;
 
             /*Commands*/
+
             if (self._user !== true && self._gps !== true) {
                 entity.add = createMainRecord;
                 entity.remove = removeMainRecord;
             }
 
-            // if (self._user !== true && self._gps === true) {}
+            if (self._user === true) {
+                entity.loadUserRecords = loadUserRecords;
+            }
+
+            if (self._gps === true) {
+                entity.createLocation = createLocation;
+                entity.removeLocation = removeLocation;
+            }
+
+            if (self._user !== true && self._gps === true) {
+                entity.add = createWithGeo;
+                entity.remove = removeWithGeo;
+            }
 
             if (self._user === true && self._gps !== true) {
-                entity.loadUserRecords = loadUserRecords;
                 entity.add = createWithUser;
                 entity.remove = removeWithUser;
             }
@@ -122,12 +134,12 @@
             if (self._user === true && self._gps === true) {
                 entity.add = createWithUserAndGeo;
                 entity.remove = removeWithUserAndGeo;
-                entity.loadUserRecords = loadUserRecords;
             }
 
             if (self._sessionAccess === true) {
                 entity.session = session;
                 entity.sessionId = sessionId;
+                entity.bindCurrent = bindCurrent;
             }
 
             if (self._geofire === true) {
@@ -247,6 +259,20 @@
             }
 
             /*Commands*/
+
+            function bindTo(id, scope, varName) {
+                switch (angular.isString(id)) {
+                    case true:
+                        return qAll(mainRecord(id), [scope, varName])
+                            .then(bindObject)
+                            .catch(standardError)
+                    case false:
+                        return qAll(id, [scope, varName])
+                            .then(bindObject)
+                            .catch(standardError);
+                }
+
+            }
 
             function createMainRecord(data, geoFlag, userFlag) {
                 if (geoFlag === true && data.geo) {
@@ -410,6 +436,12 @@
                     .removeIndex(sessionId(), self._path, key);
             }
 
+
+            /*Session Access */
+            function bindCurrent(s, v) {
+                return bindTo(sessionId(), s, v);
+            }
+
             function session() {
                 return self._sessionStorage;
             }
@@ -417,6 +449,11 @@
             function sessionId() {
                 return self._sessionStorage[self._sessionIdMethod]();
             }
+
+            /*********************************/
+
+            /*
+             * Combo Methods */
 
             /* save main record and to user index
              * @param{Object} data to save to user array - just saving key for now
@@ -432,9 +469,6 @@
                     return qAll(addUserIndex(res.key()), res);
                 }
 
-                // function returnMainRec(res){
-                // 	return res[1];
-                // }
             }
 
             /* remove main record and user index
@@ -456,10 +490,47 @@
                 }
             }
 
-            /*********************************/
 
-            /*
-             * Combo Methods */
+
+            function createWithGeo(data, loc) {
+
+                return self._q.all([createMainRecord(data), createLocation(loc, true)])
+                    .then(addLocationIndexAndPassKey)
+                    .then(setReturnValue)
+                    .then(commandSuccess)
+                    .catch(standardError);
+
+                function addLocationIndexAndPassKey(res) {
+                    return qAll(addIndex(res[0].key(), self._locationName, res[1][1].key()), res[0]);
+                }
+
+                function setReturnValue(res) {
+                    return res[1];
+                }
+            }
+
+            function removeWithGeo(mainRecId) {
+
+                return qAll(removeLocations(mainRecId), mainRecId)
+                    .then(removeMainRec)
+                    .catch(standardError);
+
+                function removeLocations(mainRecId) {
+                    return getIndexKeys(mainRecId, self._locationName)
+                        .then(completeRemove);
+
+                    function completeRemove(res) {
+                        return self._q.all(res.map(function(key) {
+                            return removeLocation(key);
+                        }));
+                    }
+
+                }
+
+                function removeMainRec(res) {
+                    return removeMainRecord(res[1]);
+                }
+            }
 
             /* @param{object} data to save to main array
              * @param{object} location data to save
@@ -626,6 +697,13 @@
             function keyAt(res) {
                 return res[0].$ketAt(res[1]);
             }
+
+            function bindObject(res) {
+                return res[0].$bindTo(res[1][0], res[1][1]);
+
+            }
+
+
 
 
             function loaded(res) {

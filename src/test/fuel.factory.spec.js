@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Fuel Factory", function() {
-        var firePath, geofire, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var firePath, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
 
         beforeEach(function() {
@@ -100,17 +100,20 @@
                 })
                 .factory("session", function() {
                     return {
-                        getId: jasmine.createSpy("getId").and.callFake(function() {
-                            userId = 1;
-                            return userId;
-                        })
+                        getId: function() {}
+                    }
+                })
+                .factory("differentSession", function() {
+                    return {
+                        differentMeth: function() {}
                     }
                 });
 
             module("testutils");
             module("firebase.fuel");
 
-            inject(function(_user_, _testutils_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+            inject(function(_user_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+                differentSession = _differentSession_;
                 geofire = _geofire_;
                 user = _user_
                 $timeout = _$timeout_;
@@ -181,9 +184,7 @@
                     it("should save the data to firebaseRef", function() {
                         expect(getPromValue(test).getData()).toEqual(newRecord);
                     });
-
                 });
-
                 describe("save", function() {
                     beforeEach(function() {
                         $rootScope.$digest();
@@ -273,7 +274,6 @@
                         });
                         qReject(0);
                     });
-
                 });
                 describe("addIndex", function() {
                     beforeEach(function() {
@@ -299,7 +299,6 @@
                         expect(getPromValue(test).path).toEqual(subject.path());
                     });
                     qReject(0);
-
                 });
                 describe("removeIndex", function() {
                     beforeEach(function() {
@@ -350,6 +349,63 @@
                     });
                     qReject(0);
                     useCurrentRef();
+                });
+                describe("bindTo", function() {
+                    beforeEach(function() {
+                        subject.add(arrData[0]);
+                        flush();
+                        this.key = subject.ref().key();
+                        this.scope = $rootScope.$new()
+                    });
+                    afterEach(function() {
+                        this.scope = null;
+                    });
+                    describe("with passing key", function() {
+                        beforeEach(function() {
+                            test = subject.bindTo(this.key, this.scope, "testData");
+                            flush();
+                        });
+                        it("should return a function", function() {
+                            expect(getPromValue(test)).toEqual(jasmine.any(Function));
+                        });
+                        it("should set watcher count to 1", function() {
+                            expect(this.scope["$$watchersCount"]).toEqual(1);
+                        });
+                        it("should add initial data to scope under correct variable name", function() {
+                            expect(this.scope['testData']).toEqual({
+                                $id: this.key,
+                                $priority: null,
+                                phone: "123456890",
+                                uid: 1,
+                                firstName: "tom"
+                            });
+
+                        });
+                    });
+                    describe("with passing a record", function() {
+                        beforeEach(function() {
+                            this.rec = subject.load(this.key);
+                            flush();
+                            test = subject.bindTo(this.rec, this.scope, "testData");
+                            $rootScope.$digest();
+                        });
+                        it("should return a function", function() {
+                            expect(getPromValue(test)).toEqual(jasmine.any(Function));
+                        });
+                        it("should set watcher count to 1", function() {
+                            expect(this.scope["$$watchersCount"]).toEqual(1);
+                        });
+                        it("should add initial data to scope under correct variable name", function() {
+                            expect(this.scope['testData']).toEqual({
+                                $id: this.key,
+                                $priority: null,
+                                phone: "123456890",
+                                uid: 1,
+                                firstName: "tom"
+                            });
+
+                        });
+                    });
                 });
             });
             describe("Queries", function() {
@@ -434,8 +490,99 @@
                 });
             });
         });
+        describe("With Session Access", function() {
+            describe("With default location and method", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        sessionAccess: true
+                    });
+                });
+                describe("bindCurrent", function() {
+                    beforeEach(function() {
+                        subject.add(arrData[0]);
+                        flush();
+                        this.key = subject.ref().key();
+                        spyOn(session, "getId").and.returnValue(this.key);
+                        this.scope = $rootScope.$new()
+                    });
+                    afterEach(function() {
+                        this.scope = null;
+                    });
+                    describe("with passing key", function() {
+                        beforeEach(function() {
+                            test = subject.bindCurrent(this.scope, "testData");
+                            flush();
+                        });
+                        it("should return a function", function() {
+                            expect(getPromValue(test)).toEqual(jasmine.any(Function));
+                        });
+                        it("should set watcher count to 1", function() {
+                            expect(this.scope["$$watchersCount"]).toEqual(1);
+                        });
+                        it("should add initial data to scope under correct variable name", function() {
+                            expect(this.scope['testData']).toEqual({
+                                $id: this.key,
+                                $priority: null,
+                                phone: "123456890",
+                                uid: 1,
+                                firstName: "tom"
+                            });
+
+                        });
+                    });
+                });
+            });
+            describe("With different location and method", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        sessionAccess: true,
+												sessionLocation: "differentSession",
+												sessionIdMethod: "differentMeth"
+                    });
+                });
+                describe("bindCurrent", function() {
+                    beforeEach(function() {
+                        subject.add(arrData[0]);
+                        flush();
+                        this.key = subject.ref().key();
+                        spyOn(session, "getId");
+                        spyOn(differentSession, "differentMeth").and.returnValue(this.key);
+                        this.scope = $rootScope.$new()
+                    });
+                    afterEach(function() {
+                        this.scope = null;
+                    });
+                    describe("with passing key", function() {
+                        beforeEach(function() {
+                            test = subject.bindCurrent(this.scope, "testData");
+                            flush();
+                        });
+												it("should not call the default session location",function(){
+													expect(session.getId).not.toHaveBeenCalled();
+												});
+                        it("should return a function", function() {
+                            expect(getPromValue(test)).toEqual(jasmine.any(Function));
+                        });
+                        it("should set watcher count to 1", function() {
+                            expect(this.scope["$$watchersCount"]).toEqual(1);
+                        });
+                        it("should add initial data to scope under correct variable name", function() {
+                            expect(this.scope['testData']).toEqual({
+                                $id: this.key,
+                                $priority: null,
+                                phone: "123456890",
+                                uid: 1,
+                                firstName: "tom"
+                            });
+
+                        });
+                    });
+                });
+            });
+        });
         describe("With User Option", function() {
             beforeEach(function() {
+                spyOn(session, "getId").and.returnValue(1);
                 options = {
                     user: true
                 };
@@ -559,8 +706,97 @@
                 });
             });
         });
+        describe("With GPS Options", function() {
+            beforeEach(function() {
+                options = {
+                    gps: true
+                }
+                subject = fuel("trips", options);
+            });
+            describe("Commands: ", function() {
+                beforeEach(function() {
+                    test = subject.add(newRecord, locData[0]);
+                    $rootScope.$digest();
+                    subject.ref().flush();
+                    $rootScope.$digest();
+                    this.key = subject.parent().key();
+                });
+
+                describe("add()", function() {
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should add record to main array", function() {
+                        var mainRef = subject.ref().root().child("trips/" + this.key);
+                        expect(mainRef.getData()).toEqual(newRecord);
+                    });
+                    it("should not add uid property to main record", function() {
+                        var mainRef = subject.ref().root().child("trips/" + this.key);
+                        expect(mainRef.getData().uid).not.toBeDefined();
+                        expect(mainRef.getData()).toBeDefined();
+                    });
+                    it("should not call user.addIndex", function() {
+                        expect(user.addIndex).not.toHaveBeenCalled();
+                    });
+                    it("should add record to main location array", function() {
+                        expect(location.addLoc).toHaveBeenCalledWith("trips", {
+                            lat: 90,
+                            lon: 100,
+                            place_id: "string",
+                            placeType: "a place",
+                            distance: 1234,
+                            closeBy: true
+                        });
+                    });
+                    it("should call geofire object with correct path, main location key and coordinates", function() {
+                        expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
+                    });
+                    it("should add location index to main record and set ref to main record", function() {
+                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key + "/locations");
+                        expect(subject.ref().getData()).toEqual(null);
+                        $timeout.flush();
+                        flush();
+                        expect(subject.ref().child("locations").getData()).toEqual({
+                            "addKey": true
+                        });
+                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
+                    });
+                    qReject(0);
+                });
+                describe("remove()", function() {
+                    beforeEach(function() {
+                        $timeout.flush();
+                        flush();
+                        this.idxKey = Object.keys(subject.ref().child("locations").getData())[0];
+                        test = subject.remove(this.key);
+                        $rootScope.$digest();
+                        flush();
+                        flush();
+                    });
+                    it("should remove location with key from index", function() {
+                        expect(this.idxKey).toEqual("addKey");
+                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
+                    });
+                    it("should call remove on geofire with key from main location array", function() {
+                        expect(geofire.remove).toHaveBeenCalledWith('trips', "removeKey");
+                    });
+                    it("should remove the data from firebase", function() {
+                        expect(subject.ref().getData()).toEqual(null);
+                    });
+                    it("should return the firebaseRef from the removed record", function() {
+                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
+                    });
+                    it("should not call user.removeIndex()", function() {
+                        expect(user.removeIndex).not.toHaveBeenCalled();
+                    });
+                    qReject(0);
+                });
+
+            });
+        });
         describe("With User And GPS Options", function() {
             beforeEach(function() {
+                spyOn(session, "getId").and.returnValue(1);
                 options = {
                     user: true,
                     gps: true
@@ -936,24 +1172,8 @@
             return p.then(success, failure);
         }
 
-        function arrCount(arr) {
-            return arr.base().ref().length;
-        }
-
-        function getBaseResult(obj) {
-            return obj.base().ref()['data'];
-        }
-
-        function getRefData(obj) {
-            return obj.ref()['data'];
-        }
-
-        function getPromValue(obj, flag) {
-            if (flag === true) {
-                return obj.$$state.value['data'];
-            } else {
-                return obj.$$state.value;
-            }
+        function getPromValue(obj) {
+            return obj.$$state.value;
         }
 
         function pathCheck(path, flag) {
@@ -1067,27 +1287,9 @@
 
         }
 
-        function returnsArray() {
-            it("should return an array", function() {
-                logContains("flattening results");
-            });
-        }
-
         function useParentRef() {
             it("should construct firebase from parentRef", function() {
                 logContains("Using parent");
-            });
-        }
-
-        function useNewBase() {
-            it("should construct a new firebase", function() {
-                logContains("Building new firebase");
-            });
-        }
-
-        function useChildRef() {
-            it("should construct firebase from childRef", function() {
-                logContains("Building childRef");
             });
         }
 
@@ -1124,43 +1326,6 @@
         }
 
 
-
-        function getDeferred(obj) {
-            return obj.$$state.pending[0][0];
-        }
-
-        function promiseStatus(obj) {
-            return obj.$$state.status;
-        }
-
-        function deferredStatus(obj) {
-            return obj.$$state.pending[0][0].promise.$$state.status;
-        }
-
-        function resolveDeferred(obj, cb) {
-            return obj.$$state.pending[0][0].resolve(cb);
-        }
-
-        function setChild(ref, path) {
-            return ref.child(path);
-        }
-
-        function rejectDeferred(obj, cb) {
-            return obj.$$state.pending[0][0].reject(cb);
-        }
-
-        function testInspect(x) {
-            expect(x).toEqual("test");
-        }
-
-        function deferredValue(obj) {
-            return obj.$$state.pending[0][0].promise.$$state.value; //.value;
-        }
-
-        function refData() {
-            return subject.ref().getData();
-        }
-
         function dataKeys(ref) {
             return Object.keys(ref.getData());
         }
@@ -1177,11 +1342,6 @@
             $timeout.flush();
             subject.ref().flush();
             $rootScope.$digest();
-        }
-
-        function refReset() {
-            subject.load();
-            flush();
         }
 
 
