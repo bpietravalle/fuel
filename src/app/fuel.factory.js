@@ -610,11 +610,17 @@
                 newProp = {};
 
                 newProp[arrName] = function(id) {
+                    if (self._sessionAccess === true && !id) {
+                        id = sessionId();
+                    }
                     return nestedArray(id, arrName);
                 };
 
-                newProp[recName] = function(mainRecId, nestedRecId) {
-                    return nestedRecord(mainRecId, arrName, nestedRecId);
+                newProp[recName] = function(id, nestedRecId) {
+                    if (self._sessionAccess === true && !id) {
+                        id = sessionId();
+                    }
+                    return nestedRecord(id, arrName, nestedRecId);
                 };
 
                 newProp[addRec] = function(id, data) {

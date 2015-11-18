@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Fuel Factory", function() {
-        var firePath, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var firePath, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
 
         beforeEach(function() {
@@ -103,6 +103,18 @@
                         getId: function() {}
                     }
                 })
+                //just making sure nested array methods dont confuse
+                //injected services
+                .factory("phone", function() {
+                    return {
+                        getId: function() {}
+                    }
+                })
+                .factory("phones", function() {
+                    return {
+                        getId: function() {}
+                    }
+                })
                 .factory("differentSession", function() {
                     return {
                         differentMeth: function() {}
@@ -112,8 +124,10 @@
             module("testutils");
             module("firebase.fuel");
 
-            inject(function(_user_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+            inject(function(_user_, _phones_, _phone_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
                 differentSession = _differentSession_;
+                phones = _phones_;
+                phone = _phone_;
                 geofire = _geofire_;
                 user = _user_
                 $timeout = _$timeout_;
@@ -536,8 +550,8 @@
                 beforeEach(function() {
                     subject = fuel("trips", {
                         sessionAccess: true,
-												sessionLocation: "differentSession",
-												sessionIdMethod: "differentMeth"
+                        sessionLocation: "differentSession",
+                        sessionIdMethod: "differentMeth"
                     });
                 });
                 describe("bindCurrent", function() {
@@ -557,9 +571,9 @@
                             test = subject.bindCurrent(this.scope, "testData");
                             flush();
                         });
-												it("should not call the default session location",function(){
-													expect(session.getId).not.toHaveBeenCalled();
-												});
+                        it("should not call the default session location", function() {
+                            expect(session.getId).not.toHaveBeenCalled();
+                        });
                         it("should return a function", function() {
                             expect(getPromValue(test)).toEqual(jasmine.any(Function));
                         });
@@ -1016,154 +1030,167 @@
             });
         });
 
-        // describe("Nested Arrays", function() {
-        //     beforeEach(function() {
-        //         options = {
-        //             nestedArrays: ["phones"],
-        //             geofire: true
+        describe("Nested Arrays", function() {
+            beforeEach(function() {
+                this.data = {
+                    name: "frank",
+                    age: 30,
+                    city: "Boston"
+                };
+                subject = fuel("users", {
+                    nestedArrays: ["phones", "emails"],
+                    sessionAccess: true,
+                    // geofire: true
 
-        //         };
-        //         subject = fuel("trips", options);
-        //         $rootScope.$digest();
-        //         subject.createMainRecord({
-        //             // $rootScope.$digest();
-        //             // subject.ref().push({
-        //             name: "bill",
-        //             age: 100
-        //         });
-        //         $rootScope.$digest();
-        //         subject.ref().flush();
-        //         $rootScope.$digest();
-        //         this.tripId = subject.ref().key();
-        // });
-        //     var methods = ["addPhone", "removePhone", "loadPhone", "savePhone", "getPhone", "loadPhones", "phone", "phones"];
+                });
+                $rootScope.$digest();
+                subject.add(this.data);
+                flush();
+                this.userId = subject.ref().key();
+                spyOn(session, "getId").and.returnValue(this.userId);
+            });
 
-        //     function nestedArr(x) {
-        //         it(x + " should be defined", function() {
-        //             expect(subject[x]).toBeDefined();
-        //         });
-        //     }
-        //     methods.forEach(nestedArr);
-        //     it("simple checks on setup", function() {
-        //         expect(getRefData(subject.ref())).toEqual({
-        //             name: "bill",
-        //             age: 100
-        //         });
-        //         expect(this.tripId).not.toEqual("trips");
-        //         expect(this.tripId).toEqual(jasmine.any(String));
+            var methods = ["addPhone", "removePhone", "loadPhone", "savePhone", "getPhone", "loadPhones", "phone", "phones"];
 
-        //     });
+            function nestedArr(x) {
+                it(x + " should be defined", function() {
+                    expect(subject[x]).toBeDefined();
+                });
+            }
+            methods.forEach(nestedArr);
+            it("simple checks on setup", function() {
+                expect(subject.ref().getData()).toEqual({
+                    name: "frank",
+                    age: 30,
+                    city: "Boston"
+                });
+                expect(this.userId).not.toEqual("users");
+                expect(this.userId).toEqual(jasmine.any(String));
+            });
+            describe("nestedArray method", function() {
+                beforeEach(function() {
+                    test = subject.phones();
+                    flush();
+                });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                    // expect(getPromValue(test)).to
+                });
+								baseCheck("array", test);
 
-        //     describe("add", function() {
-        //         beforeEach(function() {
-        //             subject.addPhone(this.tripId, {
-        //                 type: "cell",
-        //                 number: 123456789
-        //             });
-        //             $rootScope.$digest();
-        //             subject.ref().flush();
-        //             $rootScope.$digest();
-        //             this.key = subject.ref().key();
-        //         });
-        //         it("should add data to correct node", function() {
-        //             expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-        //             expect(getRefData(subject.parentRef())[this.key]).toEqual({
-        //                 type: "cell",
-        //                 number: 123456789
-        //             });
-        //         });
-        //         qReject(0);
-        //         describe("remove", function() {
-        //             beforeEach(function() {
-        //                 subject.removePhone(this.tripId, this.key);
-        //                 $rootScope.$digest();
-        //                 subject.ref().flush();
-        //                 $rootScope.$digest();
-        //             });
-        //             it("should remove the correct record", function() {
-        //                 $rootScope.$digest();
-        //                 expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-        //                 expect(getRefData(subject.parentRef())).toEqual(null);
-        //             });
-        //             qReject(0);
-        //         });
-        //         describe("load", function() {
-        //             beforeEach(function() {
-        //                 subject.loadPhone(this.tripId, this.key);
-        //                 $rootScope.$digest();
-        //                 $timeout.flush();
-        //                 subject.ref().flush();
-        //                 $rootScope.$digest();
-        //             });
-        //             it("should load the correct record", function() {
-        //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones/" + this.key);
-        //                 expect(getRefData(subject.parentRef())[this.key]).toEqual({
-        //                     type: "cell",
-        //                     number: 123456789
-        //                 });
-        //             });
-        //             qReject(0);
-        //         });
-        //         describe("load All", function() {
-        //             beforeEach(function() {
-        //                 test = subject.loadPhones(this.tripId);
-        //                 $rootScope.$digest();
-        //                 $timeout.flush();
-        //                 subject.ref().flush();
-        //                 $rootScope.$digest();
-        //             });
-        //             it("should load the correct record", function() {
-        //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-        //                 expect(getPromValue(test)).not.toEqual(null);
-        //                 expect(getRefData(subject.ref())[this.key]).toEqual({
-        //                     type: "cell",
-        //                     number: 123456789
-        //                 });
-        //             });
-        //             qReject(0);
-        //         });
-        //         describe("getRecord", function() {
-        //             //returns null
-        //             beforeEach(function() {
-        // // subject.mainArray();
-        // // $rootScope.$digest();
-        // // subject.ref().flush();
-        // // $rootScope.$digest();
-        //                 test = subject.getPhone(this.tripId, this.key);
-        //                 $rootScope.$digest();
-        // // $timeout.flush();
-        //                 // subject.ref().flush();
-        //                 $rootScope.$digest();
-        //             });
-        //             it("should return current record", function() {
-        //                 // expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-        //                 // expect(getRefData(subject.parentRef())).toBe(null);
-        //                 // expect(getPromValue(test)).toEqual(null);
-        //             });
-        //             // returnsArray();
-        //             // logCheck();
-        //             // qReject(0);
-        //         });
-        //         describe("save", function() {
-        //             beforeEach(function() {
-        //                 test = subject.loadPhone(this.tripId, this.key);
-        //                 $rootScope.$digest();
-        //                 subject.ref().flush();
-        //                 $rootScope.$digest();
-        //                 getRefData(subject.ref()).type = "fax";
-        //                 test1 = subject.savePhone(this.tripId, 0);
-        //                 $rootScope.$digest();
-        // $timeout.flush();
-        //                 // subject.ref().flush();
-        //                 $rootScope.$digest();
-        //             });
-        //             it("should load it", function() {
-        //                 expect(getPromValue(test).type).toEqual("cell");
-        //                 // expect(test1).toEqual("fax");
-        //             });
-        //             // qReject(0);
-        //             // logCheck();
-        //             });
+
+            });
+
+            //     describe("add", function() {
+            //         beforeEach(function() {
+            //             subject.addPhone(this.tripId, {
+            //                 type: "cell",
+            //                 number: 123456789
+            //             });
+            //             $rootScope.$digest();
+            //             subject.ref().flush();
+            //             $rootScope.$digest();
+            //             this.key = subject.ref().key();
+            //         });
+            //         it("should add data to correct node", function() {
+            //             expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //             expect(getRefData(subject.parentRef())[this.key]).toEqual({
+            //                 type: "cell",
+            //                 number: 123456789
+            //             });
+            //         });
+            //         qReject(0);
+            //         describe("remove", function() {
+            //             beforeEach(function() {
+            //                 subject.removePhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 subject.ref().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should remove the correct record", function() {
+            //                 $rootScope.$digest();
+            //                 expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 expect(getRefData(subject.parentRef())).toEqual(null);
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("load", function() {
+            //             beforeEach(function() {
+            //                 subject.loadPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 $timeout.flush();
+            //                 subject.ref().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load the correct record", function() {
+            //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones/" + this.key);
+            //                 expect(getRefData(subject.parentRef())[this.key]).toEqual({
+            //                     type: "cell",
+            //                     number: 123456789
+            //                 });
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("load All", function() {
+            //             beforeEach(function() {
+            //                 test = subject.loadPhones(this.tripId);
+            //                 $rootScope.$digest();
+            //                 $timeout.flush();
+            //                 subject.ref().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load the correct record", function() {
+            //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 expect(getPromValue(test)).not.toEqual(null);
+            //                 expect(getRefData(subject.ref())[this.key]).toEqual({
+            //                     type: "cell",
+            //                     number: 123456789
+            //                 });
+            //             });
+            //             qReject(0);
+            //         });
+            //         describe("getRecord", function() {
+            //             //returns null
+            //             beforeEach(function() {
+            // // subject.mainArray();
+            // // $rootScope.$digest();
+            // // subject.ref().flush();
+            // // $rootScope.$digest();
+            //                 test = subject.getPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            // // $timeout.flush();
+            //                 // subject.ref().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should return current record", function() {
+            //                 // expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
+            //                 // expect(getRefData(subject.parentRef())).toBe(null);
+            //                 // expect(getPromValue(test)).toEqual(null);
+            //             });
+            //             // returnsArray();
+            //             // logCheck();
+            //             // qReject(0);
+            //         });
+            //         describe("save", function() {
+            //             beforeEach(function() {
+            //                 test = subject.loadPhone(this.tripId, this.key);
+            //                 $rootScope.$digest();
+            //                 subject.ref().flush();
+            //                 $rootScope.$digest();
+            //                 getRefData(subject.ref()).type = "fax";
+            //                 test1 = subject.savePhone(this.tripId, 0);
+            //                 $rootScope.$digest();
+            // $timeout.flush();
+            //                 // subject.ref().flush();
+            //                 $rootScope.$digest();
+            //             });
+            //             it("should load it", function() {
+            //                 expect(getPromValue(test).type).toEqual("cell");
+            //                 // expect(test1).toEqual("fax");
+            //             });
+            //             // qReject(0);
+            //             // logCheck();
+        });
 
 
 
@@ -1197,11 +1224,11 @@
             }
         }
 
-        function baseCheck(type, test) {
+        function baseCheck(type,val) {
             switch (type) {
                 case "object":
                     it("should return a fireBaseObject", function() {
-                        expect(test).toEqual(jasmine.objectContaining({
+                        expect(val).toEqual(jasmine.objectContaining({
                             $id: "1",
                             $priority: null,
                             $ref: jasmine.any(Function),
@@ -1211,7 +1238,7 @@
                     break;
                 case "array":
                     it("should return a fireBaseArray", function() {
-                        expect(test).toEqual(jasmine.objectContaining({
+                        expect(val).toEqual(jasmine.objectContaining({
                             $keyAt: jasmine.any(Function),
                             $indexFor: jasmine.any(Function),
                             $remove: jasmine.any(Function),
