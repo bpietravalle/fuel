@@ -5,7 +5,7 @@ across your angular services while maintaing a flat, scalable JSON data structur
 This module is designed for angular services using:
 * [Firebase](https://www.firebase.com/)
 * [angularFire](https://github.com/firebase/angularfire)
-* [Geofire](https://github.com/firebase/geofire-js). 
+* [Geofire](https://github.com/firebase/geofire-js)
 
 I apologize if you aren't using these in your code, but you really need to get with the program.
 
@@ -45,14 +45,24 @@ as explained below. Either way make sure the constant is available in your modul
 Though we are both literally on the same page right now.  Let's make sure we are
 figuratively as well:
 
-1. _main_: Adjective reserved for any angularFire entity found in a direct child of your root firebaseRef. 
-For example, at http://your-firebase.firebaseio.com/trips:
+1. _main_: Adjective reserved for anything(eg, an angularFire service) found in a direct child of your root firebaseRef. 
 
+2. _nested_: Adjective reserved for any child of the main node. 
+
+For example:
 ```javascript
-$firebaseArray("trips"); //mainArray
-$firebaseObject("specficTripId"); //mainRecord
-```
+/*  https://your-firebase.firebaseio.com/trips */
+$firebaseArray //mainArray
 
+/* https://your-firebase.firebaseio.com/trips/tripId */
+$firebaseObject //mainRecord
+
+/*  https://your-firebase.firebaseio.com/trips/tripId/tickets */
+$firebaseArray //nestedArray
+
+/* https://your-firebase.firebaseio.com/trips/tripId/tickets/ticketId */
+$firebaseObject //nestedRecord
+```
 
 ## Usage
 
@@ -69,13 +79,14 @@ be a direct child of your root firebaseRef.
 
 ## Conventions
 
-1. *Syntax*: I've tried to keep a naming conventions to a minimum.  You can follow 
+1. *Syntax*: I've tried to keep naming conventions to a minimum.  You can follow 
 your own convention, however Fuel's defaults for nodes and arrays are plural nouns,
 while defaults for records, objects, and angular services singluar.  The one
 exception is that the default Geofire node and service are both called "geofire". 
 
 Example:
 ```javascript
+
 (function(){
     "use strict";
 
@@ -96,8 +107,9 @@ Example:
 })();
 
 ```
-Again, you can follow your own convention and override the defaults for all operations.
-Fuel follows this convention for constructing methods for nested arrays, as explained below.
+Again, you can follow your own convention and override the defaults for all operations on the main node.
+Nested arrays, however, are another story.  Fuel follows the above naming convention for constructing CRUD methods
+for nested arrays and nested records.  
 
 2. SRP:  
 
@@ -111,7 +123,7 @@ $ git clone https://github.com/bpietravalle/fuel.git
 $ cd fuel
 $ npm install               # install dependencies
 ```
-Refer to the gulp-angular generator by Swiip for full list of commands. The commands
+Refer to the [generator-gulp-angular](https://github.com/Swiip/generator-gulp-angular) for full list of commands. The commands
 for unit tests are:
 
 ```bash
