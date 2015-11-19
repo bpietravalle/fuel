@@ -40,8 +40,6 @@
                 }
             }
             if (this._gps === true) {
-                //below messes up methods to main location array- need another way
-                // this._nestedArrays.push(this._locationName);
                 this._locationObject = this._injector.get("location");
                 this._geofireObject = this._injector.get("geofire");
             }
@@ -615,6 +613,7 @@
                 saveRec = "save" + self._utils.camelize(recName, true);
                 newProp = {};
 
+								//TODO: send to querySuccess?
                 newProp[arrName] = function(id) {
                     if (self._sessionAccess === true && !id) {
                         id = sessionId();
@@ -622,6 +621,7 @@
                     return nestedArray(id, arrName);
                 };
 
+								//TODO: send to querySuccess?
                 newProp[recName] = function(nestedRecId, id) {
                     if (self._sessionAccess === true && !id) {
                         id = sessionId();
@@ -868,12 +868,14 @@
                 self._log.info('query success');
                 switch (angular.isDefined(res.$ref)) {
                     case true:
+                        self._log.info("setting ref to current object ref");
                         self._pathMaster.setCurrentRef(res.$ref());
                         self._pathMaster.setBase(res);
                         return res;
                     case false:
                         switch (angular.isObject(res[1])) {
                             case true:
+                                self._log.info("setting ref to current parent");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
                                 self._pathMaster.setBase(res[1]);
                                 return res[1];
