@@ -240,7 +240,6 @@
                                 expect(getPromValue(test)).toBeAFirebaseRef();
                                 expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
                             });
-                            // logCheck();
                             qReject(0);
                         });
                         describe("If second arg is the record's index", function() {
@@ -1104,12 +1103,16 @@
                 expect(this.userId).toEqual(jasmine.any(String));
             });
             describe("Queries", function() {
+                beforeEach(function() {
+                    subject.ref().child("phones").push(this.newPhone[0])
+                    subject.ref().flush();
+                    subject.ref().child("phones").push(this.newPhone[1])
+                    subject.ref().flush();
+                });
                 describe("nestedArray method", function() {
                     beforeEach(function() {
-                        subject.addPhone(this.newPhone[0])
-                        subject.addPhone(this.newPhone[1])
                         test = subject.phones();
-                        flushAll(subject.ref());
+                        flush();
                         this.key1 = childKeys()[0];
                         this.key2 = childKeys()[1];
                     });
@@ -1125,24 +1128,18 @@
                     it("should have correct path", function() {
                         expect(getPromValue(test).$ref().toString()).toEqual(rootPath + "/users/" + this.userId + "/phones");
                     });
-                    // it("should update the currentRef", function() {
-                    //     expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones");
-												// expect(childKeys()).toEqual([this.key1,this.key2]);
-                    // });
-										// TODO:  fix test - says length = 4; duplicates each item
-                    // it("should have correct length", function() {
-												// expect(Object.keys(getPromValue(test).$ref().parent().children).length).toEqual(2);
-                        // expect(getPromValue(test).length).toEqual(2);
-                    // });
+                    it("should update the currentRef", function() {
+                        expect(childKeys()).toEqual([this.key1, this.key2]);
+                    });
+                    it("should have correct length", function() {
+                        expect(getPromValue(test).length).toEqual(2);
+                    });
                     qReject(0);
-										// logCheck();
                 });
                 describe("nestedRecord method", function() {
                     beforeEach(function() {
-                        subject.addPhone(this.newPhone[0])
-                        subject.addPhone(this.newPhone[1])
                         test = subject.phone(1);
-                        flushAll(subject.ref());
+                        flush();
                         this.id = subject.ref().key();
                     });
 
@@ -1161,32 +1158,30 @@
                             $priority: null,
                             $ref: jasmine.any(Function)
                         }))
-												expect(this.id).toEqual('1');
+                        expect(this.id).toEqual('1');
                     });
 
                     it("should have correct path", function() {
                         expect(getPromValue(test).$ref().toString()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.id);
                     });
-                    // it("should update the currentRef", function() {
-                    //     expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.id);
-												// expect(this.id).not.toEqual("phones");
-												
-                    // });
-										// TODO:  fix test - says length = 3, ['1',key1,key2]; 
-										// it("parent array should be correct length",function(){
-										// 		expect(Object.keys(getPromValue(test).$ref().parent().children).length).toEqual(2);
-										// });
+                    it("should update the currentRef", function() {
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.id);
+                        expect(this.id).not.toEqual("phones");
+
+                    });
+                    it("parent array should be correct length", function() {
+                        expect(dataKeys(getPromValue(test).$ref().parent()).length).toEqual(2);
+                    });
                     qReject(0);
                 });
 
                 describe("getPhone", function() {
                     beforeEach(function() {
-                        subject.addPhone(this.newPhone[0])
-                        subject.addPhone(this.newPhone[1])
-                        flushAll(subject.ref());
-                        this.key1 = childKeys()[0];
-                        this.key2 = childKeys()[1];
+
+                        this.key1 = childKeys("phones")[0];
+                        this.key2 = childKeys("phones")[1];
                         test = subject.getPhone(this.key1);
+                        //if use flush() then getRecord wont find key;
                         flushAll(subject.ref());
                     });
                     it("should return a promise", function() {
@@ -1196,47 +1191,45 @@
                         expect(getPromValue(test)).toEqual(jasmine.objectContaining({
                             $id: this.key1,
                             $priority: null,
-														number: "123456",
-														type: "cell",
-														valid: true
+                            number: "123456",
+                            type: "cell",
+                            valid: true
                         }))
                         expect(this.key1).not.toEqual(this.key2);
                     });
                     it("should have correct key", function() {
                         expect(getPromValue(test).$id).toEqual(this.key1);
                     });
-										it("should update currentRef to parentRef",function(){
-											expect(subject.ref().key()).toEqual("phones");
-											expect(childKeys()[0]).toEqual(this.key1);
-										});
-										// TODO:  fix test - says length = 4; duplicates each item
-										// it("parent array should be correct length",function(){
-										// 		expect(dataKeys(subject.parent()).length).toEqual(2);
-										// });
-										logContains("setting ref to current parent");
+                    it("should update currentRef to parentRef", function() {
+                        expect(subject.ref().key()).toEqual("phones");
+                        expect(childKeys()[0]).toEqual(this.key1);
+                    });
+                    it("parent array should be correct length", function() {
+                        expect(childKeys().length).toEqual(2);
+                    });
+                    logContains("setting ref to current parent");
                     qReject(0);
                 });
                 describe("loadPhone", function() {
                     beforeEach(function() {
-                        subject.addPhone(this.newPhone[0])
-                        subject.addPhone(this.newPhone[1])
-                        flushAll(subject.ref());
-                        this.key1 = childKeys()[0];
-                        this.key2 = childKeys()[1];
+                        this.key1 = childKeys("phones")[0];
+                        this.key2 = childKeys("phones")[1];
                         test = subject.loadPhone(this.key1);
-                        flushAll(subject.ref());
+                        // flushAll(subject.ref());
+												//flush works here: think the issue is the order of tasks and $indexFor()
+                        flush();
                         this.refKey = getPromValue(test).$id;
                     });
                     it("should return a promise", function() {
-                        expect(test).toBeAPromise();
+												expect(test).toBeAPromise();
                     });
                     it("should resolve to a firebaseObject", function() {
                         expect(getPromValue(test)).toEqual(jasmine.objectContaining({
                             $id: this.key1,
                             $priority: null,
-														number: "123456",
-														type: "cell",
-														valid: true
+                            number: "123456",
+                            type: "cell",
+                            valid: true
                         }))
                         expect(this.key1).not.toEqual(this.key2);
                     });
@@ -1244,19 +1237,16 @@
                         expect(subject.ref().key()).toEqual(this.key1);
                         expect(this.refKey).toEqual(this.key1);
                     });
-										it("parent array should be correct length",function(){
-												expect(dataKeys(subject.parent()).length).toEqual(2);
-										});
+                    it("parent array should be correct length",function(){
+                    expect(dataKeys(subject.parent()).length).toEqual(2);
+                    });
                     qReject(0);
-										logContains("setting ref to current object ref");
-                });
-                describe("loadPhones", function() {
+                    logContains("setting ref to current object ref");
+                    });
+                    describe("loadPhones", function() {
                     beforeEach(function() {
-                        subject.addPhone(this.newPhone[0])
-                        subject.addPhone(this.newPhone[1])
-                        flushAll(subject.ref());
-                        this.key1 = childKeys()[0];
-                        this.key2 = childKeys()[1];
+                        this.key1 = childKeys("phones")[0];
+                        this.key2 = childKeys("phones")[1];
                         test = subject.loadPhones();
                         flushAll(subject.ref());
                         this.refKeys = getPromValue(test).$ref().getKeys();
@@ -1272,10 +1262,9 @@
                         }));
                         expect(this.key1).not.toEqual(this.key2);
                     });
-										// TODO:  fix test - says length = 4; duplicates each item
-                    // it("should have correct length", function() {
-                    //     expect(getPromValue(test).length).toEqual(2);
-                    // });
+                    it("should have correct length", function() {
+                        expect(getPromValue(test).length).toEqual(2);
+                    });
                     it("should have correct records", function() {
                         expect(getPromValue(test)[0]).toEqual(jasmine.objectContaining(this.newPhone[0]));
                         expect(getPromValue(test)[1]).toEqual(jasmine.objectContaining(this.newPhone[1]));
@@ -1292,7 +1281,7 @@
                         expect(subject.ref().getData()[this.key2]).toEqual(this.newPhone[1]);
                     });
                     qReject(0);
-										logContains("setting ref to current object ref");
+                    logContains("setting ref to current object ref");
                 });
             });
             describe("Commands", function() {
@@ -1488,7 +1477,7 @@
 
         }
 
-			
+
         function useParentRef() {
             it("should construct firebase from parentRef", function() {
                 logContains("Using parent");
@@ -1531,8 +1520,13 @@
         function dataKeys(ref) {
             return Object.keys(ref.getData());
         }
-        function childKeys() {
-            return Object.keys(subject.ref().children);
+
+        function childKeys(node) {
+            if (!node) {
+                return Object.keys(subject.ref().children);
+            } else {
+                return Object.keys(subject.ref().child(node).getData());
+            }
         }
 
 

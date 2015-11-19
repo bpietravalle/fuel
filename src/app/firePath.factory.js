@@ -106,7 +106,13 @@
                                 return nextRef(path);
                             default:
                                 return buildFire(type, nextRef(path), true);
+                                // return self._utils.qAll(nextRef(path), type)
+                                //     .then(completeBuild)
+                                //     .catch(standardError);
+
+
                         }
+
                 }
             }
 
@@ -115,15 +121,21 @@
                 return fullPath(path).search(mainPath()) > -1;
             }
 
+            function completeBuild(res) {
+                return buildFire(res[1], res[0], true);
+            }
+
 
 
             function nextRef(param) {
+                var ref;
                 switch (nodeComp(param) < 0) {
                     case true:
-                        return setCurrentRef(getCurrentRef().child(setChild(param)));
+                        ref = setCurrentRef(getCurrentRef().child(setChild(param)));
                     case false:
-                        return setCurrentRef(useCurrent(nodeComp(param)));
+                        ref = setCurrentRef(useCurrent(nodeComp(param)));
                 }
+                return ref;
             }
 
             function useCurrent(idx) {

@@ -29,9 +29,13 @@
         this._options = options;
         this._nestedArrays = [];
         this._pathOptions = {};
+        this._constant = "FBURL";
         if (this._options) {
             this._gps = false || this._options.gps;
             this._geofire = false || this._options.geofire;
+            if (this._options.constant && angular.isString(this._options.constant)) {
+                this._constant = this._options.constant;
+            }
             if (this._options.nestedArrays) {
                 if (!Array.isArray(this._options.nestedArrays)) {
                     throw new Error("Nested Arrays argument must be an array");
@@ -75,7 +79,7 @@
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
         }
-        this._pathMaster = this._firePath(this._path, this._pathOptions);
+        this._pathMaster = this._firePath(this._path, this._pathOptions, this._constant);
     };
 
 
@@ -266,7 +270,6 @@
 
                 function setReturnValue(res) {
                     return res;
-
                 }
             }
 
@@ -613,7 +616,7 @@
                 saveRec = "save" + self._utils.camelize(recName, true);
                 newProp = {};
 
-								//TODO: send to querySuccess?
+                //TODO: send to querySuccess?
                 newProp[arrName] = function(id) {
                     if (self._sessionAccess === true && !id) {
                         id = sessionId();
@@ -621,7 +624,7 @@
                     return nestedArray(id, arrName);
                 };
 
-								//TODO: send to querySuccess?
+                //TODO: send to querySuccess?
                 newProp[recName] = function(nestedRecId, id) {
                     if (self._sessionAccess === true && !id) {
                         id = sessionId();
@@ -849,7 +852,7 @@
             }
 
 
-            /*******************************/
+            /**CQ*****************************/
 
             //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
@@ -867,19 +870,27 @@
             function querySuccess(res) {
                 self._log.info('query success');
                 switch (angular.isDefined(res.$ref)) {
+                    //$firebaseArray or Object
                     case true:
                         self._log.info("setting ref to current object ref");
                         self._pathMaster.setCurrentRef(res.$ref());
                         self._pathMaster.setBase(res);
                         return res;
                     case false:
+                        //record in $firebaseArray
                         switch (angular.isObject(res[1])) {
                             case true:
                                 self._log.info("setting ref to current parent");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
                                 self._pathMaster.setBase(res[1]);
                                 return res[1];
+                            case false:
+                                self._log.info("return value is null");
+                                self._pathMaster.setCurrentRef(res[0].$ref());
+                                self._pathMaster.setBase(res[0]);
+                                return res[0];
                         }
+
                     default:
                         self._log.info(res);
                         throw new Error("invalid query success");
