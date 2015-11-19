@@ -123,13 +123,33 @@
             beforeEach(function() {
                 ref = new MockFirebase("data").child("child");
             });
-            it("should set ref if passed a firebaseRef", function() {
-                subject.setCurrentRef(ref);
-                $rootScope.$digest();
-                $rootScope.$digest();
-                expect(subject.ref()).toEqual(ref);
+            describe("When 2nd arg is undefined", function() {
+                it("should set ref if passed a firebaseRef", function() {
+                    subject.setCurrentRef(ref);
+                    $rootScope.$digest();
+                    expect(subject.ref()).toEqual(ref);
+                });
+                it("should not set the base() to null", function() {
+                    expect(subject.base()).not.toEqual(null);
+                    subject.setCurrentRef(ref);
+                    $rootScope.$digest();
+                    expect(subject.base()).not.toEqual(null);
+                });
             });
 
+            describe("When 2nd arg === true", function() {
+                beforeEach(function() {
+                    subject.mainArray();
+                    flush();
+                });
+                it("should set the base() to null", function() {
+                    expect(subject.base()).not.toEqual(null);
+                    subject.setCurrentRef(ref, true);
+                    $rootScope.$digest();
+                    expect(subject.base()).toEqual(null);
+                });
+
+            });
         });
         describe("build", function() {
 

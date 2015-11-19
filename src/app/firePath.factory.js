@@ -77,6 +77,7 @@
 
             fire._pathHistory = [];
             fire.base = getCurrentFirebase;
+            fire.setBase = setCurrentFirebase;
             fire.ref = getCurrentRef;
             fire.path = getCurrentPath;
             fire.parent = getCurrentParentRef;
@@ -265,9 +266,13 @@
             }
 
 
-            function setCurrentRef(res) {
+            function setCurrentRef(res, flag) {
                 fire._ref = res;
                 setCurrentPath(res.toString());
+                if (flag === true) {
+                    setCurrentFirebase(null);
+                }
+
                 return fire._ref;
             }
 

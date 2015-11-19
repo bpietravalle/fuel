@@ -205,6 +205,11 @@
                         subject.ref().set(arrData);
                         $rootScope.$digest();
                     });
+                    afterEach(function() {
+                        this.name = null;
+                        this.phone = null;
+
+                    });
                     describe("If pass an array", function() {
                         beforeEach(function() {
                             subject.load();
@@ -235,6 +240,7 @@
                                 expect(getPromValue(test)).toBeAFirebaseRef();
                                 expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
                             });
+														// logCheck();
                             qReject(0);
                         });
                         describe("If second arg is the record's index", function() {
@@ -244,7 +250,29 @@
                                 subject.ref().flush();
                                 $rootScope.$digest();
                             });
-                            it("should save record if pass an arrary with [fireBaseArray, index]", function() {
+                            it("should save record ", function() {
+                                expect(this.name).toEqual('tom');
+                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                            });
+                            it("should return a promise", function() {
+                                expect(test).toBeAPromise();
+                            });
+                            it("should resolve to the correct firebaseRef", function() {
+                                expect(getPromValue(test)).toBeAFirebaseRef();
+                                expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
+                            });
+                            qReject(0);
+                        });
+                        describe("If second arg is the record's key", function() {
+                            beforeEach(function() {
+                                this.key = dataKeys(subject.ref())[0];
+                                test = subject.save([subject.base(), this.key]);
+                                $rootScope.$digest();
+                                subject.ref().flush();
+                                $rootScope.$digest();
+                            });
+
+                            it("should save record correctly", function() {
                                 expect(this.name).toEqual('tom');
                                 expect(getPromValue(test).getData().firstName).toEqual("john jacob");
                             });
@@ -485,22 +513,19 @@
                 });
                 describe("getRecord", function() {
                     beforeEach(function() {
-                        $rootScope.$digest();
-                        subject.ref().child("trips").update({
-                            "string": true
-                        });
-                        subject.ref().flush();
-                        $rootScope.$digest();
-                        subject.ref().child("trips").update({
-                            "another": true
-                        });
-                        subject.ref().flush();
-                        $rootScope.$digest();
-                        this.ref = subject.ref().child("trips");
+                        subject.ref().push(arrData[0]);
+                        subject.ref().push(arrData[1]);
+												flush();
+												this.ref = subject.ref();
+                        this.refKeys = dataKeys(this.ref);
+												test = subject.getRecord(this.refKeys[0]);
+												flush();
                     });
                     it("should work", function() {
-                        expect(dataKeys(this.ref).length).toEqual(2)
+                        expect(this.refKeys.length).toEqual(2)
                     });
+										qReject(0);
+										// logCheck(3);
                 });
             });
         });
@@ -1032,22 +1057,33 @@
 
         describe("Nested Arrays", function() {
             beforeEach(function() {
+                test = null;
                 this.data = {
                     name: "frank",
                     age: 30,
                     city: "Boston"
                 };
+                this.newPhone = [{
+                    number: "123456",
+                    type: "cell",
+                    valid: true
+                }, {
+                    number: "098765",
+                    type: "rotary",
+                    valid: false
+                }];
                 subject = fuel("users", {
                     nestedArrays: ["phones", "emails"],
                     sessionAccess: true,
-                    // geofire: true
-
                 });
                 $rootScope.$digest();
                 subject.add(this.data);
                 flush();
                 this.userId = subject.ref().key();
                 spyOn(session, "getId").and.returnValue(this.userId);
+            });
+            afterEach(function() {
+                test = null;
             });
 
             var methods = ["addPhone", "removePhone", "loadPhone", "savePhone", "getPhone", "loadPhones", "phone", "phones"];
@@ -1067,129 +1103,223 @@
                 expect(this.userId).not.toEqual("users");
                 expect(this.userId).toEqual(jasmine.any(String));
             });
-            describe("nestedArray method", function() {
+            describe("Queries", function() {
                 beforeEach(function() {
-                    test = subject.phones();
+                    subject.addPhone(this.newPhone[0])
                     flush();
+                    this.key1 = subject.ref().key();
+                    subject.addPhone(this.newPhone[1])
+                    flush();
+                    this.key2 = subject.ref().key();
                 });
-                it("should be a promise", function() {
-                    expect(test).toBeAPromise();
-                    // expect(getPromValue(test)).to
+                describe("nestedArray method", function() {
+                    beforeEach(function() {
+                        test = subject.phones();
+                        flush();
+                    });
+                    it("should add sessionId() if available as mainRecId", function() {
+                        expect(subject.path().search(this.userId)).not.toEqual(-1);
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to a firebaseArray", function() {
+                        baseCheck("array", getPromValue(test));
+                    });
+                    it("should have correct path", function() {
+                        expect(getPromValue(test).$ref().toString()).toEqual(rootPath + "/users/" + this.userId + "/phones");
+                    });
+                    it("should update the currentRef", function() {
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones");
+                    });
                 });
-								baseCheck("array", test);
+                describe("nestedRecord method", function() {
+                    beforeEach(function() {
+                        test = subject.phone(1);
+                        flush();
+                        this.id = subject.ref().key();
+                    });
 
+                    it("should throw error if no recId is provided", function() {
+                        expect(function() {
+                            subject.phone();
+                            flush();
+                        }).toThrow();
+                    });
+                    it("should return a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to a firebaseObject", function() {
+                        expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                            $id: this.id,
+                            $priority: null,
+                            $ref: jasmine.any(Function)
+                        }))
+                    });
 
+                    it("should have correct path", function() {
+                        expect(getPromValue(test).$ref().toString()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.id);
+                    });
+                    it("should update the currentRef", function() {
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.id);
+                    });
+                    qReject(0);
+                });
+
+                describe("getPhone", function() {
+                    beforeEach(function() {
+                        test = subject.getPhone(this.key2);
+                        flush();
+                        this.refKey = getPromValue(test).$id;
+                    });
+                    // it("should return a promise", function() {
+                    //     expect(test).toBeAPromise();
+                    // });
+                    // it("should resolve to a firebaseObject", function() {
+                    //     expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                    //         $id: this.key2,
+                    //         $priority: null,
+                    //         $ref: jasmine.any(Function)
+                    //     }))
+                    //     expect(this.key1).not.toEqual(this.key2);
+                    // });
+                    // it("should have correct key", function() {
+                    //     expect(subject.ref().key()).toEqual(this.key2);
+                    //     expect(this.refKey).toEqual(this.key2);
+                    // });
+                    // qReject(0);
+                });
+                //THIS IS A BUG - you cannot load correct fbObject if currentRef is a fbobject
+                describe("loadPhone", function() {
+                    beforeEach(function() {
+                        test = subject.loadPhone(this.key2);
+                        flush();
+                        this.refKey = getPromValue(test).$id;
+                    });
+                    it("should return a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to a firebaseObject", function() {
+                        expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                            $id: this.key2,
+                            $priority: null,
+                            $ref: jasmine.any(Function)
+                        }))
+                        expect(this.key1).not.toEqual(this.key2);
+                    });
+                    it("should have correct key", function() {
+                        expect(subject.ref().key()).toEqual(this.key2);
+                        expect(this.refKey).toEqual(this.key2);
+                    });
+                    qReject(0);
+                });
+                describe("loadPhones", function() {
+                    beforeEach(function() {
+                        test = subject.loadPhones();
+                        flush();
+                        this.refKeys = getPromValue(test).$ref().getKeys();
+                    });
+                    it("should return a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to a firebaseArray", function() {
+                        expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                            $add: jasmine.any(Function),
+                            $getRecord: jasmine.any(Function),
+                            $ref: jasmine.any(Function)
+                        }));
+                        expect(this.key1).not.toEqual(this.key2);
+                    });
+                    it("should have correct length", function() {
+                        expect(getPromValue(test)).toHaveLength(2);
+                    });
+                    it("should have correct records", function() {
+                        expect(getPromValue(test)[0]).toEqual(jasmine.objectContaining(this.newPhone[0]));
+                        expect(getPromValue(test)[1]).toEqual(jasmine.objectContaining(this.newPhone[1]));
+                    });
+                    it("should have correct keys", function() {
+                        expect(this.refKeys[0]).toEqual(this.key1);
+                        expect(this.refKeys[1]).toEqual(this.key2);
+
+                    });
+                    it("should update the current ref", function() {
+                        expect(subject.ref().getKeys()[0]).toEqual(this.key1);
+                        expect(subject.ref().getData()[this.key1]).toEqual(this.newPhone[0]);
+                        expect(subject.ref().getKeys()[1]).toEqual(this.key2);
+                        expect(subject.ref().getData()[this.key2]).toEqual(this.newPhone[1]);
+                    });
+                    qReject(0);
+                });
             });
-
-            //     describe("add", function() {
-            //         beforeEach(function() {
-            //             subject.addPhone(this.tripId, {
-            //                 type: "cell",
-            //                 number: 123456789
-            //             });
-            //             $rootScope.$digest();
-            //             subject.ref().flush();
-            //             $rootScope.$digest();
-            //             this.key = subject.ref().key();
-            //         });
-            //         it("should add data to correct node", function() {
-            //             expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-            //             expect(getRefData(subject.parentRef())[this.key]).toEqual({
-            //                 type: "cell",
-            //                 number: 123456789
-            //             });
-            //         });
-            //         qReject(0);
-            //         describe("remove", function() {
-            //             beforeEach(function() {
-            //                 subject.removePhone(this.tripId, this.key);
-            //                 $rootScope.$digest();
-            //                 subject.ref().flush();
-            //                 $rootScope.$digest();
-            //             });
-            //             it("should remove the correct record", function() {
-            //                 $rootScope.$digest();
-            //                 expect(subject.parentRef().path).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-            //                 expect(getRefData(subject.parentRef())).toEqual(null);
-            //             });
-            //             qReject(0);
-            //         });
-            //         describe("load", function() {
-            //             beforeEach(function() {
-            //                 subject.loadPhone(this.tripId, this.key);
-            //                 $rootScope.$digest();
-            //                 $timeout.flush();
-            //                 subject.ref().flush();
-            //                 $rootScope.$digest();
-            //             });
-            //             it("should load the correct record", function() {
-            //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones/" + this.key);
-            //                 expect(getRefData(subject.parentRef())[this.key]).toEqual({
-            //                     type: "cell",
-            //                     number: 123456789
-            //                 });
-            //             });
-            //             qReject(0);
-            //         });
-            //         describe("load All", function() {
-            //             beforeEach(function() {
-            //                 test = subject.loadPhones(this.tripId);
-            //                 $rootScope.$digest();
-            //                 $timeout.flush();
-            //                 subject.ref().flush();
-            //                 $rootScope.$digest();
-            //             });
-            //             it("should load the correct record", function() {
-            //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-            //                 expect(getPromValue(test)).not.toEqual(null);
-            //                 expect(getRefData(subject.ref())[this.key]).toEqual({
-            //                     type: "cell",
-            //                     number: 123456789
-            //                 });
-            //             });
-            //             qReject(0);
-            //         });
-            //         describe("getRecord", function() {
-            //             //returns null
-            //             beforeEach(function() {
-            // // subject.mainArray();
-            // // $rootScope.$digest();
-            // // subject.ref().flush();
-            // // $rootScope.$digest();
-            //                 test = subject.getPhone(this.tripId, this.key);
-            //                 $rootScope.$digest();
-            // // $timeout.flush();
-            //                 // subject.ref().flush();
-            //                 $rootScope.$digest();
-            //             });
-            //             it("should return current record", function() {
-            //                 // expect(subject.path()).toEqual(rootPath + "/trips/" + this.tripId + "/phones");
-            //                 // expect(getRefData(subject.parentRef())).toBe(null);
-            //                 // expect(getPromValue(test)).toEqual(null);
-            //             });
-            //             // returnsArray();
-            //             // logCheck();
-            //             // qReject(0);
-            //         });
-            //         describe("save", function() {
-            //             beforeEach(function() {
-            //                 test = subject.loadPhone(this.tripId, this.key);
-            //                 $rootScope.$digest();
-            //                 subject.ref().flush();
-            //                 $rootScope.$digest();
-            //                 getRefData(subject.ref()).type = "fax";
-            //                 test1 = subject.savePhone(this.tripId, 0);
-            //                 $rootScope.$digest();
-            // $timeout.flush();
-            //                 // subject.ref().flush();
-            //                 $rootScope.$digest();
-            //             });
-            //             it("should load it", function() {
-            //                 expect(getPromValue(test).type).toEqual("cell");
-            //                 // expect(test1).toEqual("fax");
-            //             });
-            //             // qReject(0);
-            //             // logCheck();
+            describe("Commands", function() {
+                beforeEach(function() {
+                    test = subject.addPhone(this.newPhone[0]);
+                    flush();
+                    this.key = subject.ref().key();
+                });
+                describe("add()", function() {
+                    it("should add a record to the correct array", function() {
+                        expect(subject.ref().getData()).toEqual(this.newPhone[0]);
+                    });
+                    it("should have correct path", function() {
+                        expect(getPromValue(test).toString()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key);
+                    });
+                    it("should update the currentRef", function() {
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key);
+                    });
+                    it("should resolve to a fireBaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                    });
+                    qReject(0);
+                });
+                describe("remove()", function() {
+                    beforeEach(function() {
+                        test = subject.removePhone(this.key);
+                        flush();
+                        this.key1 = subject.ref().key();
+                    });
+                    it("should remove the record to the correct array", function() {
+                        expect(subject.ref().getData()).toEqual(null);
+                    });
+                    it("should have correct path", function() {
+                        expect(this.key1).toEqual(this.key);
+                        expect(getPromValue(test).toString()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key1);
+                    });
+                    it("should update the currentRef", function() {
+                        expect(this.key1).toEqual(this.key);
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key1);
+                    });
+                    it("should resolve to a fireBaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                    });
+                    qReject(0);
+                });
+                describe("save()", function() {
+                    beforeEach(function() {
+                        subject.base()[0].type = "landLine";
+                        subject.base()[0].number = "11223344";
+                        test = subject.savePhone([subject.base(), this.key]);
+                        flush();
+                        this.key1 = subject.ref().key();
+                    });
+                    it("should have correct path", function() {
+                        expect(this.key1).toEqual(this.key);
+                        expect(getPromValue(test).toString()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key1);
+                    });
+                    it("should update the currentRef", function() {
+                        expect(this.key1).toEqual(this.key);
+                        expect(subject.path()).toEqual(rootPath + "/users/" + this.userId + "/phones/" + this.key1);
+                    });
+                    it("should update record", function() {
+                        expect(subject.ref().getData().type).toEqual("landLine");
+                        expect(subject.ref().getData().number).toEqual("11223344");
+                    });
+                    it("should resolve to a fireBaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                    });
+                    qReject(0);
+                })
+            });
         });
 
 
@@ -1224,29 +1354,25 @@
             }
         }
 
-        function baseCheck(type,val) {
+        function baseCheck(type, val, id) {
             switch (type) {
                 case "object":
-                    it("should return a fireBaseObject", function() {
-                        expect(val).toEqual(jasmine.objectContaining({
-                            $id: "1",
-                            $priority: null,
-                            $ref: jasmine.any(Function),
-                            $value: null
-                        }));
-                    });
+                    expect(val).toEqual(jasmine.objectContaining({
+                        $id: id,
+                        $priority: null,
+                        $ref: jasmine.any(Function),
+                        $value: null
+                    }));
                     break;
                 case "array":
-                    it("should return a fireBaseArray", function() {
-                        expect(val).toEqual(jasmine.objectContaining({
-                            $keyAt: jasmine.any(Function),
-                            $indexFor: jasmine.any(Function),
-                            $remove: jasmine.any(Function),
-                            $getRecord: jasmine.any(Function),
-                            $add: jasmine.any(Function),
-                            $watch: jasmine.any(Function)
-                        }));
-                    });
+                    expect(val).toEqual(jasmine.objectContaining({
+                        $keyAt: jasmine.any(Function),
+                        $indexFor: jasmine.any(Function),
+                        $remove: jasmine.any(Function),
+                        $getRecord: jasmine.any(Function),
+                        $add: jasmine.any(Function),
+                        $watch: jasmine.any(Function)
+                    }));
                     break;
             }
         }

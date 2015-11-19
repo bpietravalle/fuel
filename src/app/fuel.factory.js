@@ -101,8 +101,8 @@
             /*Queries*/
             entity.load = load;
             entity.userRecordsByUID = userRecordsByUID;
-            entity.getRecord = getRecord;
-            entity.save = saveMainRecord;
+            entity.getRecord = getMainRecord;
+            entity.save = saveMaster;
             entity.bindTo = bindTo;
 
             /*Commands*/
@@ -207,6 +207,7 @@
 
             function nestedRecord(mainId, name, recId) {
                 return self._pathMaster.nestedRecord(mainId, name, recId);
+
             }
 
             /* Geofire Interface */
@@ -258,6 +259,21 @@
                 }
             }
 
+            function getMainRecord(key) {
+                return qAll(loadMainArray(), key)
+                    .then(getRecord)
+                    .then(setReturnValue)
+                    // .then(querySuccess)
+                    .catch(standardError);
+
+                function setReturnValue(res) {
+                    return res;
+
+                }
+            }
+
+
+
             /*Commands*/
 
             function bindTo(id, scope, varName) {
@@ -305,20 +321,10 @@
 
             }
 
-            function saveMainRecord(key) {
-                return checkParam(key)
+            function saveMaster(key) {
+                return save(key)
                     .then(commandSuccess)
                     .catch(standardError);
-
-                //TODO add specs for below
-                function checkParam(param) {
-                    if (angular.isString(param)) {
-                        return mainRecord(key)
-                            .then(save);
-                    } else {
-                        return save(key);
-                    }
-                }
 
             }
 
@@ -616,30 +622,34 @@
                     return nestedArray(id, arrName);
                 };
 
-                newProp[recName] = function(id, nestedRecId) {
+                newProp[recName] = function(nestedRecId, id) {
                     if (self._sessionAccess === true && !id) {
                         id = sessionId();
                     }
-                    return nestedRecord(id, arrName, nestedRecId);
+                    if (!nestedRecId) {
+                        throw new Error("You must provide a record id");
+                    } else {
+                        return nestedRecord(id, arrName, nestedRecId);
+                    }
                 };
 
-                newProp[addRec] = function(id, data) {
+                newProp[addRec] = function(data, id) {
                     return qAll(newProp[arrName](id), data)
                         .then(add)
                         .then(commandSuccess)
                         .catch(standardError);
                 };
 
-                newProp[getRec] = function(mainRecId, key) {
+                newProp[getRec] = function(key, id) {
 
-                    return qAll(newProp[arrName](mainRecId), key)
+                    return qAll(newProp[arrName](id), key)
                         .then(getRecord)
                         .then(querySuccess)
                         .catch(standardError);
                 };
 
-                newProp[removeRec] = function(mainRecId, key) {
-                    return newProp[recName](mainRecId, key)
+                newProp[removeRec] = function(key, id) {
+                    return newProp[recName](key, id)
                         .then(remove)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -658,11 +668,8 @@
                         .catch(standardError);
                 };
 
-                newProp[saveRec] = function(id, idxOrRec) {
-                    return qAll(newProp[arrName](id), idxOrRec)
-                        .then(save)
-                        .then(commandSuccess)
-                        .catch(standardError);
+                newProp[saveRec] = function(params) {
+                    return saveMaster(params);
                 };
 
                 return newProp;
@@ -685,15 +692,48 @@
             }
 
             function save(res) {
-                if (Array.isArray(res)) {
-                    return res[0].$save(res[1]);
-                } else {
-                    return res.$save();
+                switch (Array.isArray(res)) {
+                    case true:
+                        return saveArray(res);
+                    case false:
+                        return saveObject(res);
                 }
             }
 
+            function saveArray(res) {
+                return checkParams(res)
+                    .catch(standardError);
+
+                function checkParams(params) {
+                    switch (angular.isString(params[1])) {
+                        case true:
+                            return qAll(params[0].$indexFor(params[1]), params[0])
+                                .then(completeSave)
+                        case false:
+                            return res[0].$save(res[1]);
+
+                    }
+
+
+                }
+
+                function completeSave(res) {
+                    return res[1].$save(res[0]);
+                }
+            }
+
+            function saveObject(res) {
+                return res.$save();
+            }
+
             function getRecord(res) {
-                return res[0].$getRecord(res[1]);
+                return qAll(res[0].$getRecord(res[1]), res[0])
+                    .then(setReturnValue)
+                    .catch(standardError);
+
+                function setReturnValue(res) {
+                    return [res[1], res[0]];
+                }
             }
 
             function indexFor(res) {
@@ -814,19 +854,35 @@
             //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
-                // if (Array.isArray(res)) {
-                // self._pathMaster.setCurrentRef(res[0]);
-                // } else {
-                self._pathMaster.setCurrentRef(res);
-                // }
-                return res;
+                switch (angular.isString(res.key())) {
+                    case true:
+                        self._pathMaster.setCurrentRef(res);
+                        return res;
+                    default:
+                        self._log.info(res);
+                        throw new Error("invalid command success");
+                }
             }
 
             function querySuccess(res) {
                 self._log.info('query success');
-                self._log.info(res.$ref().key());
-                self._pathMaster.setCurrentRef(res.$ref());
-                return res;
+                switch (angular.isDefined(res.$ref)) {
+                    case true:
+                        self._pathMaster.setCurrentRef(res.$ref());
+                        self._pathMaster.setBase(res);
+                        return res;
+                    case false:
+                        switch (angular.isObject(res[1])) {
+                            case true:
+                                self._pathMaster.setCurrentRef(res[0].$ref());
+                                self._pathMaster.setBase(res[1]);
+                                return res[1];
+                        }
+                    default:
+                        self._log.info(res);
+                        throw new Error("invalid query success");
+
+                }
             }
 
 
