@@ -1,8 +1,13 @@
-# fuel
+# Fuel
 
-fuel is a lightweight constructor to help DRY up common CRUD operations across your angular
-services while maintaing a flat, scalable JSON data structure. This module is specifically 
-for angular services using firebase and Geofire. 
+Fuel is a lightweight constructor to help DRY up common Command and Query operations 
+across your angular services while maintaing a flat, scalable JSON data structure. 
+This module is designed for angular services using:
+* [Firebase](https://www.firebase.com/)
+* [angularFire](https://github.com/firebase/angularfire)
+* [Geofire](https://github.com/firebase/geofire-js). 
+
+I apologize if you aren't using these in your code, but you really need to get with the program.
 
 
 ## Installation & Setup
@@ -15,31 +20,14 @@ $ npm install firebase.fuel --save
 $ bower install firebase.fuel --save
 ```
 
-1.) Include fuel in your app dependencies.
+1.) Include Fuel in your app dependencies.
 
 ```javascript
 angular.module("yourApp",['firebase.fuel']);
 ```
-2.) Inject fuel service into your angular service.
-
-```javascript
-
-(function(){
-    "use strict";
-
-    angular.module("yourApp")
-	 .factory("yourFactory", yourFactory);
-
-	 /** @ngInject */
-	 function yourFactory(fuel){
-
-	 }
-
-})();
-```
-3.) Define a root node constant.  The fuel service will look for a constant called 'FBURL'.
-If you'd prefer to have fuel look for a different constant, you can do so, as explained below.
-Either way make sure the constant is available in your module.
+2.) Define a root node constant.  The Fuel service will look for a constant called
+'FBURL'. If you'd prefer to have Fuel look for a different constant, you can do so,
+as explained below. Either way make sure the constant is available in your module.
 
 ```javascript
 
@@ -52,22 +40,66 @@ Either way make sure the constant is available in your module.
 
 })();
 ```
+### Repo Terminology
+
+Though we are both literally on the same page right now.  Let's make sure we are
+figuratively as well:
+
+1. _main_: Adjective reserved for any angularFire entity found in a direct child of your root firebaseRef. 
+For example, at http://your-firebase.firebaseio.com/trips:
+
+```javascript
+$firebaseArray("trips"); //mainArray
+$firebaseObject("specficTripId"); //mainRecord
+```
+
+
 ## Usage
 
-The fuel service takes 2 arguments:
+The Fuel service takes 2 arguments:
 
 ```javascript
 	 fuel(path, options);
 ```
-1. _path_: String of the firebase node your angular service will manage.This should a direct child of your root firebaseRef.   
+1. _path_: String of the Firebase node your angular service will manage. This should
+be a direct child of your root firebaseRef. 
 
-2. _options_: 
+2. _options_: Options hash.  See below.
+
 
 ## Conventions
 
-1. Naming: I've tried to keep a reliance on syntax to a minimum.  I simply recommend keeping nodes and arrays plural and records, objects, and angular classes singluar.  You can choose 
+1. *Syntax*: I've tried to keep a naming conventions to a minimum.  You can follow 
+your own convention, however Fuel's defaults for nodes and arrays are plural nouns,
+while defaults for records, objects, and angular services singluar.  The one
+exception is that the default Geofire node and service are both called "geofire". 
 
-2. SRP: 
+Example:
+```javascript
+(function(){
+    "use strict";
+
+    angular.module("yourApp")
+	 .factory("trip", tripFactory)
+	 .factory("geofire", geofireFactory);
+
+	 /** @ngInject */
+	 function tripFactory(Fuel){
+			return fuel("trips");
+	 }
+
+	 /** @ngInject */
+	 function geofireFactory(Fuel){
+			return fuel("geofire");
+	 }
+
+})();
+
+```
+Again, you can follow your own convention and override the defaults for all operations.
+Fuel follows this convention for constructing methods for nested arrays, as explained below.
+
+2. SRP:  
 
 
 ## Contributing
