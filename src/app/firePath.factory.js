@@ -24,6 +24,7 @@
         this._injector = $injector;
         this._path = path;
         this._fireStarter = fireStarter;
+				//TODO: merge options with fuel options - no need to have options here
         this._options = options || null;
         this._constant = constant || "FBURL";
         this._rootPath = this._injector.get(this._constant);
@@ -34,13 +35,13 @@
         if (this._constant !== "FBURL") {
             this._const = this._constant;
         }
-        this._sessionAccess = false;
+        this._session = false;
         this._geofire = false;
         if (this._options) {
-            if (this._options.sessionAccess === true) {
-                this._sessionAccess = true;
-                if (this._options.sessionLocation) {
-                    this._sessionStorage = this._injector.get(this._options.sessionLocation);
+            if (this._options.session === true) {
+                this._session = true;
+                if (this._options.sessionService) {
+                    this._sessionObject = this._injector.get(this._options.sessionService);
                 } else {
                     throw new Error("You must provide a service to inject to access your session");
                 }
@@ -52,8 +53,9 @@
             }
             if (this._options.geofire === true) {
                 this._geofire = true;
-                this._locationName = this._options.locationName || "locations";
-                this._geofireName = this._options.geofireName || "geofire";
+								//TODO currently unused- remove
+                this._locationNode = this._options.locationNode || "locations";
+                this._geofireNode = this._options.geofireNode || "geofire";
             }
         }
     };
@@ -251,7 +253,7 @@
             }
 
             function sessionId() {
-                return self._sessionStorage[self._sessionIdMethod]();
+                return self._sessionObject[self._sessionIdMethod]();
             }
 
             function getCurrentPath() {

@@ -23,6 +23,7 @@
             qAll: qAll,
             qAllResult: qAllResult,
             singularize: singularize,
+						paramCheck: paramCheck,
 						paramNodeIdx: removeMainPath,
             nodeIdx: setNodeIdx,
             nextPath: nextPath,
@@ -31,6 +32,78 @@
         };
 
         return utils;
+
+        function strCheck(str) {
+            switch (angular.isString(str)) {
+                case true:
+                    switch (str.length < 20) {
+                        case true:
+                            return str;
+                        case false:
+                            return invalidLen(str);
+                    }
+                case false:
+                    return invalidType(str);
+            }
+        }
+
+        function arrCheck(arr) {
+            switch (Array.isArray(arr)) {
+                case true:
+                    return arr;
+
+                case false:
+                    return invalidType(arr);
+            }
+        }
+
+        function setNestedArr(arr) {
+            var n = [];
+
+        }
+
+        function boolCheck(bool) {
+					var accepted = [false,true];
+
+            switch (accepted.indexOf(bool)) {
+                case -1:
+                    return invalidType(bool);
+                default:
+                    return bool;
+
+            }
+        }
+
+        function invalidType(type) {
+            throw new Error("Invalid parameter type at: " + type);
+        }
+
+        function invalidLen(len) {
+            throw new Error("Invalid parameter length at: " + len);
+        }
+
+        function paramCheck(param, fn, d) {
+            switch (angular.isUndefined(param)) {
+                case true:
+                    return d;
+                case false:
+                    switch (fn) {
+                        case "bool":
+                            return boolCheck(param);
+                        case "str":
+                            return strCheck(param);
+                        case "arr":
+                            return arrCheck(param);
+                        case "opt":
+                            return hashCheck(param);
+                    }
+            }
+        }
+
+        function hashCheck(hash) {
+            //TODO: iterate over keys and check for and remove unknowns
+            return hash;
+        }
 
         function camelize(str, flag) {
             return inflector.camelize(str, flag);

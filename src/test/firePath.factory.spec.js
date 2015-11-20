@@ -31,9 +31,9 @@
             rootPath = "https://your-firebase.firebaseio.com";
             ref = new MockFirebase(rootPath);
             options = {
-                sessionAccess: true,
+                session: true,
                 geofire: true,
-                sessionLocation: "session",
+                sessionService: "session",
                 sessionIdMethod: "getId",
                 geofireName: "geofire"
             };
@@ -202,10 +202,10 @@
         });
         describe("Invalid options", function() {
             describe("session", function() {
-                it("should throw error if no sessionLocation is present", function() {
+                it("should throw error if no sessionService is present", function() {
                     expect(function() {
                         options = {
-                            sessionAccess: true,
+                            session: true,
                             sessionIdMethod: "getId"
                         };
                         firePath("trips", options);
@@ -215,8 +215,8 @@
                 it("should throw error if no sessionIdMethod is present", function() {
                     expect(function() {
                         options = {
-                            sessionAccess: true,
-                            sessionLocation: "session"
+                            session: true,
+                            sessionService: "session"
                         };
                         firePath("trips", options);
 

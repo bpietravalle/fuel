@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Fuel Factory", function() {
-        var firePath, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
 
         beforeEach(function() {
@@ -52,7 +52,7 @@
                 place_id: "different_place",
                 placeType: "some place",
                 distance: 1000,
-                closeBy: null //false doesn't work
+                closeBy: false
             }];
             keyMock = function(id, q) {
                 return jasmine.createSpy(id).and.callFake(function() {
@@ -70,6 +70,24 @@
                     var location = {
                         addLoc: keyMock("add", $q),
                         removeLoc: keyMock("remove", $q),
+
+                    };
+
+                    return location;
+
+                })
+                .factory("differentLocation", function($q) {
+                    var location = {
+                        addLoc: function(path, data, flag) {
+                            if (flag === true) {
+                                delete data.lat;
+                                delete data.lon;
+                            }
+                            ref = new MockFirebase("locations")
+                            ref.set(data);
+                            ref.flush();
+                            return ref;
+                        }
 
                     };
 
@@ -124,7 +142,8 @@
             module("testutils");
             module("firebase.fuel");
 
-            inject(function(_user_, _phones_, _phone_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+            inject(function(_user_, _phones_, _differentLocation_, _phone_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
+                differentLocation = _differentLocation_;
                 differentSession = _differentSession_;
                 phones = _phones_;
                 phone = _phone_;
@@ -171,6 +190,66 @@
                     expect(subject.path()).toBeDefined();
                 });
             });
+        });
+        describe("Options", function() {
+
+            function definedMeth(y) {
+                it(y + "() should be a defined method", function() {
+                    expect(subject[y]).toBeDefined();
+                    expect(subject[y]).toEqual(jasmine.any(Function));
+                });
+            }
+
+            var sessionAdded = ["session", "sessionId", "bindCurrent"];
+            var geofireAdded = ["get", "remove", "set", "addLoc", "removeLoc"];
+            var gpsAdded = ["createLocation", "removeLocation"];
+            var userAdded = ["userRecordsByUID", "loadUserRecords"];
+            var noOptionApi = ["base", "ref", "path", "parent", "pathHistory",
+                "inspect", "addIndex", "removeIndex", "getIndexKeys", "load",
+                "getRecord", "save", "bindTo", "add", "remove"
+            ];
+
+            describe("Basic API", function() {
+                beforeEach(function() {
+                    subject = fuel("trips");
+                });
+                noOptionApi.forEach(definedMeth);
+            });
+
+            describe("Added methods with User Option", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        user: true
+                    });
+                });
+                sessionAdded.forEach(definedMeth);
+                userAdded.forEach(definedMeth);
+            });
+            describe("Added methods with GPS Option", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        gps: true
+                    });
+                });
+                gpsAdded.forEach(definedMeth);
+            });
+            describe("Added methods with Geofire Option", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        geofire: true
+                    });
+                });
+                geofireAdded.forEach(definedMeth);
+            });
+            describe("Added methods with session Option", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        session: true
+                    });
+                });
+                sessionAdded.forEach(definedMeth);
+            });
+
         });
         describe("Without Options", function() {
             beforeEach(function() {
@@ -532,7 +611,7 @@
             describe("With default location and method", function() {
                 beforeEach(function() {
                     subject = fuel("trips", {
-                        sessionAccess: true
+                        session: true
                     });
                 });
                 describe("bindCurrent", function() {
@@ -573,8 +652,8 @@
             describe("With different location and method", function() {
                 beforeEach(function() {
                     subject = fuel("trips", {
-                        sessionAccess: true,
-                        sessionLocation: "differentSession",
+                        session: true,
+                        sessionService: "differentSession",
                         sessionIdMethod: "differentMeth"
                     });
                 });
@@ -649,22 +728,8 @@
                         expect(getPromValue(test)[1]).toBeAFirebaseRef();
                         expect(getPromValue(test)[1].key()).toEqual(this.mainKey);
                     });
-                    describe("user option", function() {
-                        describe("if true", function() {
-                            beforeEach(function() {
-                                var data = {
-                                    rec: newRecord,
-                                    geo: locData
-                                };
-                                test = subject.add(data, null, true);
-                                flush();
-                            });
-                            it("should add uid property to record", function() {
-                                expect(getPromValue(test)[1].getData().uid).toEqual(1);
-                                expect(getPromValue(test)[1].getData()).toBeDefined();
-                            });
-                        });
-                        describe("if undefined", function() {
+                    describe("uid option", function() {
+                        describe("default", function() {
                             beforeEach(function() {
                                 var data = {
                                     rec: newRecord,
@@ -673,6 +738,25 @@
                                 test = subject.add(data);
                                 flush();
                             });
+                            it("should add uid property to record", function() {
+                                expect(getPromValue(test)[1].getData().uid).toEqual(1);
+                                expect(getPromValue(test)[1].getData()).toBeDefined();
+                            });
+                        });
+                        describe("if false", function() {
+                            beforeEach(function() {
+                                subject = fuel("trips", {
+                                    user: true,
+                                    uid: false
+                                });
+                                var data = {
+                                    rec: newRecord,
+                                    geo: locData
+                                };
+                                test = subject.add(data);
+                                flush();
+                            });
+                            // subject();
                             it("should not add uid property to record", function() {
                                 expect(getPromValue(test)[1].getData().uid).not.toBeDefined();
                                 expect(getPromValue(test)[1].getData()).toBeDefined();
@@ -784,7 +868,7 @@
                             placeType: "a place",
                             distance: 1234,
                             closeBy: true
-                        });
+                        }, true);
                     });
                     it("should call geofire object with correct path, main location key and coordinates", function() {
                         expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
@@ -873,7 +957,7 @@
                             placeType: "a place",
                             distance: 1234,
                             closeBy: true
-                        });
+                        }, true);
                     });
                     it("should call geofire object with correct path, main location key and coordinates", function() {
                         expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
@@ -1007,10 +1091,10 @@
                 });
                 describe("addLoc", function() {
                     beforeEach(function() {
-                        test = subject.addLoc("trips", locData[0]);
+                        test = subject.addLoc("trips", locData[0], true);
                         flush();
                         this.key = subject.ref().key();
-                        test1 = subject.addLoc("trips", locData[1]);
+                        test1 = subject.addLoc("trips", locData[1], true);
                         flush();
                         this.key1 = subject.ref().key();
                     });
@@ -1022,6 +1106,12 @@
                     it("should return correct ref", function() {
                         expect(getPromValue(test).path).toEqual(rootPath + "/locations/trips/" + this.key);
                         expect(subject.path()).toEqual(rootPath + "/locations/trips/" + this.key1);
+                    });
+                    it("should remove coordinate data", function() {
+                        expect(getPromValue(test).getData()).toBeDefined();
+                        expect(getPromValue(test).getData().lat).not.toBeDefined();
+                        expect(getPromValue(test).getData().lat).not.toBeDefined();
+
                     });
                     it("should add the data to firebase", function() {
                         expect(getPromValue(test).getData()).toEqual(locData[0]);
@@ -1052,6 +1142,25 @@
                     qReject(0);
                 });
             });
+            describe("Separating Location Data", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        gps: true,
+                        locationService: "differentLocation"
+                    });
+                    test = subject.addLoc(locData[0]);
+                    $rootScope.$digest();
+                    subject.ref().flush();
+                    $rootScope.$digest();
+                    this.key = subject.parent().key();
+                });
+                it("should not save coordinate data to location array", function() {
+                    expect(getPromValue(test)).toBeAFirebaseRef();
+                });
+                it("should call geofire object with correct path, main location key and coordinates", function() {
+                    expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
+                });
+            });
         });
 
         describe("Nested Arrays", function() {
@@ -1073,7 +1182,7 @@
                 }];
                 subject = fuel("users", {
                     nestedArrays: ["phones", "emails"],
-                    sessionAccess: true,
+                    session: true,
                 });
                 $rootScope.$digest();
                 subject.add(this.data);
@@ -1216,12 +1325,12 @@
                         this.key2 = childKeys("phones")[1];
                         test = subject.loadPhone(this.key1);
                         // flushAll(subject.ref());
-												//flush works here: think the issue is the order of tasks and $indexFor()
+                        //flush works here: think the issue is the order of tasks and $indexFor()
                         flush();
                         this.refKey = getPromValue(test).$id;
                     });
                     it("should return a promise", function() {
-												expect(test).toBeAPromise();
+                        expect(test).toBeAPromise();
                     });
                     it("should resolve to a firebaseObject", function() {
                         expect(getPromValue(test)).toEqual(jasmine.objectContaining({
@@ -1237,13 +1346,13 @@
                         expect(subject.ref().key()).toEqual(this.key1);
                         expect(this.refKey).toEqual(this.key1);
                     });
-                    it("parent array should be correct length",function(){
-                    expect(dataKeys(subject.parent()).length).toEqual(2);
+                    it("parent array should be correct length", function() {
+                        expect(dataKeys(subject.parent()).length).toEqual(2);
                     });
                     qReject(0);
                     logContains("setting ref to current object ref");
-                    });
-                    describe("loadPhones", function() {
+                });
+                describe("loadPhones", function() {
                     beforeEach(function() {
                         this.key1 = childKeys("phones")[0];
                         this.key2 = childKeys("phones")[1];

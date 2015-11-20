@@ -17,8 +17,7 @@
     }
 
     Fuel = function($timeout, utils, firePath, $q, $log, $injector, path, options) {
-        //TODO: error messages for invalid entires for user , geofire, or gps
-        //only except true...
+
         this._timeout = $timeout;
         this._utils = utils;
         this._firePath = firePath;
@@ -26,60 +25,62 @@
         this._log = $log;
         this._injector = $injector;
         this._path = path;
-        this._options = options;
-        this._nestedArrays = [];
+        this._options = this._utils.paramCheck(options, "opt", {});
         this._pathOptions = {};
-        this._constant = "FBURL";
-        if (this._options) {
-            this._gps = false || this._options.gps;
-            this._geofire = false || this._options.geofire;
-            if (this._options.constant && angular.isString(this._options.constant)) {
-                this._constant = this._options.constant;
-            }
-            if (this._options.nestedArrays) {
-                if (!Array.isArray(this._options.nestedArrays)) {
-                    throw new Error("Nested Arrays argument must be an array");
-                } else {
-                    this._nestedArrays = this._options.nestedArrays;
-                }
-            }
-            if (this._gps === true) {
-                this._locationObject = this._injector.get("location");
-                this._geofireObject = this._injector.get("geofire");
-            }
 
-            if (this._gps === true || this._geofire === true) {
-                this._pathOptions.geofire = true;
-                this._locationName = "locations";
-                this._geofireName = "geofire";
-                this._pathOptions.locationName = this._locationName;
-                this._pathOptions.geofireName = this._geofireName;
-            }
-            this._user = this._options.user || false;
-            this._sessionAccess = this._options.sessionAccess || false;
-            if (this._user === true) {
-                this._userPath = "users";
-                this._userObject = this._injector.get("user");
-                this._sessionAccess = true;
-            }
-            if (this._sessionAccess === true) {
-                this._pathOptions.sessionAccess = true;
-                if (!this._options.sessionLocation) {
-                    this._sessionName = "session";
-                } else {
-                    this._sessionName = this._options.sessionLocation;
-                }
-                this._sessionStorage = this._injector.get(this._sessionName);
-                if (this._options.sessionIdMethod) {
-                    this._sessionIdMethod = this._options.sessionIdMethod;
-                } else {
-                    this._sessionIdMethod = "getId";
-                }
-                this._pathOptions.sessionLocation = this._sessionName;
-                this._pathOptions.sessionIdMethod = this._sessionIdMethod;
-            }
+        /*Core Options */
+        this._constant = this._utils.paramCheck(this._options.constant, "str", "FBURL");
+        this._geofire = this._utils.paramCheck(this._options.geofire, "bool", false);
+        this._gps = this._utils.paramCheck(this._options.gps, "bool", false);
+        this._nestedArrays = this._utils.paramCheck(this._options.nestedArrays, "arr", []);
+        this._session = this._utils.paramCheck(this._options.session, "bool", false);
+        this._user = this._utils.paramCheck(this._options.user, "bool", false);
+
+        /******************
+         * Additional Config
+         * *****************/
+
+        /* Geofire */
+        if (this._gps === true || this._geofire === true) {
+            this._locationNode = this._utils.paramCheck(this._options.locationNode, "str", "locations");
+            this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
+            this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
+            this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
+
+            this._pathOptions.geofire = true;
+            this._pathOptions.locationNode = this._locationNode;
+            this._pathOptions.geofireNode = this._geofireNode;
         }
+        if (this._gps === true) {
+            this._locationService = this._utils.paramCheck(this._options.locationService, "str", this._utils.singularize(this._locationNode));
+            this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
+            this._locationObject = this._injector.get(this._locationService);
+            this._geofireObject = this._injector.get(this._geofireService);
+        }
+
+
+        /* Geofire */
+        if (this._user === true || this._session === true) {
+            this._uid = this._utils.paramCheck(this._options.uid, "bool", true);
+        }
+        if (this._user === true) {
+            this._userNode = this._utils.paramCheck(this._options.userNode, "str", "users");
+            this._userService = this._utils.paramCheck(this._options.userService, "str", this._utils.singularize(this._userNode));
+            this._userObject = this._injector.get(this._userService);
+            this._session = true;
+        }
+        if (this._session === true) {
+            this._sessionService = this._utils.paramCheck(this._options.sessionService, "str", "session");
+            this._sessionIdMethod = this._utils.paramCheck(this._options.sessionIdMethod, "str", "getId");
+            this._sessionObject = this._injector.get(this._sessionService);
+
+            this._pathOptions.session = true;
+            this._pathOptions.sessionService = this._sessionService;
+            this._pathOptions.sessionIdMethod = this._sessionIdMethod;
+        }
+
         this._pathMaster = this._firePath(this._path, this._pathOptions, this._constant);
+
     };
 
 
@@ -96,18 +97,16 @@
             entity.pathHistory = getPathHistory;
             entity.inspect = inspect;
 
-            entity.addIndex = addIndex;
-            entity.removeIndex = removeIndex;
-            entity.getIndexKeys = getIndexKeys;
-
             /*Queries*/
             entity.load = load;
-            entity.userRecordsByUID = userRecordsByUID;
             entity.getRecord = getMainRecord;
-            entity.save = saveMaster;
+            entity.getIndexKeys = getIndexKeys;
             entity.bindTo = bindTo;
 
             /*Commands*/
+            entity.save = saveMaster;
+            entity.addIndex = addIndex;
+            entity.removeIndex = removeIndex;
 
             if (self._user !== true && self._gps !== true) {
                 entity.add = createMainRecord;
@@ -116,6 +115,7 @@
 
             if (self._user === true) {
                 entity.loadUserRecords = loadUserRecords;
+                entity.userRecordsByUID = userRecordsByUID;
             }
 
             if (self._gps === true) {
@@ -138,7 +138,7 @@
                 entity.remove = removeWithUserAndGeo;
             }
 
-            if (self._sessionAccess === true) {
+            if (self._session === true) {
                 entity.session = session;
                 entity.sessionId = sessionId;
                 entity.bindCurrent = bindCurrent;
@@ -292,9 +292,6 @@
             }
 
             function createMainRecord(data, geoFlag, userFlag) {
-                if (geoFlag === true && data.geo) {
-                    delete data.geo
-                }
                 if (userFlag === true) {
                     data.uid = sessionId();
                 }
@@ -329,8 +326,7 @@
 
             }
 
-            /* Geofire Interface */
-
+            /* Geofire Service Methods */
             function geofireSet(k, c) {
                 return self._geofireObject.set(self._path, k, c);
             }
@@ -345,7 +341,6 @@
 
 
             /* Geofire API access */
-
             function removeLoc(path, key) {
                 return nestedRecord(path, key)
                     .then(remove)
@@ -353,7 +348,12 @@
                     .catch(standardError);
             }
 
-            function addLoc(path, data) {
+            function addLoc(path, data, flag) {
+                if (flag === true) {
+                    delete data[self._latitude]
+                    delete data[self._longitude]
+                }
+
                 return qAll(nestedArray(path), data)
                     .then(add)
                     .then(commandSuccess)
@@ -402,10 +402,10 @@
              */
             function createLocation(data) {
                 var coords = {
-                    lat: data.lat,
-                    lon: data.lon
+                    lat: data[self._latitude],
+                    lon: data[self._longitude]
                 };
-                return qAll(self._locationObject.addLoc(self._path, data), [coords.lat, coords.lon])
+                return qAll(self._locationObject.addLoc(self._path, data,true), [coords.lat, coords.lon])
                     .then(addGeofireAndPassLocKey)
                     .catch(standardError);
 
@@ -450,11 +450,11 @@
             }
 
             function session() {
-                return self._sessionStorage;
+                return self._sessionObject;
             }
 
             function sessionId() {
-                return self._sessionStorage[self._sessionIdMethod]();
+                return self._sessionObject[self._sessionIdMethod]();
             }
 
             /*********************************/
@@ -468,6 +468,9 @@
              */
 
             function createWithUser(data, geoFlag, userFlag) {
+                if (!userFlag) {
+                    userFlag = self._uid;
+                }
                 return createMainRecord(data, geoFlag, userFlag)
                     .then(passKeyToUser)
                     .catch(standardError);
@@ -508,7 +511,7 @@
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
-                    return qAll(addIndex(res[0].key(), self._locationName, res[1][1].key()), res[0]);
+                    return qAll(addIndex(res[0].key(), self._locationNode, res[1][1].key()), res[0]);
                 }
 
                 function setReturnValue(res) {
@@ -523,7 +526,7 @@
                     .catch(standardError);
 
                 function removeLocations(mainRecId) {
-                    return getIndexKeys(mainRecId, self._locationName)
+                    return getIndexKeys(mainRecId, self._locationNode)
                         .then(completeRemove);
 
                     function completeRemove(res) {
@@ -547,14 +550,14 @@
 
             function createWithUserAndGeo(data, loc) {
 
-                return self._q.all([createWithUser(data, null, true), createLocation(loc, true)])
+                return self._q.all([createWithUser(data), createLocation(loc, true)])
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValue)
                     .then(commandSuccess)
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
-                    return qAll(addIndex(res[0][1].key(), self._locationName, res[1][1].key()), res[0][1]);
+                    return qAll(addIndex(res[0][1].key(), self._locationNode, res[1][1].key()), res[0][1]);
                 }
 
                 function setReturnValue(res) {
@@ -569,7 +572,7 @@
                     .catch(standardError);
 
                 function removeLocations(mainRecId) {
-                    return getIndexKeys(mainRecId, self._locationName)
+                    return getIndexKeys(mainRecId, self._locationNode)
                         .then(completeRemove);
 
                     function completeRemove(res) {
@@ -616,17 +619,15 @@
                 saveRec = "save" + self._utils.camelize(recName, true);
                 newProp = {};
 
-                //TODO: send to querySuccess?
                 newProp[arrName] = function(id) {
-                    if (self._sessionAccess === true && !id) {
+                    if (self._session === true && !id) {
                         id = sessionId();
                     }
                     return nestedArray(id, arrName);
                 };
 
-                //TODO: send to querySuccess?
                 newProp[recName] = function(nestedRecId, id) {
-                    if (self._sessionAccess === true && !id) {
+                    if (self._session === true && !id) {
                         id = sessionId();
                     }
                     if (!nestedRecId) {
@@ -899,9 +900,6 @@
             }
 
 
-            /**misc*/
-
-
             function qWrap(obj) {
                 return self._utils.qWrap(obj);
             }
@@ -918,9 +916,13 @@
                 return self._utils.standardError(err);
             }
 
-            /*to remove later on*/
-            function inspect() {
-                return self;
+            function inspect(item) {
+                if (!item) {
+                    return self;
+                } else {
+                    item = "_" + item;
+                    return self[item];
+                }
             }
 
             self._entity = entity;
