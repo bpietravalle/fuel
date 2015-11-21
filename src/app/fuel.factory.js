@@ -63,7 +63,7 @@
         /* Geofire */
         if (this._user === true || this._session === true) {
             this._uid = this._utils.paramCheck(this._options.uid, "bool", true);
-            this._uidProperty = this._utils.paramCheck(this._options.uidProperty, "str","uid");
+            this._uidProperty = this._utils.paramCheck(this._options.uidProperty, "str", "uid");
         }
         if (this._user === true) {
             this._userNode = this._utils.paramCheck(this._options.userNode, "str", "users");
@@ -150,6 +150,7 @@
                 entity.get = getGf;
                 entity.remove = removeGf;
                 entity.set = setGf;
+                entity.query = queryGf;
                 entity.addLoc = addLoc;
                 entity.removeLoc = removeLoc;
             }
@@ -375,6 +376,18 @@
 
             }
 
+            function queryGf(path, data) {
+                return qAll(makeGeo(path), data)
+                    .then(queryGeo)
+                    .then(querySuccess)
+                    .catch(standardError);
+
+                function queryGeo(res) {
+                    return qAll(res[0], res[0].query(res[1]));
+                }
+
+            }
+
             function getGf(path, key) {
                 return qAll(makeGeo(path), key)
                     .then(getGeo)
@@ -382,7 +395,7 @@
                     .catch(standardError);
 
                 function getGeo(res) {
-                    return res[0].get(res[1]);
+                    return qAll(res[0], res[0].get(res[1]));
                 }
             }
 
@@ -408,7 +421,7 @@
                     lat: data[self._latitude],
                     lon: data[self._longitude]
                 };
-                return qAll(self._locationObject.addLoc(self._path, data,true), [coords.lat, coords.lon])
+                return qAll(self._locationObject.addLoc(self._path, data, true), [coords.lat, coords.lon])
                     .then(addGeofireAndPassLocKey)
                     .catch(standardError);
 
@@ -858,7 +871,6 @@
 
             /**CQ*****************************/
 
-            //these wont catch geofire cmmands and queries
             function commandSuccess(res) {
                 self._log.info('command success');
                 switch (angular.isString(res.key())) {
@@ -871,6 +883,7 @@
                 }
             }
 
+
             function querySuccess(res) {
                 self._log.info('query success');
                 switch (angular.isDefined(res.$ref)) {
@@ -881,14 +894,15 @@
                         self._pathMaster.setBase(res);
                         return res;
                     case false:
-                        //record in $firebaseArray
                         switch (angular.isObject(res[1])) {
+                            //record in $firebaseArray or result from geofire.get()/geofire.query()
                             case true:
                                 self._log.info("setting ref to current parent");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
                                 self._pathMaster.setBase(res[1]);
                                 return res[1];
                             case false:
+                                //failed queries 
                                 self._log.info("return value is null");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
                                 self._pathMaster.setBase(res[0]);

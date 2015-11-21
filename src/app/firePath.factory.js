@@ -158,7 +158,7 @@
                         return ref.parent().parent().parent().parent().parent();
                     default:
                         //TODO fix so dynamically calls parent() based on idx
-                        throw new Error("Too deep");
+                        throw new Error("Too deep - construct again");
                 }
             }
 

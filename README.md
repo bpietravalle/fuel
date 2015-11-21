@@ -49,21 +49,22 @@ figuratively as well:
 
 2. _nested_: Adjective reserved for any firebaseRef or angularFire service found at a child of a main node. 
 
+3. _index_: used as the [pros](https://www.firebase.com/docs/web/guide/structuring-data.html) do.
+
 For example:
 ```javascript
-/*  https://your-firebase.firebaseio.com/trips */
-$firebaseArray //mainArray
+/* mainArray - $firebaseArray 
+*  https://your-firebase.firebaseio.com/trips */
 
-/* https://your-firebase.firebaseio.com/trips/tripId */
-$firebaseObject //mainRecord
+/* mainRecord - $firebaseObject
+* https://your-firebase.firebaseio.com/trips/tripId */
 
-/*  https://your-firebase.firebaseio.com/trips/tripId/cities*/
-$firebaseArray //nestedArray
+/* nestedArray - $firebaseArray (or an index) 
+* https://your-firebase.firebaseio.com/trips/tripId/cities*/
 
-/* https://your-firebase.firebaseio.com/trips/tripId/tickets/cities/cityId */
-$firebaseObject //nestedRecord
+/* nestedRecord - $firebaseObject
+* https://your-firebase.firebaseio.com/trips/tripId/tickets/cities/cityId */
 ```
-3. _index_: used as the [pros](https://www.firebase.com/docs/web/guide/structuring-data.html) do.
 
 ## Usage
 
@@ -125,7 +126,7 @@ You can configure Fuel by adding predefined keys to the options hash.  There are
 options.
 
 options[key] | Type | Result
------------------------------------
+-------------|------|-------------
 constant| String | injects 'constant' rather than 'FBURL' to specify the root firebaseRef 
 geofire| Boolean | adds methods to persist/query geospatial data to/in Geofire
 gps| Boolean | adds a simple API to your app's geofire service
@@ -180,8 +181,10 @@ are 'lat' and 'lon'. These keys are only necessary for communicating with your c
 its own methodology.
 
 *REQs*:
-Your app will need to specify two separate fireBase nodes(as well as angular services) for fuel
-to work properly.
+* Your controller/view will need to save coordinates in a data object with 'lat'/'lon' keys. See below for 
+renaming these keys.
+* Your app will need to specify two separate fireBase nodes(as well as angular services) for fuel
+to work properly. For example:
 ```javascript
 (function(){
     "use strict";
@@ -191,7 +194,9 @@ to work properly.
 			.factory("geofire", geofireFactory);
 
 
-//For all location-data
+	 /*For all location-data
+	 * https://your-firebase.firebaseio.com/locations */
+
 	 /** @ngInject */
 	 function locationFactory(fuel){
 			return fuel("locations",{
@@ -199,7 +204,9 @@ to work properly.
 			});
 	 }
 
-//For all coordinates
+	 /*For all coordinates
+	 * https://your-firebase.firebaseio.com/geofire */
+
 	 /** @ngInject */
 	 function geofireFactory(fuel){
 			return fuel("geofire",{
@@ -208,7 +215,7 @@ to work properly.
 	 }
 })();
 ```
-Your controller/view will need to save coordinates in a data object with 'lat'/'lon' keys.
+
 
 ### *GPS Interface*
 By adding `gps: true` to the options hash, fuel will:
@@ -312,7 +319,7 @@ Here are the current defaults and the required options to override them.
 *Nodes and Services*
 
 options[key] | Type | Default Value
------------------------------------
+-------------|------|--------------
 geofireNode | String | "geofire"
 geofireService | String | "geofire"
 locationNode | String | "locations"
@@ -326,11 +333,10 @@ userService | String | singular of userNode
 *Properties*
 
 options[key] | Type | Default Value
------------------------------------
+-------------|------|--------------
 latitude| String| "lat"
 longitude| String| "lon"
 uidProperty| String | "uid"
-
 
 
 

@@ -868,7 +868,7 @@
                             placeType: "a place",
                             distance: 1234,
                             closeBy: true
-                        },true);
+                        }, true);
                     });
                     it("should call geofire object with correct path, main location key and coordinates", function() {
                         expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
@@ -1084,22 +1084,43 @@
                         subject.set("trips", "key2", [50, 100]);
                         flushTime();
                         test = subject.get("trips", "key");
-                        flushTime();
                         $rootScope.$digest();
+                        $timeout.flush();
                     });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
                     });
                     it("should retrieve the correct record", function() {
                         expect(subject.path()).toEqual(rootPath + "/geofire/trips");
-                        // expect(subject.ref().getData()).toEqual({
-                        //     key: {
-                        //         g: jasmine.any(String),
-                        //         l: [90, 100]
-                        //     }
-                        // });
                     });
-
+                });
+                describe("query", function() {
+                    beforeEach(function() {
+                        subject.set("trips", "key2", [50, 100]);
+                        flushTime();
+                        extendMockFb(subject.ref());
+                        test = subject.query("trips", {
+                            center: [90, 100],
+                            radius: 10
+                        });
+                        $rootScope.$digest();
+                        $timeout.flush();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should retrieve the correct record", function() {
+                        expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    });
+                    it("should return a geoQuery", function() {
+                        expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                            updateCriteria: jasmine.any(Function),
+                            radius: jasmine.any(Function),
+                            center: jasmine.any(Function),
+                            cancel: jasmine.any(Function),
+                            on: jasmine.any(Function)
+                        }));
+                    });
                 });
             });
             describe("Main Location Array", function() {
@@ -1653,6 +1674,27 @@
             $rootScope.$digest();
         }
 
+        function extendMockFb(obj) {
+            var querySpy = {
+                startAt: function() {
+                    return {
+                        endAt: function() {
+                            return {
+                                on: function() {}
+                            }
+
+                        }
+                    }
+                },
+            };
+            var extension = {
+                orderByChild: jasmine.createSpy("child").and.returnValue(querySpy)
+            };
+            angular.extend(obj, extension);
+            return obj;
+        }
+
+
         //from angularFire repo
         var flushAll = (function() {
             return function flushAll() {
@@ -1667,6 +1709,5 @@
 
 
     });
-
 
 })();
