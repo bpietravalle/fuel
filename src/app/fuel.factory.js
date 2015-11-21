@@ -267,13 +267,13 @@
             function getMainRecord(key) {
                 return qAll(loadMainArray(), key)
                     .then(getRecord)
-                    .then(setReturnValue)
-                    // .then(querySuccess)
+                    // .then(setReturnValue)
+                    .then(querySuccess)
                     .catch(standardError);
 
-                function setReturnValue(res) {
-                    return res;
-                }
+                // function setReturnValue(res) {
+                //     return res;
+                // }
             }
 
 
@@ -622,7 +622,6 @@
                 return angular.merge({}, obj, newProperties);
             }
 
-            //untested/unused
             function addNestedArray(obj, arr) {
                 var arrName, recName, addRec, getRec, removeRec, loadRec, loadRecs, saveRec, saveRecs, newProp;
                 arrName = self._utils.pluralize(arr);
@@ -895,11 +894,12 @@
                         return res;
                     case false:
                         switch (angular.isObject(res[1])) {
-                            //record in $firebaseArray or result from geofire.get()/geofire.query()
                             case true:
+                            //record in $firebaseArray or result from geofire.get()/geofire.query()
+                                self._log.info(res);
                                 self._log.info("setting ref to current parent");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
-                                self._pathMaster.setBase(res[1]);
+                                self._pathMaster.setBase(res[0]);
                                 return res[1];
                             case false:
                                 //failed queries 

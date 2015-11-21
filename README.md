@@ -277,9 +277,10 @@ By adding `session: true` to the options hash, fuel adds a very simple API for s
 data between your app's session and the given firebase node.  
 
 *REQs*:
-1.) _injector_: fuel will try to inject a 'session' service.  Make sure it's
- available. See below for overriding these names.
-2.) _IdMethod_: fuel also expects the session service to have a method for querying ids stored
+1. _injector_: fuel will try to inject a 'session' service.  Make sure it's available. 
+See below for overriding these names.
+
+2. _IdMethod_: fuel also expects the session service to have a method for querying ids stored
 in session.  The default is 'getId'.  See below for overriding this name.
 
 Again, very simple but it allows your service to maintain a current Record with very little code.
@@ -292,7 +293,7 @@ By adding `user: true` to the options hash, fuel will:
 * queries user records based on the user index or uid property
 
 *REQs*:
-1.) _index_: fuel will look for an index with the same name as the main node.
+1. _index_: fuel will look for an index with the same name as the main node.
 You need to specify the index in your security rules.
 
 For example:
@@ -302,9 +303,10 @@ For example:
 	 };
 //make sure that 'https://your-firebase.firebaseio.com/users/userId/trips' is defined!
 ```
-2.) _injector_: fuel will try to inject a 'user' service.  Make sure it's
+2. _injector_: fuel will try to inject a 'user' service.  Make sure it's
  available. See below for overriding these names.
-3.) _uid_: Your security rules will need to allow for a uid property. To opt-out of
+
+3. _uid_: Your security rules will need to allow for a uid property. To opt-out of
 this functionality simply add `uid: false` to the options hash.  You can also specify a
 a different name via the 'uidProperty' option, as described below.
 

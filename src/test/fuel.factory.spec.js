@@ -65,6 +65,7 @@
                 });
             };
             angular.module("firebase.fuel")
+                .constant("MYURL", "https://your-different-firebase.firebaseio.com/")
                 .constant("FBURL", "https://your-firebase.firebaseio.com/")
                 .factory("location", function($q) {
                     var location = {
@@ -200,13 +201,45 @@
                 });
             }
 
+            function defaultValues(y) {
+                it("should have a default for " + y[0] + " of: " + y[1], function() {
+                    expect(subject.inspect(y[0])).toEqual(y[1]);
+                });
+            }
+
             var sessionAdded = ["session", "sessionId", "bindCurrent"];
-            var geofireAdded = ["get", "remove", "set", "addLoc", "removeLoc"];
+            var geofireAdded = ["get", "remove", "set", "addLoc", "removeLoc", "query"];
             var gpsAdded = ["createLocation", "removeLocation"];
             var userAdded = ["userRecordsByUID", "loadUserRecords"];
             var noOptionApi = ["base", "ref", "path", "parent", "pathHistory",
                 "inspect", "addIndex", "removeIndex", "getIndexKeys", "load",
                 "getRecord", "save", "bindTo", "add", "remove"
+            ];
+            var defaultNodes = [
+                ["userNode", "users"],
+                ["locationNode", "locations"],
+                ["geofireNode", "geofire"]
+            ];
+            var defaultServices = [
+                ["userService", "user"],
+                ["locationService", "location"],
+                ["sessionService", "session"],
+                ["geofireService", "geofire"]
+            ];
+            var defaultProps = [
+                ["longitude", "lon"],
+                ["latitude", "lat"],
+                ["sessionIdMethod", "getId"],
+                ["uid", true],
+                ["uidProperty", "uid"],
+            ];
+            var coreDefaults = [
+                ["constant", "FBURL"],
+                ["geofire", false],
+                ["gps", false],
+                ["nestedArrays", []],
+                ["session", false],
+                ["user", false]
             ];
 
             describe("Basic API", function() {
@@ -214,6 +247,7 @@
                     subject = fuel("trips");
                 });
                 noOptionApi.forEach(definedMeth);
+
             });
 
             describe("Added methods with User Option", function() {
@@ -249,6 +283,47 @@
                 });
                 sessionAdded.forEach(definedMeth);
             });
+            describe("different constant", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        constant: "MYURL"
+                    });
+                });
+                it("should still generate firebaseRefs", function() {
+                    expect(subject.ref()).toBeAFirebaseRef();
+                    expect(subject.ref().key()).toEqual("trips");
+                });
+                it("should have a different root URL", function() {
+                    expect(subject.ref().root().toString()).toEqual("https://your-different-firebase.firebaseio.com")
+                });
+            });
+            describe("Default Settings", function() {
+                describe("Core: ", function() {
+                    beforeEach(function() {
+                        subject = fuel("trips");
+                    });
+                    coreDefaults.forEach(defaultValues);
+                });
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        user: true,
+                        gps: true,
+                        geofire: true
+                    });
+                });
+                describe("Nodes: ", function() {
+                    defaultNodes.forEach(defaultValues);
+                });
+                describe("Services: ", function() {
+                    defaultServices.forEach(defaultValues);
+                });
+                describe("Properties: ", function() {
+                    defaultProps.forEach(defaultValues);
+                });
+
+            });
+
+
 
         });
         describe("Without Options", function() {
@@ -275,6 +350,7 @@
                         expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/" + this.key);
                     });
                     it("should save the data to firebaseRef", function() {
+                        // expect(subject.inspect("uid")).toEqual("as");
                         expect(getPromValue(test).getData()).toEqual(newRecord);
                     });
                 });
@@ -599,11 +675,20 @@
                         test = subject.getRecord(this.refKeys[0]);
                         flush();
                     });
-                    it("should work", function() {
-                        expect(this.refKeys.length).toEqual(2)
+                    it("should return correct record", function() {
+                        expect(getPromValue(test).$id).toEqual(this.refKeys[0]);
+                        expect(getPromValue(test).phone).toEqual(arrData[0].phone);
+                        expect(getPromValue(test).uid).toEqual(arrData[0].uid);
+                    });
+                    it("should update the currentRef to the parentRef", function() {
+                        expect(subject.ref().child(this.refKeys[0]).getData().phone).toEqual(getPromValue(test).phone);
+                        expect(subject.ref().child(this.refKeys[0]).getData().firstName).toEqual(getPromValue(test).firstName);
+                    });
+                    it("should update the base() to the mainArray", function() {
+                        baseCheck("array", subject.base());
+												expect(subject.base().$ref().key()).toEqual("trips");
                     });
                     qReject(0);
-                    // logCheck(3);
                 });
             });
         });
