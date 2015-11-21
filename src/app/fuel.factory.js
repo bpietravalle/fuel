@@ -42,6 +42,7 @@
 
         /* Geofire */
         if (this._gps === true || this._geofire === true) {
+
             this._locationNode = this._utils.paramCheck(this._options.locationNode, "str", "locations");
             this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
             this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
@@ -62,6 +63,7 @@
         /* Geofire */
         if (this._user === true || this._session === true) {
             this._uid = this._utils.paramCheck(this._options.uid, "bool", true);
+            this._uidProperty = this._utils.paramCheck(this._options.uidProperty, "str","uid");
         }
         if (this._user === true) {
             this._userNode = this._utils.paramCheck(this._options.userNode, "str", "users");
@@ -275,7 +277,7 @@
 
 
 
-            /*Commands*/
+            /* Commands */
 
             function bindTo(id, scope, varName) {
                 switch (angular.isString(id)) {
@@ -293,7 +295,7 @@
 
             function createMainRecord(data, geoFlag, userFlag) {
                 if (userFlag === true) {
-                    data.uid = sessionId();
+                    data[self._uidProperty] = sessionId();
                 }
 
                 return qAll(mainArray(), data)
@@ -326,7 +328,7 @@
 
             }
 
-            /* Geofire Service Methods */
+            /* GPS Option */
             function geofireSet(k, c) {
                 return self._geofireObject.set(self._path, k, c);
             }
@@ -340,7 +342,7 @@
             }
 
 
-            /* Geofire API access */
+            /* Geofire Service Option */
             function removeLoc(path, key) {
                 return nestedRecord(path, key)
                     .then(remove)
@@ -400,6 +402,7 @@
             /* @param{Object} location data to save
              * @return{Array} [null, fireBaseRef of mainlocation]
              */
+
             function createLocation(data) {
                 var coords = {
                     lat: data[self._latitude],
@@ -431,7 +434,7 @@
             }
 
 
-            /* User Object Interface*/
+            /* User Interface */
 
             function addUserIndex(key) {
                 return self._userObject

@@ -42,12 +42,12 @@ as explained below. Either way make sure the constant is available in your modul
 ```
 ### Repo Terminology
 
-Though we are both literally on the same page right now.  Let's make sure we are
+Though we are both literally on the same page right now, let's make sure we are
 figuratively as well:
 
-1. _main_: Adjective reserved for any firebaseRef or angularFire service found in a direct child of your root firebaseRef. 
+1. _main_: Adjective reserved for any firebaseRef or angularFire service found at a direct child of your root firebaseRef. 
 
-2. _nested_: Adjective reserved for any firebaseRef or angularFire service found in a child of a main node. 
+2. _nested_: Adjective reserved for any firebaseRef or angularFire service found at a child of a main node. 
 
 For example:
 ```javascript
@@ -92,7 +92,7 @@ Example:
     "use strict";
 
     angular.module("yourApp")
-	 .factory("trips", tripFactory)
+	 .factory("trip", tripFactory)
 	 .factory("geofire", geofireFactory);
 
 	 /** @ngInject */
@@ -143,27 +143,125 @@ executing the given queries/commands. So:
     "use strict";
 
     angular.module("yourApp")
-	 .factory("trips", tripFactory)
-	 .factory("geofire", geofireFactory);
+			.factory("trip", tripFactory)
+			.factory("geofire", geofireFactory);
 
 // a service that has gps data associated with its ontology
 	 /** @ngInject */
 	 function tripFactory(fuel){
 			return fuel("trips",{
-			gps: true
+				gps: true
 			});
 	 }
 
 // a service that has prefined methods for managing geospatial data
 	 /** @ngInject */
 	 function geofireFactory(fuel){
-			return fuel("geofire");
+			return fuel("geofire",{
+				 geofire: true
+			});
 	 }
 
 })();
 
 ```
-Again, perhaps the keys should be renamed, but for now this is all my double digit IQ can offer.
+
+
+### *Geofire Interface*
+
+By adding `geofire: true` to the options hash, fuel will persist/query any location
+data on behalf of your other services.
+
+Fuel separates longitude and latitude from other data associated with a location (_eg_, placeIds, 
+reviews, etc.). This will allow you to associate more than one location with a given firebase node
+Fuel will send non-coordinate data to a firebase Node, and will then send coordinates to a geofire node.
+Currently, the default names are "locations" and "geofire" respectively.  Default names for coordinates
+are 'lat' and 'lon'. These keys are only necessary for communicating with your controller; Geofire follows
+its own methodology.
+
+*REQs*:
+Your app will need to specify two separate fireBase nodes(as well as angular services) for fuel
+to work properly.
+```javascript
+(function(){
+    "use strict";
+
+    angular.module("yourApp")
+			.factory("location", locationFactory)
+			.factory("geofire", geofireFactory);
+
+
+//For all location-data
+	 /** @ngInject */
+	 function locationFactory(fuel){
+			return fuel("locations",{
+				 geofire: true
+			});
+	 }
+
+//For all coordinates
+	 /** @ngInject */
+	 function geofireFactory(fuel){
+			return fuel("geofire",{
+				 geofire: true
+			});
+	 }
+})();
+```
+Your controller/view will need to save coordinates in a data object with 'lat'/'lon' keys.
+
+### *GPS Interface*
+By adding `gps: true` to the options hash, fuel will:
+
+* send location data to your Geofire services defined above
+* save/remove a location Index in your main node
+
+*REQs*:
+* Follow setup for Geofire interface 
+* Specify a locations index in your security rules. See below for overriding
+the default names.
+
+For example:
+```javascript
+(function(){
+    "use strict";
+
+    angular.module("yourApp")
+			.factory("trip", tripFactory);
+
+	 /** @ngInject */
+	 function tripFactory(fuel){
+			return fuel("trips",{
+				 gps: true
+			});
+	 }
+	 //make sure that 'https://your-firebase.firebaseio.com/trips/tripId/locations' is defined!
+
+}();
+```
+### *NestedArrays*
+By adding `nestedArrays: []` to the options hash, fuel will construct
+a few methods for manipulating/querying nested arrays/records.  
+For example:
+
+```javascript
+fuel("users",{
+  nestedArrays: ["phones"]
+});
+
+/* Will expose the firebase node 'https://your-fb.com/users/userId/phones',
+* via the following methods.
+*/
+
+phone(key)
+phones()
+addPhone(data)
+getPhone(key)
+loadPhone(key)
+loadPhones()
+removePhone(idxOrRec)
+savePhone(key)
+```
 
 
 ### *Session Interface*
@@ -189,44 +287,6 @@ By adding `user: true` to the options hash, fuel will:
 *REQs*:
 1.) _index_: fuel will look for an index with the same name as the main node.
 You need to specify the index in your security rules.
-2.) _injector_: fuel will try to inject a 'user' service.  Make sure it's
- available. See below for overriding these names.
-3.) _uid_: Your security rules will need to allow for a uid property. But I don't want
-a uid property?  Ok, fine, don't worry.  To opt-out of
-this functionality simply add `uid: false` to the options hash.
-
-_Note_: This option also provides the session mngt functionality described above.  No need
-to add `session: true`, however if you want to be redundant redundant, please be my guest.
-
-### *Geofire Interface*
-
-By adding `geofire: true` to the options hash, fuel will persist/query any location
-data on behalf of your other services.
-
-Fuel expects to separate coordinates from other location data (_eg_, google placeIds, reviews, etc.).  
-Fuel will send all initial data to a firebase Node, and will then send coordinates to a geofire node.
-Currently, the default names are "locations" and "geofire" respectively.  See below
-for overriding these values.
-
-
-*REQs*:
-To use this, you will need to specify two separate fireBase nodes(as well as angular services).
-
-
-
-### Overriding Defaults 
-Here are the current defaults and the required options to override them.
-
-options[key] | Type | Default Value
------------------------------------
-userNode | String | "users"
-userService | String | singular of userNode
-sessionService | String | "session"
-sessionIdMethod | String | "getId"
-locationNode | String | "locations"
-locationService | String | singular of locationNode
-geofireNode | String | "geofire"
-geofireService | String | "geofire"
 
 For example:
 ```javascript
@@ -235,6 +295,44 @@ For example:
 	 };
 //make sure that 'https://your-firebase.firebaseio.com/users/userId/trips' is defined!
 ```
+2.) _injector_: fuel will try to inject a 'user' service.  Make sure it's
+ available. See below for overriding these names.
+3.) _uid_: Your security rules will need to allow for a uid property. To opt-out of
+this functionality simply add `uid: false` to the options hash.  You can also specify a
+a different name via the 'uidProperty' option, as described below.
+
+_Note_: This option also provides the session mngt functionality described above.  No need
+to add `session: true`, however if you want to be redundant redundant, please be my guest.
+
+
+
+### Overriding Defaults 
+Here are the current defaults and the required options to override them.
+
+*Nodes and Services*
+
+options[key] | Type | Default Value
+-----------------------------------
+geofireNode | String | "geofire"
+geofireService | String | "geofire"
+locationNode | String | "locations"
+locationService | String | singular of locationNode
+sessionService | String | "session"
+sessionIdMethod | String | "getId"
+userNode | String | "users"
+userService | String | singular of userNode
+
+
+*Properties*
+
+options[key] | Type | Default Value
+-----------------------------------
+latitude| String| "lat"
+longitude| String| "lon"
+uidProperty| String | "uid"
+
+
+
 
 ## Contributing
 Yes, please.  Below should get you setup.

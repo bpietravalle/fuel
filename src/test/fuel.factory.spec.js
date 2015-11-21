@@ -868,7 +868,7 @@
                             placeType: "a place",
                             distance: 1234,
                             closeBy: true
-                        }, true);
+                        },true);
                     });
                     it("should call geofire object with correct path, main location key and coordinates", function() {
                         expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
@@ -914,6 +914,26 @@
                     qReject(0);
                 });
 
+            });
+            describe("Separating Location Data", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        gps: true,
+                        locationService: "differentLocation"
+                    });
+                    test = subject.createLocation(locData[0]);
+                    $rootScope.$digest();
+                    $rootScope.$digest();
+                });
+                it("should not save coordinate data to location array", function() {
+                    expect(dataKeys(getPromValue(test)[1])).toBeDefined();
+                    expect(dataKeys(getPromValue(test)[1]).lat).not.toBeDefined();
+                    expect(dataKeys(getPromValue(test)[1]).lon).not.toBeDefined();
+                });
+                it("should call geofire object with correct path, main location key and coordinates", function() {
+                    expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
+                    expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
+                });
             });
         });
         describe("With User And GPS Options", function() {
@@ -1140,25 +1160,6 @@
                         expect(subject.ref().getData()).toEqual(null);
                     });
                     qReject(0);
-                });
-            });
-            describe("Separating Location Data", function() {
-                beforeEach(function() {
-                    subject = fuel("trips", {
-                        gps: true,
-                        locationService: "differentLocation"
-                    });
-                    test = subject.addLoc(locData[0]);
-                    $rootScope.$digest();
-                    subject.ref().flush();
-                    $rootScope.$digest();
-                    this.key = subject.parent().key();
-                });
-                it("should not save coordinate data to location array", function() {
-                    expect(getPromValue(test)).toBeAFirebaseRef();
-                });
-                it("should call geofire object with correct path, main location key and coordinates", function() {
-                    expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
                 });
             });
         });
