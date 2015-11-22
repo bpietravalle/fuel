@@ -1,5 +1,27 @@
 (function() {
     "use strict";
+    describe("Inject", function() {
+        var testFactory;
+        beforeEach(function() {
+            angular.module("test", ["firebase.fuel"])
+								.config(function(fuelProvider){
+									fuelProvider.setRoot("http://boom.com");
+								})
+                .factory("testFactory", ["fuel",
+                    function(fuel) {
+                        return fuel("main");
+                    }
+                ]);
+            module("test");
+            inject(function(_testFactory_) {
+                testFactory = _testFactory_;
+            });
+        });
+        it("should be defined", function() {
+            expect(testFactory).toEqual("as");
+            expect(testFactory).toBeDefined();
+        });
+    });
 
     describe("FirePath factory", function() {
         var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;

@@ -7,7 +7,7 @@
 
     function FuelProvider(fireStarterProvider) {
         var prov = this;
-        prov.rootRef;
+        // prov.rootRef;
         prov.setRoot = function(val) {
             prov.rootRef = val;
             fireStarterProvider.setRoot(prov.rootRef);
@@ -34,9 +34,11 @@
             this._injector = $injector;
             this._path = path;
             this._rootPath = this._utils.paramCheck(prov.rootRef, "str");
+						if(!this._rootPath){
+							throw new Error("Please set root url in a config block");
+						}
             this._options = this._utils.paramCheck(options, "opt", {});
             this._pathOptions = {};
-            this._pathOptions.rootPath = this._rootPath;
 
             /*Core Options */
             this._geofire = this._utils.paramCheck(this._options.geofire, "bool", false);
@@ -90,7 +92,7 @@
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
 
-            this._pathMaster = this._firePath(this._path, this._pathOptions, this._constant);
+            this._pathMaster = this._firePath(this._path, this._pathOptions);
 
         };
 

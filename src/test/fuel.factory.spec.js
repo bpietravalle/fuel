@@ -691,20 +691,20 @@
                         });
                         spyOn(session, "getId").and.returnValue(1);
                         test = subject.current();
-												flush();
+                        flush();
                     });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
                     });
                     it("should resolve to a $firebaseObject", function() {
-                        baseCheck("object", getPromValue(test),'1');
+                        baseCheck("object", getPromValue(test), '1');
                     });
-										it("should update currentRef",function(){
-											expect(subject.ref()).toEqual(getPromValue(test).$ref());
-										});
-										it("should update base",function(){
-											expect(subject.base()).toEqual(getPromValue(test));
-										});
+                    it("should update currentRef", function() {
+                        expect(subject.ref()).toEqual(getPromValue(test).$ref());
+                    });
+                    it("should update base", function() {
+                        expect(subject.base()).toEqual(getPromValue(test));
+                    });
 
                 });
                 // describe("saveCurrent", function() {
@@ -714,23 +714,23 @@
                 //         });
                 //         spyOn(session, "getId").and.returnValue(1);
                 //         test = subject.saveCurrent(arrData[0]);
-												// flush();
+                // flush();
                 //     });
                 //     it("should be a promise", function() {
                 //         expect(test).toBeAPromise();
                 //     });
                 //     it("should resolve to a firebaseRef", function() {
                 //         expect(getPromValue(test)).toBeAFirebaseRef();
-												// //error
+                // //error
                 //         expect(getPromValue(test).getData()).toEqual(null);
                 //     });
-										// it("should update currentRef",function(){
-											// expect(subject.ref()).toEqual(getPromValue(test));
-											// // expect(subject.ref().getData()).toEqual(arrData[0]);
-										// });
-										// // it("should update base",function(){
-										// // 	expect(subject.base().$ref().getData()).toEqual(arrData[0]);
-										// // });
+                // it("should update currentRef",function(){
+                // expect(subject.ref()).toEqual(getPromValue(test));
+                // // expect(subject.ref().getData()).toEqual(arrData[0]);
+                // });
+                // // it("should update base",function(){
+                // // 	expect(subject.base().$ref().getData()).toEqual(arrData[0]);
+                // // });
 
                 // });
                 describe("bindCurrent", function() {

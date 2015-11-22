@@ -24,7 +24,6 @@
         this._path = path;
         this._fireStarter = fireStarter;
 				this._options = options;
-        this._rootPath = this._options.rootPath;
         this._session = this._options.session
         this._geofire = this._options.geofire
         if (this._session === true) {
@@ -78,7 +77,6 @@
                 fire.makeGeo = makeGeo;
             }
 
-            setCurrentRef(main())
 
 
             /*************** Constructor ************/
@@ -160,7 +158,7 @@
             /*************** firebaseRefs ************/
 
             function root() {
-                return new self._window.Firebase(rootPath());
+                return new self._fireStarter("root");
             }
 
             function main() {
@@ -204,7 +202,7 @@
 
 
             function rootPath() {
-                return self._utils.removeSlash(self._rootPath);
+                return root().toString();
             }
 
             function mainPath() {
@@ -318,6 +316,7 @@
             function inspect() {
                 return self;
             }
+            setCurrentRef(main())
 
             self._fire = fire;
             return self._fire;
