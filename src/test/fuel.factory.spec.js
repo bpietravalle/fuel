@@ -4,7 +4,6 @@
     describe("Fuel Factory", function() {
         var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
-
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
             arrData = [{
@@ -686,7 +685,7 @@
                     });
                     it("should update the base() to the mainArray", function() {
                         baseCheck("array", subject.base());
-												expect(subject.base().$ref().key()).toEqual("trips");
+                        expect(subject.base().$ref().key()).toEqual("trips");
                     });
                     qReject(0);
                 });
@@ -699,6 +698,55 @@
                         session: true
                     });
                 });
+                describe("current", function() {
+                    beforeEach(function() {
+                        subject = fuel("users", {
+                            session: true
+                        });
+                        spyOn(session, "getId").and.returnValue(1);
+                        test = subject.current();
+												flush();
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to a $firebaseObject", function() {
+                        baseCheck("object", getPromValue(test),'1');
+                    });
+										it("should update currentRef",function(){
+											expect(subject.ref()).toEqual(getPromValue(test).$ref());
+										});
+										it("should update base",function(){
+											expect(subject.base()).toEqual(getPromValue(test));
+										});
+
+                });
+                // describe("saveCurrent", function() {
+                //     beforeEach(function() {
+                //         subject = fuel("users", {
+                //             session: true
+                //         });
+                //         spyOn(session, "getId").and.returnValue(1);
+                //         test = subject.saveCurrent(arrData[0]);
+												// flush();
+                //     });
+                //     it("should be a promise", function() {
+                //         expect(test).toBeAPromise();
+                //     });
+                //     it("should resolve to a firebaseRef", function() {
+                //         expect(getPromValue(test)).toBeAFirebaseRef();
+												// //error
+                //         expect(getPromValue(test).getData()).toEqual(null);
+                //     });
+										// it("should update currentRef",function(){
+											// expect(subject.ref()).toEqual(getPromValue(test));
+											// // expect(subject.ref().getData()).toEqual(arrData[0]);
+										// });
+										// // it("should update base",function(){
+										// // 	expect(subject.base().$ref().getData()).toEqual(arrData[0]);
+										// // });
+
+                // });
                 describe("bindCurrent", function() {
                     beforeEach(function() {
                         subject.add(arrData[0]);

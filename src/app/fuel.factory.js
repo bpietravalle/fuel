@@ -141,9 +141,11 @@
             }
 
             if (self._session === true) {
+                entity.bindCurrent = bindCurrent;
+                entity.current = current;
+                // entity.saveCurrent = saveCurrent;
                 entity.session = session;
                 entity.sessionId = sessionId;
-                entity.bindCurrent = bindCurrent;
             }
 
             if (self._geofire === true) {
@@ -463,6 +465,19 @@
             /*Session Access */
             function bindCurrent(s, v) {
                 return bindTo(sessionId(), s, v);
+            }
+
+            function saveCurrent(data) {
+                return qAll(current(), data)
+                    .then(save)
+                    .then(commandSuccess)
+                    .catch(standardError);
+
+
+            }
+
+            function current() {
+                return mainRecord(sessionId());
             }
 
             function session() {
@@ -871,6 +886,7 @@
             /**CQ*****************************/
 
             function commandSuccess(res) {
+							// self._log.info(res);
                 self._log.info('command success');
                 switch (angular.isString(res.key())) {
                     case true:
@@ -895,7 +911,7 @@
                     case false:
                         switch (angular.isObject(res[1])) {
                             case true:
-                            //record in $firebaseArray or result from geofire.get()/geofire.query()
+                                //record in $firebaseArray or result from geofire.get()/geofire.query()
                                 self._log.info(res);
                                 self._log.info("setting ref to current parent");
                                 self._pathMaster.setCurrentRef(res[0].$ref());
