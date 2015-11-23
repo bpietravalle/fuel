@@ -1,6 +1,6 @@
 # Fuel
 
-Fuel is a lightweight constructor to help DRY up common command and query operations 
+Fuel is a lightweight provider useful for DRYing up common command and query operations 
 across your angular services while maintaing a flat, scalable JSON data structure. 
 This module is designed for angular services using:
 * [Firebase](https://www.firebase.com/)
@@ -25,9 +25,7 @@ $ bower install firebase.fuel --save
 ```javascript
 angular.module("yourApp",['firebase.fuel']);
 ```
-2.) Define a root node constant.  The Fuel service will look for a constant called
-'FBURL'. If you'd prefer to have Fuel look for a different constant, you can do so,
-as explained below. Either way make sure the constant is available in your module.
+2.) Define your root url in a config block using the `setRoot` method.
 
 ```javascript
 
@@ -35,8 +33,9 @@ as explained below. Either way make sure the constant is available in your modul
     "use strict";
 
     angular.module("yourApp")
-	 .constant("FBURL", "http://your-firebase.firebaseio.com");
-
+			.config(function(fuelProvider){
+				 fuelProvider.setRoot("http://your-firebase.firebaseio.com");
+			});
 
 })();
 ```
@@ -68,7 +67,7 @@ For example:
 
 ## Usage
 
-The Fuel service takes 2 arguments:
+The Fuel provider takes 2 arguments:
 
 ```javascript
 	 fuel(path, options);
@@ -114,7 +113,7 @@ Again, you can follow your own convention and override the defaults for all oper
 naming convention for constructing CRUD methods for nested arrays and nested records. 
 To mainpulate nested data using a different naming convention you can do so manually.
 
-2. _SRP_: Fuel services cannot directly manipulate/query other main firebase nodes. 
+2. _SRP_:  Fuel cannot directly manipulate/query other main firebase nodes. 
 To access other direct child nodes of your root firebaseRef, you can call methods on
 a few predefined services that are injected on initialization.  Currently, these services
 are: 'session','user','location','geofire'.
@@ -127,7 +126,6 @@ options.
 
 options[key] | Type | Result
 -------------|------|-------------
-constant| String | injects 'constant' rather than 'FBURL' to specify the root firebaseRef 
 geofire| Boolean | adds methods to persist/query geospatial data to/in Geofire
 gps| Boolean | adds a simple API to your app's geofire service
 nestedArrays| Array | `["child","nodes",]`

@@ -5,8 +5,11 @@
         var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
 
         beforeEach(function() {
+            rootPath = "https://your-firebase.firebaseio.com";
             angular.module("firebase.fuel")
-                .constant("FBURL", "https://your-firebase.firebaseio.com/")
+                .config(function(fuelProvider) {
+                    fuelProvider.setRoot(rootPath);
+                })
                 .factory("session", function() {
                     return {
                         getId: jasmine.createSpy("getId").and.callFake(function() {
@@ -28,11 +31,11 @@
                 $q = _$q_;
                 $log = _$log_;
             });
-            rootPath = "https://your-firebase.firebaseio.com";
             ref = new MockFirebase(rootPath);
             options = {
                 session: true,
                 geofire: true,
+                rootPath: rootPath,
                 sessionService: "session",
                 sessionIdMethod: "getId",
                 geofireName: "geofire"
@@ -65,13 +68,13 @@
 
         var paths = [
             ["mainArray", "trips"],
-            ["mainRecord", "trips/1", "1"],
-            ["nestedRef", "trips/1", "1"],
-            ["nestedArray", "trips/hotels", "hotels", undefined],
-            ["nestedArray", "trips/1/hotels", "1", "hotels"],
-            ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-            ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeo", "trips/hotels", ["hotels"]],
+                ["mainRecord", "trips/1", "1"],
+                ["nestedRef", "trips/1", "1"],
+                ["nestedArray", "trips/hotels", "hotels", undefined],
+                ["nestedArray", "trips/1/hotels", "1", "hotels"],
+                ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
+                ["nestedRecord", "trips/hotels/5", "hotels", "5"],
+                ["makeGeo", "trips/hotels", ["hotels"]],
         ];
 
         function testPaths(y) {

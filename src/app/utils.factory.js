@@ -36,7 +36,7 @@
         function strCheck(str) {
             switch (angular.isString(str)) {
                 case true:
-                    switch (str.length < 20) {
+                    switch (str.length < 100) {
                         case true:
                             return str;
                         case false:

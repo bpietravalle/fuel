@@ -64,8 +64,9 @@
                 });
             };
             angular.module("firebase.fuel")
-                .constant("MYURL", "https://your-different-firebase.firebaseio.com/")
-                .constant("FBURL", "https://your-firebase.firebaseio.com/")
+                .config(function(fuelProvider) {
+                    fuelProvider.setRoot(rootPath);
+                })
                 .factory("location", function($q) {
                     var location = {
                         addLoc: keyMock("add", $q),
@@ -233,7 +234,6 @@
                 ["uidProperty", "uid"],
             ];
             var coreDefaults = [
-                ["constant", "FBURL"],
                 ["geofire", false],
                 ["gps", false],
                 ["nestedArrays", []],
@@ -281,20 +281,6 @@
                     });
                 });
                 sessionAdded.forEach(definedMeth);
-            });
-            describe("different constant", function() {
-                beforeEach(function() {
-                    subject = fuel("trips", {
-                        constant: "MYURL"
-                    });
-                });
-                it("should still generate firebaseRefs", function() {
-                    expect(subject.ref()).toBeAFirebaseRef();
-                    expect(subject.ref().key()).toEqual("trips");
-                });
-                it("should have a different root URL", function() {
-                    expect(subject.ref().root().toString()).toEqual("https://your-different-firebase.firebaseio.com")
-                });
             });
             describe("Default Settings", function() {
                 describe("Core: ", function() {

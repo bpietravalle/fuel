@@ -8,15 +8,14 @@
     /** @ngInject */
     function firePathFactory(utils, $window, $q, $log, $injector, fireStarter) {
 
-        return function(path, options, constant) {
-            var fb = new FirePath(utils, $window, $q, $log, $injector, fireStarter, path, options, constant);
+        return function(path, options) {
+            var fb = new FirePath(utils, $window, $q, $log, $injector, fireStarter, path, options);
             return fb.construct();
-
         };
 
     }
 
-    FirePath = function(utils, $window, $q, $log, $injector, fireStarter, path, options, constant) {
+    FirePath = function(utils, $window, $q, $log, $injector, fireStarter, path, options) {
         this._utils = utils;
         this._window = $window;
         this._q = $q;
@@ -24,39 +23,25 @@
         this._injector = $injector;
         this._path = path;
         this._fireStarter = fireStarter;
-				//TODO: merge options with fuel options - no need to have options here
-        this._options = options || null;
-        this._constant = constant || "FBURL";
-        this._rootPath = this._injector.get(this._constant);
-        if (!angular.isString(this._rootPath)) {
-            throw new Error("You must provide a root path, either by a constant 'FBURL' or by providing a service name to inject");
-        }
-        this._const = undefined;
-        if (this._constant !== "FBURL") {
-            this._const = this._constant;
-        }
-        this._session = false;
-        this._geofire = false;
-        if (this._options) {
-            if (this._options.session === true) {
-                this._session = true;
-                if (this._options.sessionService) {
-                    this._sessionObject = this._injector.get(this._options.sessionService);
-                } else {
-                    throw new Error("You must provide a service to inject to access your session");
-                }
-                if (this._options.sessionIdMethod) {
-                    this._sessionIdMethod = this._options.sessionIdMethod;
-                } else {
-                    throw new Error("You must provide a method to query the sessionId");
-                }
+				this._options = options;
+        this._rootPath = this._options.rootPath;
+        this._session = this._options.session
+        this._geofire = this._options.geofire
+        if (this._session === true) {
+            this._sessionService = this._options.sessionService;
+            this._sessionObject = this._injector.get(this._options.sessionService);
+            if (!this._sessionObject) {
+                throw new Error("You must provide a service to inject to access your session");
             }
-            if (this._options.geofire === true) {
-                this._geofire = true;
-								//TODO currently unused- remove
-                this._locationNode = this._options.locationNode || "locations";
-                this._geofireNode = this._options.geofireNode || "geofire";
+            this._sessionIdMethod = this._options.sessionIdMethod;
+            if (!this._sessionIdMethod) {
+                throw new Error("You must provide a method to query the sessionId");
             }
+        }
+        if (this._geofire === true) {
+            //TODO currently unused- remove
+            this._locationNode = this._options.locationNode;
+            this._geofireNode = this._options.geofireNode;
         }
     };
 
@@ -108,10 +93,6 @@
                                 return nextRef(path);
                             default:
                                 return buildFire(type, nextRef(path), true);
-                                // return self._utils.qAll(nextRef(path), type)
-                                //     .then(completeBuild)
-                                //     .catch(standardError);
-
 
                         }
 
