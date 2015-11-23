@@ -146,7 +146,7 @@
 
             function buildFire(type, path, flag) {
 
-                return self._q.when(self._fireStarter(type, path, flag, self._const))
+                return self._q.when(self._fireStarter(type, path, flag))
                     .then(setCurrentRefAndReturn)
                     .catch(standardError);
 
