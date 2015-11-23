@@ -17,7 +17,7 @@
     "angular-mocks": "~1.4.0",
     "mockfirebase": "~0.11.0"
   },
-  "main": "dist/scripts/app.js",
+  "main": "dist/scripts/fuelProvider.js",
   "ignore": [
     "**/.*",
     "coverage",
