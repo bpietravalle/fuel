@@ -1,25 +1,53 @@
 (function() {
     "use strict";
     describe("Inject", function() {
-        var testFactory;
-        beforeEach(function() {
-            angular.module("test", ["firebase.fuel"])
-								.config(function(fuelProvider){
-									fuelProvider.setRoot("http://boom.com");
-								})
-                .factory("testFactory", ["fuel",
-                    function(fuel) {
-                        return fuel("main");
-                    }
-                ]);
-            module("test");
-            inject(function(_testFactory_) {
-                testFactory = _testFactory_;
+        var testFactory, rootPath;
+        describe("with invalid Config", function() {
+            beforeEach(function() {
+                rootPath = "https://your-firebase.firebaseio.com";
+                angular.module("test", ["firebase.fuel"])
+                    .factory("testFactory", ["fuel",
+                        function(fuel) {
+                            return fuel("main");
+                        }
+                    ]);
+            });
+            it("should throw Error", function() {
+                expect(function() {
+                    module("test");
+                    inject(function(_testFactory_) {
+                        testFactory = _testFactory_;
+                    });
+                    testFactory
+                }).toThrow();
             });
         });
-        it("should be defined", function() {
-            expect(testFactory).toEqual("as");
-            expect(testFactory).toBeDefined();
+        describe("with valid Config", function() {
+            beforeEach(function() {
+                rootPath = "https://your-firebase.firebaseio.com";
+                angular.module("test", ["firebase.fuel"])
+                    .config(function(fuelProvider) {
+                        fuelProvider.setRoot(rootPath);
+                    })
+                    .factory("testFactory", ["fuel",
+                        function(fuel) {
+                            return fuel("main");
+                        }
+                    ]);
+                module("test");
+                inject(function(_testFactory_) {
+                    testFactory = _testFactory_;
+                });
+            });
+            it("should be defined", function() {
+                expect(testFactory).toBeDefined();
+            });
+						it("should have a rootPath equal to value set in config phase",function(){
+                expect(testFactory.inspect()._pathMaster.rootRef().toString()).toEqual(rootPath + "/");
+						});
+            it("should have a current ref = main()", function() {
+                expect(testFactory.ref().key()).toEqual("main");
+            });
         });
     });
 
@@ -90,13 +118,13 @@
 
         var paths = [
             ["mainArray", "trips"],
-                ["mainRecord", "trips/1", "1"],
-                ["nestedRef", "trips/1", "1"],
-                ["nestedArray", "trips/hotels", "hotels", undefined],
-                ["nestedArray", "trips/1/hotels", "1", "hotels"],
-                ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-                ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-                ["makeGeo", "trips/hotels", ["hotels"]],
+            ["mainRecord", "trips/1", "1"],
+            ["nestedRef", "trips/1", "1"],
+            ["nestedArray", "trips/hotels", "hotels", undefined],
+            ["nestedArray", "trips/1/hotels", "1", "hotels"],
+            ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
+            ["nestedRecord", "trips/hotels/5", "hotels", "5"],
+            ["makeGeo", "trips/hotels", ["hotels"]],
         ];
 
         function testPaths(y) {
