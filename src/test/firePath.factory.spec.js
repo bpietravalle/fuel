@@ -54,7 +54,7 @@
             });
 
             it("should have a rootPath equal to value set in config phase", function() {
-                expect(testFactory.inspect()._pathMaster.rootRef().toString()).toEqual(rootPath + "/");
+                expect(testFactory.inspect()._pathMaster.root().toString()).toEqual(rootPath + "/");
             });
             it("should have a current ref = main()", function() {
                 expect(testFactory.ref().key()).toEqual("main");
@@ -173,12 +173,12 @@
             });
         });
 
-        describe("rootRef", function() {
+        describe("root", function() {
             it("is a firebaseRef", function() {
-                expect(subject.rootRef()).toBeAFirebaseRef();
+                expect(subject.root()).toBeAFirebaseRef();
             });
             it("should create the correct path", function() {
-                expect(subject.rootRef().path).toEqual(rootPath);
+                expect(subject.root().path).toEqual(rootPath);
             });
         });
 

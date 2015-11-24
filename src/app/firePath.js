@@ -61,7 +61,7 @@
                 fire.main = main;
                 fire.reset = reset;
                 fire.nestedRef = nestedRef;
-                fire.rootRef = root;
+                fire.root = root;
                 fire.mainArray = mainArray;
                 fire.mainRecord = mainRecord;
                 fire.nestedArray = nestedArray;
@@ -166,7 +166,6 @@
 
                 function root() {
                     return main().root();
-                    // return self._fireStarter("root");
                 }
 
                 function main() {
@@ -176,7 +175,6 @@
                 function nestedRef(recId, name) {
                     return build(nestedArrayPath(recId, name));
                 }
-
 
                 function reset() {
                     return setCurrentRef(main());

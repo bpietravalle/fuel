@@ -90,7 +90,7 @@
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
 
-            this._pathMaster = this._firePath(this._path, this._pathOptions);
+            this._pathMaster = this._firePath(this._path, this._pathOptions, this._rootPath);
         };
 
         Fuel.prototype = {
@@ -276,13 +276,9 @@
                 function getMainRecord(key) {
                     return qAll(loadMainArray(), key)
                         .then(getRecord)
-                        // .then(setReturnValue)
                         .then(querySuccess)
                         .catch(standardError);
 
-                    // function setReturnValue(res) {
-                    //     return res;
-                    // }
                 }
 
 
@@ -983,29 +979,29 @@
     function FirePathProvider(fireStarterProvider) {
         var prov = this;
 
-        prov.$get = ["utils", "$window", "$q", "$log", "$injector", "fireStarter",
-            function firePathFactory(utils, $window, $q, $log, $injector, fireStarter) {
+        prov.$get = ["utils", "$q", "$log", "$injector", "fireStarter",
+            function firePathFactory(utils, $q, $log, $injector, fireStarter) {
 
-                return function(path, options) {
-                    var fb = new FirePath(utils, $window, $q, $log, $injector, fireStarter, path, options);
+                return function(path, options, constant) {
+                    var fb = new FirePath(utils, $q, $log, $injector, fireStarter, path, options, constant);
                     var c = fb.construct();
-										c.reset();
-										return c;
+                    c.reset();
+                    return c;
 
                 };
 
             }
         ];
 
-        FirePath = function(utils, $window, $q, $log, $injector, fireStarter, path, options) {
+        FirePath = function(utils, $q, $log, $injector, fireStarter, path, options, constant) {
             this._utils = utils;
-            this._window = $window;
             this._q = $q;
             this._log = $log;
             this._injector = $injector;
             this._path = path;
             this._fireStarter = fireStarter;
             this._options = options;
+            this._rootPath = constant;
             this._session = this._options.session
             this._geofire = this._options.geofire
             if (this._session === true) {
@@ -1035,7 +1031,7 @@
                 fire.main = main;
                 fire.reset = reset;
                 fire.nestedRef = nestedRef;
-                fire.rootRef = root;
+                fire.root = root;
                 fire.mainArray = mainArray;
                 fire.mainRecord = mainRecord;
                 fire.nestedArray = nestedArray;
@@ -1088,8 +1084,6 @@
                     return buildFire(res[1], res[0], true);
                 }
 
-
-
                 function nextRef(param) {
                     var ref;
                     switch (nodeComp(param) < 0) {
@@ -1119,7 +1113,7 @@
                             return ref.parent().parent().parent().parent().parent();
                         default:
                             //TODO fix so dynamically calls parent() based on idx
-														reset();
+                            reset();
                             throw new Error("Too deep - construct again");
                     }
                 }
@@ -1127,7 +1121,7 @@
 
                 function buildFire(type, path, flag) {
 
-                    return self._q.when(self._fireStarter(type, path, flag))
+                    return self._q.when(self._fireStarter(type, path, flag, self._rootPath))
                         .then(setCurrentRefAndReturn)
                         .catch(standardError);
 
@@ -1141,17 +1135,16 @@
                 /*************** firebaseRefs ************/
 
                 function root() {
-                    return self._fireStarter("root");
+                    return main().root();
                 }
 
                 function main() {
-                    return root().child(self._utils.relativePath(self._path));
+                    return self._fireStarter("ref", [self._path], null, self._rootPath);
                 }
 
                 function nestedRef(recId, name) {
                     return build(nestedArrayPath(recId, name));
                 }
-
 
                 function reset() {
                     return setCurrentRef(main());
@@ -1185,16 +1178,14 @@
                     return build(self._utils.toArray([self._path, path]), "geo");
                 }
 
-
                 /************ Absolute Paths ****************/
 
-
                 function rootPath() {
-                    return root().toString();
+                    return self._utils.removeSlash(self._rootPath);
                 }
 
                 function mainPath() {
-                    return main().toString();
+                    return fullPath(self._path);
                 }
 
                 /************ Relative Paths ****************/
