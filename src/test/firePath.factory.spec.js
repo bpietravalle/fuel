@@ -23,6 +23,7 @@
             });
         });
         describe("with valid Config", function() {
+            var fuel;
             beforeEach(function() {
                 rootPath = "https://your-firebase.firebaseio.com";
                 angular.module("test", ["firebase.fuel"])
@@ -35,16 +36,26 @@
                         }
                     ]);
                 module("test");
-                inject(function(_testFactory_) {
+                inject(function(_testFactory_, _fuel_) {
+                    fuel = _fuel_;
                     testFactory = _testFactory_;
                 });
             });
             it("should be defined", function() {
+                expect(fuel).toEqual(jasmine.any(Function));
+                expect(fuel).toBeDefined();
                 expect(testFactory).toBeDefined();
             });
-						it("should have a rootPath equal to value set in config phase",function(){
+            it("should have a root path defined in fuel object", function() {
+                expect(testFactory.inspect()._rootPath).toEqual(rootPath);
+            });
+            it("should have a root path defined in firePath object", function() {
+                expect(testFactory.inspect()._pathMaster.inspect()._rootPath).toEqual(rootPath);
+            });
+
+            it("should have a rootPath equal to value set in config phase", function() {
                 expect(testFactory.inspect()._pathMaster.rootRef().toString()).toEqual(rootPath + "/");
-						});
+            });
             it("should have a current ref = main()", function() {
                 expect(testFactory.ref().key()).toEqual("main");
             });
@@ -85,13 +96,12 @@
             options = {
                 session: true,
                 geofire: true,
-                rootPath: rootPath,
                 sessionService: "session",
                 sessionIdMethod: "getId",
                 geofireName: "geofire"
             };
             spyOn($log, "info");
-            subject = firePath("trips", options);
+            subject = firePath("trips", options, rootPath);
         });
         afterEach(function() {
             subject = null;

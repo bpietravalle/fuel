@@ -90,7 +90,7 @@
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
 
-            this._pathMaster = this._firePath(this._path, this._pathOptions);
+            this._pathMaster = this._firePath(this._path, this._pathOptions, this._rootPath);
         };
 
         Fuel.prototype = {
@@ -276,13 +276,9 @@
                 function getMainRecord(key) {
                     return qAll(loadMainArray(), key)
                         .then(getRecord)
-                        // .then(setReturnValue)
                         .then(querySuccess)
                         .catch(standardError);
 
-                    // function setReturnValue(res) {
-                    //     return res;
-                    // }
                 }
 
 
