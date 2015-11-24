@@ -87,7 +87,6 @@
                 }
 
 
-
                 /*************** Constructor ************/
 
                 function build(path, type) {
@@ -318,10 +317,6 @@
 
                 function nodeComp(param) {
                     return nodeIdx().length - paramNodeIdx(param).length;
-                }
-
-                function resetRef() {
-                    return setCurrentRef(main());
                 }
 
                 function fullPath(path) {

@@ -22,7 +22,7 @@ wrench.readdirSyncRecursive('./gulp').filter(function(file) {
 gulp.task('concat', function() {
     return gulp.src(["./src/app/fuel.js", "./src/app/firePath.js", "./src/app/utils.js"])
         .pipe(concat("fuelProvider.js"))
-        .pipe(gulp.dest("./dist/"));
+        .pipe(gulp.dest("./dist/scripts/"));
 });
 /**
  *  Default task clean temporaries directories and launch the
