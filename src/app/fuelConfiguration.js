@@ -11,10 +11,13 @@
             rootRef = val;
             fireStarterProvider.setRoot(rootRef);
         }
+        prov.getRoot = function() {
+            return fireStarterProvider.getRoot();
+        }
 
         prov.$get = ["fireStarter",
             function(fireStarter) {
-                switch (angular.isString(rootRef)) {
+                switch (angular.isString(prov.getRoot())) {
                     case true:
                         return function(type, path, options) {
                             return fireStarter(type, path, options)
