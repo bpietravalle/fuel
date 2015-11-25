@@ -5,7 +5,7 @@
         var utils, $log, $q, test, rootPath, main, c, p;
 
         beforeEach(function() {
-            module("firebase.fuel");
+            module("firebase.fuel.utils");
             inject(function(_utils_, _$q_, _$log_) {
                 $log = _$log_;
                 utils = _utils_;

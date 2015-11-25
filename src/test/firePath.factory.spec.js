@@ -27,8 +27,8 @@
             beforeEach(function() {
                 rootPath = "https://your-firebase.firebaseio.com";
                 angular.module("test", ["firebase.fuel"])
-                    .config(function(fuelProvider) {
-                        fuelProvider.setRoot(rootPath);
+                    .config(function(fuelConfigurationProvider) {
+                        fuelConfigurationProvider.setRoot(rootPath);
                     })
                     .factory("testFactory", ["fuel",
                         function(fuel) {
@@ -46,12 +46,6 @@
                 expect(fuel).toBeDefined();
                 expect(testFactory).toBeDefined();
             });
-            it("should have a root path defined in fuel object", function() {
-                expect(testFactory.inspect()._rootPath).toEqual(rootPath);
-            });
-            it("should have a root path defined in firePath object", function() {
-                expect(testFactory.inspect()._pathMaster.inspect()._rootPath).toEqual(rootPath);
-            });
 
             it("should have a rootPath equal to value set in config phase", function() {
                 expect(testFactory.inspect()._pathMaster.root().toString()).toEqual(rootPath + "/");
@@ -68,8 +62,8 @@
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
             angular.module("firebase.fuel")
-                .config(function(fuelProvider) {
-                    fuelProvider.setRoot(rootPath);
+                .config(function(fuelConfigurationProvider) {
+                    fuelConfigurationProvider.setRoot(rootPath);
                 })
                 .factory("session", function() {
                     return {

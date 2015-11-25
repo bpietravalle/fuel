@@ -2,15 +2,11 @@
     "use strict";
     var Fuel;
     angular
-        .module('firebase.fuel', ['platanus.inflector', 'firebase.starter'])
+        .module('firebase.fuel.services')
     .provider("fuel", FuelProvider);
 
-    function FuelProvider(fireStarterProvider) {
+    function FuelProvider() {
         var prov = this;
-        prov.setRoot = function(val) {
-            prov.rootRef = val;
-            fireStarterProvider.setRoot(prov.rootRef);
-        };
 
         prov.$get = ["$timeout", "utils", "firePath", "$q", "$log", "$injector",
             function FuelFactory($timeout, utils, firePath, $q, $log, $injector) {
@@ -19,7 +15,6 @@
                     var fb = new Fuel($timeout, utils, firePath, $q, $log, $injector, path, options);
                     return fb.construct();
                 };
-
             }
         ];
 
@@ -31,10 +26,6 @@
             this._log = $log;
             this._injector = $injector;
             this._path = path;
-            this._rootPath = this._utils.paramCheck(prov.rootRef, "str");
-						if(!this._rootPath){
-							throw new Error("Please set root url in your module's configuration phase");
-						}
             this._options = this._utils.paramCheck(options, "opt", {});
             this._pathOptions = {};
 
@@ -90,7 +81,7 @@
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
             }
 
-            this._pathMaster = this._firePath(this._path, this._pathOptions, this._rootPath);
+            this._pathMaster = this._firePath(this._path, this._pathOptions);
         };
 
         Fuel.prototype = {

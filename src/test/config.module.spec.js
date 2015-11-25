@@ -1,10 +1,10 @@
 (function(angular) {
     'use strict';
-    describe("firebase.fuel module", function() {
+    describe("firebase.fuel.config module", function() {
         describe("Module-Dependencies:", function() {
             var module;
             beforeEach(function() {
-                module = angular.module("firebase.fuel");
+                module = angular.module("firebase.fuel.config");
             });
 
             it("should exist", function() {
@@ -16,13 +16,10 @@
                     return deps.indexOf(m) >= 0;
                 };
                 beforeEach(function() {
-                    deps = module.value('firebase.fuel').requires;
+                    deps = module.value('firebase.fuel.config').requires;
                 });
-                it("should depend on firebase.fuel.services", function() {
-                    expect(hasModule("firebase.fuel.services")).toBeTruthy();
-                });
-                it("should depend on firebase.fuel.config", function() {
-                    expect(hasModule("firebase.fuel.config")).toBeTruthy();
+                it("should depend on firebase.starter", function() {
+                    expect(hasModule("firebase.starter")).toBeTruthy();
                 });
             });
         });

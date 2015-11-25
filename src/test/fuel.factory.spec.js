@@ -64,8 +64,8 @@
                 });
             };
             angular.module("firebase.fuel")
-                .config(function(fuelProvider) {
-                    fuelProvider.setRoot(rootPath);
+                .config(function(fuelConfigurationProvider) {
+                    fuelConfigurationProvider.setRoot(rootPath);
                 })
                 .factory("location", function($q) {
                     var location = {

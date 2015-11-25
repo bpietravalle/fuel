@@ -33,8 +33,8 @@ angular.module("yourApp",['firebase.fuel']);
     "use strict";
 
     angular.module("yourApp")
-			.config(function(fuelProvider){
-				 fuelProvider.setRoot("http://your-firebase.firebaseio.com");
+			.config(function(fuelConfigurationProvider){
+				 fuelConfigurationProvider.setRoot("http://your-firebase.firebaseio.com");
 			});
 
 })();
@@ -338,6 +338,9 @@ latitude| String| "lat"
 longitude| String| "lon"
 uidProperty| String | "uid"
 
+### Authentication Helper
+Fuel does not expose the $firebaseAuth service.  To do so, inject `fuelAuth`.  This factory will return a $firebaseAuth
+service at the url specified by the `fuelConfigurationProvider`, as specifided above.
 
 
 ## Contributing

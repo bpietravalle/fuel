@@ -3,6 +3,7 @@
 
     /** @ngInject */
     function loggerFactory($log) {
+			//unused currently
 
         return {
 
@@ -19,6 +20,6 @@
 
     }
 
-    angular.module("firebase.fuel")
+    angular.module("firebase.fuel.logger",[])
         .factory("logger", loggerFactory);
 })();

@@ -2,7 +2,7 @@
     "use strict";
 
 
-    angular.module("firebase.fuel")
+    angular.module("firebase.fuel.utils",['platanus.inflector'])
         .factory("utils", utilsFactory);
 
 

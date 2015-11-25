@@ -2,18 +2,17 @@
     "use strict";
     var FirePath;
 
-    angular.module("firebase.fuel")
+    angular.module("firebase.fuel.services")
         .provider("firePath", FirePathProvider);
 
-    /** @ngInject */
-    function FirePathProvider(fireStarterProvider) {
+    function FirePathProvider() {
         var prov = this;
 
-        prov.$get = ["utils", "$q", "$log", "$injector", "fireStarter",
-            function firePathFactory(utils, $q, $log, $injector, fireStarter) {
+        prov.$get = ["utils", "$q", "$log", "$injector", "fuelConfiguration",
+            function firePathFactory(utils, $q, $log, $injector, fuelConfiguration) {
 
                 return function(path, options, constant) {
-                    var fb = new FirePath(utils, $q, $log, $injector, fireStarter, path, options, constant);
+                    var fb = new FirePath(utils, $q, $log, $injector, fuelConfiguration, path, options);
                     var c = fb.construct();
                     c.reset();
                     return c;
@@ -23,15 +22,14 @@
             }
         ];
 
-        FirePath = function(utils, $q, $log, $injector, fireStarter, path, options, constant) {
+        FirePath = function(utils, $q, $log, $injector, fuelConfiguration, path, options) {
             this._utils = utils;
             this._q = $q;
             this._log = $log;
             this._injector = $injector;
             this._path = path;
-            this._fireStarter = fireStarter;
+            this._fuelConfiguration = fuelConfiguration;
             this._options = options;
-            this._rootPath = constant;
             this._session = this._options.session
             this._geofire = this._options.geofire
             if (this._session === true) {
@@ -110,10 +108,6 @@
                     return fullPath(path).search(mainPath()) > -1;
                 }
 
-                function completeBuild(res) {
-                    return buildFire(res[1], res[0], true);
-                }
-
                 function nextRef(param) {
                     var ref;
                     switch (nodeComp(param) < 0) {
@@ -151,7 +145,7 @@
 
                 function buildFire(type, path, flag) {
 
-                    return self._q.when(self._fireStarter(type, path, flag, self._rootPath))
+                    return self._q.when(self._fuelConfiguration(type, path, flag))
                         .then(setCurrentRefAndReturn)
                         .catch(standardError);
 
@@ -169,7 +163,7 @@
                 }
 
                 function main() {
-                    return self._fireStarter("ref", [self._path], null, self._rootPath);
+                    return self._fuelConfiguration("ref", [self._path]);
                 }
 
                 function nestedRef(recId, name) {
@@ -211,10 +205,11 @@
                 /************ Absolute Paths ****************/
 
                 function rootPath() {
-                    return self._utils.removeSlash(self._rootPath);
+                    return root().toString();
                 }
 
                 function mainPath() {
+									//this should be main().toString();
                     return fullPath(self._path);
                 }
 
