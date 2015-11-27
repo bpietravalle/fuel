@@ -238,18 +238,16 @@
 
 
         function addTimeAtCreate(obj, createtime, updatetime) {
-            var newProp = {}
-            newProp[createtime] = timeStamp();
-            newProp[updatetime] = timeStamp();
+            obj[createtime] = timeStamp();
+            obj[updatetime] = timeStamp();
 
-            return angular.extend(obj, newProp);
+            return obj;
         }
 
         function addTimeAtSave(obj, updatetime) {
-            var newProp = {}
-            newProp[updatetime] = timeStamp();
+            obj[updatetime] = timeStamp();
 
-            return angular.extend(obj, newProp);
+            return obj;
         }
 
         function timeStamp() {

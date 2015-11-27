@@ -193,7 +193,6 @@
             });
         });
         describe("Options", function() {
-
             function definedMeth(y) {
                 it(y + "() should be a defined method", function() {
                     expect(subject[y]).toBeDefined();
@@ -311,9 +310,6 @@
                 });
 
             });
-
-
-
         });
         describe("Without Options", function() {
             beforeEach(function() {
@@ -1627,19 +1623,97 @@
                 });
                 describe("save()", function() {
                     beforeEach(function() {
-                        test = subject.add(arrData[0]);
+                        $rootScope.$digest();
+                        subject.add(arrData[0]);
                         flush();
-												this.key = subject.ref().key();
-												this.createTime = subject.ref().getData().createdAt;
-												this.updateTime = subject.ref().getData().updateAt;
-												subject.save(subject.ref().key());
-												flush();
+                        this.key = subject.ref().key();
+                        this.base = subject.base()[0];
+                        this.createTime = this.base.createdAt;
+                        this.updateTime = this.base.updatedAt;
                     });
-                    it("should change updatedAt time", function() {
-                        expect(subject.ref().getData().updatedAt).not.toEqual(this.createTime);
+                    afterEach(function() {
+                        this.createTime = null;
+                        this.updateTime = null;
+                    });
+                    describe("If pass an array", function() {
+                        beforeEach(function() {
+                            subject.load();
+                            flush();
+                        this.name = subject.base()[0].firstName;
+                        subject.base()[0].firstName = "john jacob";
+                        $rootScope.$digest();
+                        });
+                        it("should have timestamp properties", function() {
+                            expect(subject.base()[0].createdAt).toEqual(this.createTime);
+                            expect(subject.base()[0].updatedAt).toEqual(this.updateTime);
+                        });
+                        describe("If second arg is the record", function() {
+                            beforeEach(function() {
+                                test = subject.save([subject.base(), subject.base()[0]]);
+                                flush();
+                            });
+                            it("should save new time for updatedAt", function() {
+                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                                expect(getPromValue(test).getData().updatedAt).toEqual(jasmine.any(Number));
+                                expect(getPromValue(test).getData().updatedAt).not.toEqual(this.updateTime);
+                            });
+                            it("should not changed createdAt", function() {
+                                expect(getPromValue(test).getData().createdAt).toEqual(this.createTime);
+                            });
+                            qReject(0);
+                        });
+                        describe("If second arg is the record's index", function() {
+                            beforeEach(function() {
+                                test = subject.save([subject.base(), 0]);
+                                flush();
+                            });
+                            it("should save new time for updatedAt", function() {
+                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                                expect(getPromValue(test).getData().updatedAt).toEqual(jasmine.any(Number));
+                                expect(getPromValue(test).getData().updatedAt).not.toEqual(this.updateTime);
+                            });
+                            it("should not changed createdAt", function() {
+                                expect(getPromValue(test).getData().createdAt).toEqual(this.createTime);
+                            });
+                            qReject(0);
+                        });
+                        describe("If second arg is the record's key", function() {
+                            beforeEach(function() {
+                                test = subject.save([subject.base(), this.key]);
+                                flush();
+                            });
+                            it("should save new time for updatedAt", function() {
+                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                                expect(getPromValue(test).getData().updatedAt).toEqual(jasmine.any(Number));
+                                expect(getPromValue(test).getData().updatedAt).not.toEqual(this.updateTime);
+                            });
+                            it("should not changed createdAt", function() {
+                                expect(getPromValue(test).getData().createdAt).toEqual(this.createTime);
+                            });
+                            qReject(0);
+                        });
+                    });
+                    describe("If pass record instead of array", function() {
+                        beforeEach(function() {
+                        subject.load(0);
+                        flush();
+												subject.base().firstName= "john jacob";
+                            test = subject.save(subject.base());
+                            flush();
+                        });
+                        it("should save new time for updatedAt", function() {
+                            expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                            expect(getPromValue(test).getData().updatedAt).toEqual(jasmine.any(Number));
+                            expect(getPromValue(test).getData().updatedAt).not.toEqual(this.updateTime);
+                        });
+                        it("should not changed createdAt", function() {
+                            // expect(getPromValue(test)).toEqual("as");
+
+                            expect(getPromValue(test).getData().createdAt).toEqual(this.createTime);
+                        });
+                        qReject(0);
                     });
                 });
-
             });
         });
 

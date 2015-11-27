@@ -728,8 +728,10 @@
 
                 function save(res) {
                     switch (Array.isArray(res)) {
+											/* to save array record */
                         case true:
                             return saveArray(res);
+											/* to save object */
                         case false:
                             return saveObject(res);
                     }
@@ -740,28 +742,58 @@
                         .catch(standardError);
 
                     function checkParams(params) {
+                        /* pass key */
                         switch (angular.isString(params[1])) {
                             case true:
-                                return qAll(params[0].$indexFor(params[1]), params[0])
-                                    .then(completeSave)
+                                switch (self._timeStamp) {
+                                    case true:
+                                        return getRecord(params)
+                                            .then(updateTime)
+                                            .catch(standardError);
+                                    default:
+                                        return qAll(params[0].$indexFor(params[1]), params[0])
+                                            .then(completeSave)
+                                            .catch(standardError);
+                                }
                             case false:
-                                return res[0].$save(checkTimeStampAtSave(res[1]));
+                                /* pass idx */
+                                switch (angular.isNumber(params[1])) {
+                                    case true:
+                                        switch (self._timeStamp) {
+                                            case true:
+                                                return getRecord(params)
+                                                    .then(updateTime)
+                                                    .catch(standardError);
+                                            default:
+                                                return params[0].$save(checkTimeStampAtSave(params[1]));
+                                        }
+                                        /* pass record */
+                                    default:
+                                        return params[0].$save(checkTimeStampAtSave(params[1]));
+                                }
 
                         }
 
                     }
 
+                    function updateTime(res) {
+                        return res[0].$save(checkTimeStampAtSave(res[1]));
+                    }
+
                     function completeSave(res) {
-                        return res[1].$save(checkTimeStampAtSave(res[0]));
+                        return res[1].$save(res[0]);
                     }
                 }
 
                 function saveObject(res) {
-							 
-                    return checkTimeStampAtSave(res).$save();
+                    res = checkTimeStampAtSave(res)
+                    return res.$save();
                 }
 
                 function getRecord(res) {
+                    if (angular.isNumber(res[1])) {
+                        res[1] = res[0].$keyAt(res[1]);
+                    }
                     return qAll(res[0].$getRecord(res[1]), res[0])
                         .then(setReturnValue)
                         .catch(standardError);
