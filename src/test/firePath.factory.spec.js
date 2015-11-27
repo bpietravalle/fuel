@@ -23,7 +23,7 @@
             });
         });
         describe("with valid Config", function() {
-            var fuel;
+            var fuel, geoFactory;
             beforeEach(function() {
                 rootPath = "https://your-firebase.firebaseio.com";
                 angular.module("test", ["firebase.fuel"])
@@ -34,17 +34,24 @@
                         function(fuel) {
                             return fuel("main");
                         }
+                    ])
+                    .factory("geoFactory", ["fuel",
+                        function(fuel) {
+                            return fuel("main");
+                        }
                     ]);
                 module("test");
-                inject(function(_testFactory_, _fuel_) {
+                inject(function(_testFactory_, _geoFactory_, _fuel_) {
                     fuel = _fuel_;
                     testFactory = _testFactory_;
+                    geoFactory = _geoFactory_;
                 });
             });
             it("should be defined", function() {
                 expect(fuel).toEqual(jasmine.any(Function));
                 expect(fuel).toBeDefined();
                 expect(testFactory).toBeDefined();
+                expect(geoFactory).toBeDefined();
             });
 
             it("should have a rootPath equal to value set in config phase", function() {

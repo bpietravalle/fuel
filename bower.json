@@ -27,7 +27,8 @@
     "src/testutils"
   ],
   "resolutions": {
-    "angular": "~1.4.4"
+    "angular": "~1.4.4",
+    "firebase": "~2.3.2"
   },
   "repository": {
     "type": "git",

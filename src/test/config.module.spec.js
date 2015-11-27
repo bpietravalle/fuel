@@ -6,7 +6,6 @@
             beforeEach(function() {
                 module = angular.module("firebase.fuel.config");
             });
-
             it("should exist", function() {
                 expect(module).toBeDefined();
             });

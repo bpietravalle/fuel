@@ -33,10 +33,9 @@
     .provider('fuelConfiguration', FuelConfigProvider);
 
     function FuelConfigProvider(fireStarterProvider) {
-        var rootRef, prov = this;
+        var prov = this;
         prov.setRoot = function(val) {
-            rootRef = val;
-            fireStarterProvider.setRoot(rootRef);
+            fireStarterProvider.setRoot(val);
         }
         prov.getRoot = function() {
             return fireStarterProvider.getRoot();
@@ -1033,7 +1032,7 @@
         prov.$get = ["utils", "$q", "$log", "$injector", "fuelConfiguration",
             function firePathFactory(utils, $q, $log, $injector, fuelConfiguration) {
 
-                return function(path, options, constant) {
+                return function(path, options) {
                     var fb = new FirePath(utils, $q, $log, $injector, fuelConfiguration, path, options);
                     var c = fb.construct();
                     c.reset();
@@ -1141,6 +1140,10 @@
                     return ref;
                 }
 
+                // function toParent(r) {
+                //     return r.parent();
+                // }
+
                 function useCurrent(idx) {
                     var ref = getCurrentRef();
                     self._log.info("setting parent at index: " + idx);
@@ -1231,7 +1234,7 @@
                 }
 
                 function mainPath() {
-									//this should be main().toString();
+                    //this should be main().toString();
                     return fullPath(self._path);
                 }
 
@@ -1371,7 +1374,6 @@
     function utilsFactory($log, $q, inflector) {
 
         var utils = {
-
             toArray: toArray,
             camelize: camelize,
             extendPath: extendPath,
@@ -1389,7 +1391,6 @@
             nodeIdx: setNodeIdx,
             nextPath: nextPath,
             standardError: standardError,
-
         };
 
         return utils;

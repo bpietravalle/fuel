@@ -10,7 +10,6 @@
     function utilsFactory($log, $q, inflector) {
 
         var utils = {
-
             toArray: toArray,
             camelize: camelize,
             extendPath: extendPath,
@@ -28,7 +27,6 @@
             nodeIdx: setNodeIdx,
             nextPath: nextPath,
             standardError: standardError,
-
         };
 
         return utils;
