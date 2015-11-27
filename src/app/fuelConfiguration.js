@@ -6,10 +6,9 @@
     .provider('fuelConfiguration', FuelConfigProvider);
 
     function FuelConfigProvider(fireStarterProvider) {
-        var rootRef, prov = this;
+        var prov = this;
         prov.setRoot = function(val) {
-            rootRef = val;
-            fireStarterProvider.setRoot(rootRef);
+            fireStarterProvider.setRoot(val);
         }
         prov.getRoot = function() {
             return fireStarterProvider.getRoot();

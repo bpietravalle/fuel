@@ -11,7 +11,7 @@
         prov.$get = ["utils", "$q", "$log", "$injector", "fuelConfiguration",
             function firePathFactory(utils, $q, $log, $injector, fuelConfiguration) {
 
-                return function(path, options, constant) {
+                return function(path, options) {
                     var fb = new FirePath(utils, $q, $log, $injector, fuelConfiguration, path, options);
                     var c = fb.construct();
                     c.reset();
@@ -119,6 +119,10 @@
                     return ref;
                 }
 
+                // function toParent(r) {
+                //     return r.parent();
+                // }
+
                 function useCurrent(idx) {
                     var ref = getCurrentRef();
                     self._log.info("setting parent at index: " + idx);
@@ -209,7 +213,7 @@
                 }
 
                 function mainPath() {
-									//this should be main().toString();
+                    //this should be main().toString();
                     return fullPath(self._path);
                 }
 
