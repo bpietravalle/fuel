@@ -23,6 +23,7 @@
     "coverage",
     "node_modules",
     "bower_components",
+		"gulp",
     "src/test",
     "src/testutils"
   ],
