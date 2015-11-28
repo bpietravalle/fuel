@@ -33,8 +33,9 @@ angular.module("yourApp",['firebase.fuel']);
     "use strict";
 
     angular.module("yourApp")
-			.config(function(fuelConfigurationProvider){
-				 fuelConfigurationProvider.setRoot("http://your-firebase.firebaseio.com");
+			.constant("YOURURL","https://your-firebase.firebaseio.com")
+			.config(function(fuelConfigurationProvider,YOURURL){
+				 fuelConfigurationProvider.setRoot(YOURURL);
 			});
 
 })();
