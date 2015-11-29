@@ -63,7 +63,7 @@ For example:
 * https://your-firebase.firebaseio.com/trips/tripId/cities*/
 
 /* nestedRecord - $firebaseObject
-* https://your-firebase.firebaseio.com/trips/tripId/tickets/cities/cityId */
+* https://your-firebase.firebaseio.com/trips/tripId/cities/cityId */
 ```
 
 ## Usage
@@ -122,7 +122,7 @@ are: 'session','user','location','geofire'.
 
 ## Configuration
 
-You can configure Fuel by adding predefined keys to the options hash.  There are 6 core
+You can configure Fuel by adding predefined keys to the options hash.  There are 5 core
 options.
 
 options[key] | Type | Result
