@@ -266,7 +266,7 @@ getPhone(key)
 loadPhone(key)
 loadPhones()
 removePhone(idxOrRec)
-savePhone(key)
+savePhone(rec)
 ```
 
 
@@ -291,7 +291,8 @@ By adding `user: true` to the options hash, fuel will:
 * add a `uid` property to any record created in the main Array
 * queries user records based on the user index or uid property
 
-*REQs*:
+*REQs*
+
 1. _index_: fuel will look for an index with the same name as the main node.
 You need to specify the index in your security rules.
 

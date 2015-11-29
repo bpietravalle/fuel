@@ -63,7 +63,7 @@
     var Fuel;
     angular
         .module('firebase.fuel.services')
-    .provider("fuel", FuelProvider);
+        .provider("fuel", FuelProvider);
 
     function FuelProvider() {
         var prov = this;
@@ -95,12 +95,13 @@
             this._nestedArrays = this._utils.paramCheck(this._options.nestedArrays, "arr", []);
             this._session = this._utils.paramCheck(this._options.session, "bool", false);
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
+            this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
 
             /******************
              * Additional Config
              * *****************/
 
-            /* Geofire */
+            /* GPS & Geofire */
             if (this._gps === true || this._geofire === true) {
 
                 this._locationNode = this._utils.paramCheck(this._options.locationNode, "str", "locations");
@@ -112,6 +113,7 @@
                 this._pathOptions.locationNode = this._locationNode;
                 this._pathOptions.geofireNode = this._geofireNode;
             }
+
             if (this._gps === true) {
                 this._locationService = this._utils.paramCheck(this._options.locationService, "str", this._utils.singularize(this._locationNode));
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
@@ -120,7 +122,7 @@
             }
 
 
-            /* Geofire */
+            /* User  & Session */
             if (this._user === true || this._session === true) {
                 this._uid = this._utils.paramCheck(this._options.uid, "bool", true);
                 this._uidProperty = this._utils.paramCheck(this._options.uidProperty, "str", "uid");
@@ -139,6 +141,10 @@
                 this._pathOptions.session = true;
                 this._pathOptions.sessionService = this._sessionService;
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
+            }
+            if (this._timeStamp === true) {
+                this._createTime = this._utils.paramCheck(this._options.createTime, "str", "createdAt");
+                this._updateTime = this._utils.paramCheck(this._options.updateTime, "str", "updatedAt");
             }
 
             this._pathMaster = this._firePath(this._path, this._pathOptions);
@@ -378,8 +384,8 @@
 
                 }
 
-                function saveMaster(key) {
-                    return save(key)
+                function saveMaster(keyIdxorRec) {
+                    return save(keyIdxorRec)
                         .then(commandSuccess)
                         .catch(standardError);
 
@@ -413,7 +419,7 @@
                         delete data[self._longitude]
                     }
 
-                    return qAll(nestedArray(path), data)
+                    return qAll(nestedArray(path), checkTimeStampAtCreate(data))
                         .then(add)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -521,14 +527,12 @@
                     return bindTo(sessionId(), s, v);
                 }
 
-                function saveCurrent(data) {
-                    return qAll(current(), data)
-                        .then(save)
-                        .then(commandSuccess)
-                        .catch(standardError);
-
-
-                }
+                // function saveCurrent(data) {
+                //     return qAll(current(), data)
+                //         .then(save)
+                //         .then(commandSuccess)
+                //         .catch(standardError);
+                // }
 
                 function current() {
                     return mainRecord(sessionId());
@@ -756,8 +760,9 @@
                             .catch(standardError);
                     };
 
-                    newProp[saveRec] = function(params) {
-                        return saveMaster(params);
+                    newProp[saveRec] = function(rec) {
+											// can pass array as well
+                        return saveMaster(rec);
                     };
 
                     return newProp;
@@ -768,7 +773,7 @@
                  **** Helpers ****/
 
                 function add(res) {
-                    return res[0].$add(res[1]);
+                    return res[0].$add(checkTimeStampAtCreate(res[1]));
                 }
 
                 function remove(res) {
@@ -781,8 +786,10 @@
 
                 function save(res) {
                     switch (Array.isArray(res)) {
+											/* to save array record */
                         case true:
                             return saveArray(res);
+											/* to save object */
                         case false:
                             return saveObject(res);
                     }
@@ -793,16 +800,42 @@
                         .catch(standardError);
 
                     function checkParams(params) {
+                        /* pass key */
                         switch (angular.isString(params[1])) {
                             case true:
-                                return qAll(params[0].$indexFor(params[1]), params[0])
-                                    .then(completeSave)
+                                switch (self._timeStamp) {
+                                    case true:
+                                        return getRecord(params)
+                                            .then(updateTime)
+                                            .catch(standardError);
+                                    default:
+                                        return qAll(params[0].$indexFor(params[1]), params[0])
+                                            .then(completeSave)
+                                            .catch(standardError);
+                                }
                             case false:
-                                return res[0].$save(res[1]);
+                                /* pass idx */
+                                switch (angular.isNumber(params[1])) {
+                                    case true:
+                                        switch (self._timeStamp) {
+                                            case true:
+                                                return getRecord(params)
+                                                    .then(updateTime)
+                                                    .catch(standardError);
+                                            default:
+                                                return params[0].$save(checkTimeStampAtSave(params[1]));
+                                        }
+                                        /* pass record */
+                                    default:
+                                        return params[0].$save(checkTimeStampAtSave(params[1]));
+                                }
 
                         }
 
+                    }
 
+                    function updateTime(res) {
+                        return res[0].$save(checkTimeStampAtSave(res[1]));
                     }
 
                     function completeSave(res) {
@@ -811,10 +844,14 @@
                 }
 
                 function saveObject(res) {
+                    res = checkTimeStampAtSave(res)
                     return res.$save();
                 }
 
                 function getRecord(res) {
+                    if (angular.isNumber(res[1])) {
+                        res[1] = res[0].$keyAt(res[1]);
+                    }
                     return qAll(res[0].$getRecord(res[1]), res[0])
                         .then(setReturnValue)
                         .catch(standardError);
@@ -986,6 +1023,24 @@
                     }
                 }
 
+
+                function checkTimeStampAtCreate(obj) {
+                    switch (self._timeStamp) {
+                        case true:
+                            return self._utils.addTimeAtCreate(obj, self._createTime, self._updateTime);
+                        default:
+                            return obj;
+                    }
+                }
+
+                function checkTimeStampAtSave(obj) {
+                    switch (self._timeStamp) {
+                        case true:
+                            return self._utils.addTimeAtSave(obj, self._updateTime);
+                        default:
+                            return obj;
+                    }
+                }
 
                 function qWrap(obj) {
                     return self._utils.qWrap(obj);
@@ -1366,7 +1421,7 @@
     "use strict";
 
 
-    angular.module("firebase.fuel.utils",['platanus.inflector'])
+    angular.module("firebase.fuel.utils", ['platanus.inflector'])
         .factory("utils", utilsFactory);
 
 
@@ -1374,23 +1429,25 @@
     function utilsFactory($log, $q, inflector) {
 
         var utils = {
-            toArray: toArray,
+            addTimeAtCreate: addTimeAtCreate,
+            addTimeAtSave: addTimeAtSave,
             camelize: camelize,
             extendPath: extendPath,
             flatten: flatten,
-            removeSlash: removeSlash,
-            stringify: stringify,
+            nextPath: nextPath,
+            nodeIdx: setNodeIdx,
+            paramCheck: paramCheck,
+            paramNodeIdx: removeMainPath,
             pluralize: pluralize,
-            relativePath: relativePath,
             qWrap: qWrap,
             qAll: qAll,
             qAllResult: qAllResult,
-            singularize: singularize,
-						paramCheck: paramCheck,
-						paramNodeIdx: removeMainPath,
-            nodeIdx: setNodeIdx,
-            nextPath: nextPath,
+            relativePath: relativePath,
+            removeSlash: removeSlash,
             standardError: standardError,
+            singularize: singularize,
+            stringify: stringify,
+            toArray: toArray,
         };
 
         return utils;
@@ -1425,7 +1482,7 @@
         }
 
         function boolCheck(bool) {
-					var accepted = [false,true];
+            var accepted = [false, true];
 
             switch (accepted.indexOf(bool)) {
                 case -1:
@@ -1506,8 +1563,8 @@
         }
 
         function removeSlash(path) {
-            if (path[path.length-1] === "/") {
-                path = path.substring(0, path.length-1);
+            if (path[path.length - 1] === "/") {
+                path = path.substring(0, path.length - 1);
             }
             if (path[0] === "/") {
                 path = path.substring(1);
@@ -1552,10 +1609,10 @@
         function setNodeIdx(path, main) {
             path = removeSlash(path).slice(removeSlash(main).length);
             path = path.split('/');
-						if(path[0]===""){
-							path.shift();
-						}
-						return path;
+            if (path[0] === "") {
+                path.shift();
+            }
+            return path;
         }
 
 
@@ -1565,7 +1622,7 @@
          * @return {array} [Int - idx of deepest shared node, string - remaining childpath if any]
          *
          */
-			
+
 
         function nextPath(current, param) {
 
@@ -1597,6 +1654,25 @@
             return path;
 
         }
+
+
+        function addTimeAtCreate(obj, createtime, updatetime) {
+            obj[createtime] = timeStamp();
+            obj[updatetime] = timeStamp();
+
+            return obj;
+        }
+
+        function addTimeAtSave(obj, updatetime) {
+            obj[updatetime] = timeStamp();
+
+            return obj;
+        }
+
+        function timeStamp() {
+            return Firebase.ServerValue.TIMESTAMP;
+        }
+
     }
 
 
