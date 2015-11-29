@@ -110,7 +110,7 @@
                 entity.bindTo = bindTo;
 
                 /*Commands*/
-                entity.save = saveMainRecord;
+                entity.save = saveMaster;
                 entity.addIndex = addIndex;
                 entity.removeIndex = removeIndex;
 
@@ -324,8 +324,8 @@
 
                 }
 
-                function saveMainRecord(key) {
-                    return save(key)
+                function saveMaster(keyIdxorRec) {
+                    return save(keyIdxorRec)
                         .then(commandSuccess)
                         .catch(standardError);
 
@@ -358,7 +358,6 @@
                         delete data[self._latitude]
                         delete data[self._longitude]
                     }
-
 
                     return qAll(nestedArray(path), checkTimeStampAtCreate(data))
                         .then(add)
@@ -468,14 +467,12 @@
                     return bindTo(sessionId(), s, v);
                 }
 
-                function saveCurrent(data) {
-                    return qAll(current(), data)
-                        .then(save)
-                        .then(commandSuccess)
-                        .catch(standardError);
-
-
-                }
+                // function saveCurrent(data) {
+                //     return qAll(current(), data)
+                //         .then(save)
+                //         .then(commandSuccess)
+                //         .catch(standardError);
+                // }
 
                 function current() {
                     return mainRecord(sessionId());
@@ -703,8 +700,9 @@
                             .catch(standardError);
                     };
 
-                    newProp[saveRec] = function(params) {
-                        return saveMainRecord(params);
+                    newProp[saveRec] = function(rec) {
+											// can pass array as well
+                        return saveMaster(rec);
                     };
 
                     return newProp;
