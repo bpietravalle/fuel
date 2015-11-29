@@ -2,7 +2,7 @@
     "use strict";
 
 
-    angular.module("firebase.fuel.utils",['platanus.inflector'])
+    angular.module("firebase.fuel.utils", ['platanus.inflector'])
         .factory("utils", utilsFactory);
 
 
@@ -10,23 +10,25 @@
     function utilsFactory($log, $q, inflector) {
 
         var utils = {
-            toArray: toArray,
+            addTimeAtCreate: addTimeAtCreate,
+            addTimeAtSave: addTimeAtSave,
             camelize: camelize,
             extendPath: extendPath,
             flatten: flatten,
-            removeSlash: removeSlash,
-            stringify: stringify,
+            nextPath: nextPath,
+            nodeIdx: setNodeIdx,
+            paramCheck: paramCheck,
+            paramNodeIdx: removeMainPath,
             pluralize: pluralize,
-            relativePath: relativePath,
             qWrap: qWrap,
             qAll: qAll,
             qAllResult: qAllResult,
-            singularize: singularize,
-						paramCheck: paramCheck,
-						paramNodeIdx: removeMainPath,
-            nodeIdx: setNodeIdx,
-            nextPath: nextPath,
+            relativePath: relativePath,
+            removeSlash: removeSlash,
             standardError: standardError,
+            singularize: singularize,
+            stringify: stringify,
+            toArray: toArray,
         };
 
         return utils;
@@ -61,7 +63,7 @@
         }
 
         function boolCheck(bool) {
-					var accepted = [false,true];
+            var accepted = [false, true];
 
             switch (accepted.indexOf(bool)) {
                 case -1:
@@ -142,8 +144,8 @@
         }
 
         function removeSlash(path) {
-            if (path[path.length-1] === "/") {
-                path = path.substring(0, path.length-1);
+            if (path[path.length - 1] === "/") {
+                path = path.substring(0, path.length - 1);
             }
             if (path[0] === "/") {
                 path = path.substring(1);
@@ -188,10 +190,10 @@
         function setNodeIdx(path, main) {
             path = removeSlash(path).slice(removeSlash(main).length);
             path = path.split('/');
-						if(path[0]===""){
-							path.shift();
-						}
-						return path;
+            if (path[0] === "") {
+                path.shift();
+            }
+            return path;
         }
 
 
@@ -201,7 +203,7 @@
          * @return {array} [Int - idx of deepest shared node, string - remaining childpath if any]
          *
          */
-			
+
 
         function nextPath(current, param) {
 
@@ -233,6 +235,27 @@
             return path;
 
         }
+
+
+        function addTimeAtCreate(obj, createtime, updatetime) {
+            var newProp = {}
+            newProp[createtime] = timeStamp();
+            newProp[updatetime] = timeStamp();
+
+            return angular.extend(obj, newProp);
+        }
+
+        function addTimeAtSave(obj, updatetime) {
+            var newProp = {}
+            newProp[updatetime] = timeStamp();
+
+            return angular.extend(obj, newProp);
+        }
+
+        function timeStamp() {
+            return Firebase.ServerValue.TIMESTAMP;
+        }
+
     }
 
 

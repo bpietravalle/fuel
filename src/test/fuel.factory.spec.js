@@ -227,6 +227,8 @@
                 ["geofireService", "geofire"]
             ];
             var defaultProps = [
+                ["createTime", "createdAt"],
+                ["updateTime", "updatedAt"],
                 ["longitude", "lon"],
                 ["latitude", "lat"],
                 ["sessionIdMethod", "getId"],
@@ -237,6 +239,7 @@
                 ["geofire", false],
                 ["gps", false],
                 ["nestedArrays", []],
+                ["timeStamp", false],
                 ["session", false],
                 ["user", false]
             ];
@@ -293,6 +296,7 @@
                     subject = fuel("trips", {
                         user: true,
                         gps: true,
+                        timeStamp: true,
                         geofire: true
                     });
                 });
@@ -1602,6 +1606,40 @@
                     });
                     qReject(0);
                 })
+            });
+        });
+        describe("timeStamp", function() {
+            describe("no other options", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        timeStamp: true
+                    });
+                });
+                describe("add()", function() {
+                    beforeEach(function() {
+                        test = subject.add(arrData[0]);
+                        flush();
+                    });
+                    it("should add createdAt and updatedAt properties", function() {
+                        expect(subject.ref().getData().createdAt).toEqual(jasmine.any(Number));
+                        expect(subject.ref().getData().updatedAt).toEqual(jasmine.any(Number));
+                    });
+                });
+                describe("save()", function() {
+                    beforeEach(function() {
+                        test = subject.add(arrData[0]);
+                        flush();
+												this.key = subject.ref().key();
+												this.createTime = subject.ref().getData().createdAt;
+												this.updateTime = subject.ref().getData().updateAt;
+												subject.save(subject.ref().key());
+												flush();
+                    });
+                    it("should change updatedAt time", function() {
+                        expect(subject.ref().getData().updatedAt).not.toEqual(this.createTime);
+                    });
+                });
+
             });
         });
 

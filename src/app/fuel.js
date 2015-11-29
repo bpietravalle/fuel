@@ -3,7 +3,7 @@
     var Fuel;
     angular
         .module('firebase.fuel.services')
-    .provider("fuel", FuelProvider);
+        .provider("fuel", FuelProvider);
 
     function FuelProvider() {
         var prov = this;
@@ -35,12 +35,13 @@
             this._nestedArrays = this._utils.paramCheck(this._options.nestedArrays, "arr", []);
             this._session = this._utils.paramCheck(this._options.session, "bool", false);
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
+            this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
 
             /******************
              * Additional Config
              * *****************/
 
-            /* Geofire */
+            /* GPS & Geofire */
             if (this._gps === true || this._geofire === true) {
 
                 this._locationNode = this._utils.paramCheck(this._options.locationNode, "str", "locations");
@@ -52,6 +53,7 @@
                 this._pathOptions.locationNode = this._locationNode;
                 this._pathOptions.geofireNode = this._geofireNode;
             }
+
             if (this._gps === true) {
                 this._locationService = this._utils.paramCheck(this._options.locationService, "str", this._utils.singularize(this._locationNode));
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
@@ -60,7 +62,7 @@
             }
 
 
-            /* Geofire */
+            /* User  & Session */
             if (this._user === true || this._session === true) {
                 this._uid = this._utils.paramCheck(this._options.uid, "bool", true);
                 this._uidProperty = this._utils.paramCheck(this._options.uidProperty, "str", "uid");
@@ -79,6 +81,10 @@
                 this._pathOptions.session = true;
                 this._pathOptions.sessionService = this._sessionService;
                 this._pathOptions.sessionIdMethod = this._sessionIdMethod;
+            }
+            if (this._timeStamp === true) {
+                this._createTime = this._utils.paramCheck(this._options.createTime, "str", "createdAt");
+                this._updateTime = this._utils.paramCheck(this._options.updateTime, "str", "updatedAt");
             }
 
             this._pathMaster = this._firePath(this._path, this._pathOptions);
@@ -104,7 +110,7 @@
                 entity.bindTo = bindTo;
 
                 /*Commands*/
-                entity.save = saveMaster;
+                entity.save = saveMainRecord;
                 entity.addIndex = addIndex;
                 entity.removeIndex = removeIndex;
 
@@ -318,7 +324,7 @@
 
                 }
 
-                function saveMaster(key) {
+                function saveMainRecord(key) {
                     return save(key)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -353,7 +359,8 @@
                         delete data[self._longitude]
                     }
 
-                    return qAll(nestedArray(path), data)
+
+                    return qAll(nestedArray(path), checkTimeStampAtCreate(data))
                         .then(add)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -697,7 +704,7 @@
                     };
 
                     newProp[saveRec] = function(params) {
-                        return saveMaster(params);
+                        return saveMainRecord(params);
                     };
 
                     return newProp;
@@ -708,7 +715,7 @@
                  **** Helpers ****/
 
                 function add(res) {
-                    return res[0].$add(res[1]);
+                    return res[0].$add(checkTimeStampAtCreate(res[1]));
                 }
 
                 function remove(res) {
@@ -738,20 +745,20 @@
                                 return qAll(params[0].$indexFor(params[1]), params[0])
                                     .then(completeSave)
                             case false:
-                                return res[0].$save(res[1]);
+                                return res[0].$save(checkTimeStampAtSave(res[1]));
 
                         }
-
 
                     }
 
                     function completeSave(res) {
-                        return res[1].$save(res[0]);
+                        return res[1].$save(checkTimeStampAtSave(res[0]));
                     }
                 }
 
                 function saveObject(res) {
-                    return res.$save();
+							 
+                    return checkTimeStampAtSave(res).$save();
                 }
 
                 function getRecord(res) {
@@ -926,6 +933,24 @@
                     }
                 }
 
+
+                function checkTimeStampAtCreate(obj) {
+                    switch (self._timeStamp) {
+                        case true:
+                            return self._utils.addTimeAtCreate(obj, self._createTime, self._updateTime);
+                        default:
+                            return obj;
+                    }
+                }
+
+                function checkTimeStampAtSave(obj) {
+                    switch (self._timeStamp) {
+                        case true:
+                            return self._utils.addTimeAtSave(obj, self._updateTime);
+                        default:
+                            return obj;
+                    }
+                }
 
                 function qWrap(obj) {
                     return self._utils.qWrap(obj);
