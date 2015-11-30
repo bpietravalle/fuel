@@ -1,5 +1,7 @@
 # Fuel
 
+[![Build Status](https://travis-ci.org/bpietravalle/fuel.svg?branch=master)](https://travis-ci.org/bpietravalle/fuel)
+
 Fuel is a lightweight provider useful for DRYing up common command and query operations 
 across your angular services while maintaing a flat, scalable JSON data structure. 
 This module is designed for angular services using:
@@ -81,7 +83,7 @@ be a direct child of your root firebaseRef.
 
 ## Conventions
 
-1. *Syntax*: I've tried to keep naming conventions to a minimum.  You can follow 
+*  *Syntax*: I've tried to keep naming conventions to a minimum.  You can follow 
 your own convention, however Fuel's defaults for nodes and arrays are plural nouns,
 while defaults for records, objects, and angular services singluar.  The one
 exception is that the default Geofire node and service are both called "geofire". 
@@ -114,7 +116,7 @@ Again, you can follow your own convention and override the defaults for all oper
 naming convention for constructing CRUD methods for nested arrays and nested records. 
 To mainpulate nested data using a different naming convention you can do so manually.
 
-2. _SRP_:  Fuel cannot directly manipulate/query other main firebase nodes. 
+*  *SRP*:  Fuel cannot directly manipulate/query other main firebase nodes. 
 To access other direct child nodes of your root firebaseRef, you can call methods on
 a few predefined services that are injected on initialization.  Currently, these services
 are: 'session','user','location','geofire'.
@@ -134,7 +136,7 @@ session | Boolean | adds a simple API for your app's session service/object
 user | Boolean | adds a simple API for your app's user service (and session as well) 
 
 ##### gps vs geofire
-These keys are confusing, and perhaps need to be renamed.  Anyhow, in keeping with convention #2, 
+These keys are confusing, and perhaps need to be renamed.  Anyhow, in keeping with convention SRP, 
 services that have geospatial data to persist and query are not responsible for actually
 executing the given queries/commands. So:
 
@@ -176,11 +178,11 @@ Fuel separates longitude and latitude from other data associated with a location
 reviews, etc.). This will allow you to associate more than one location with a given firebase node
 Fuel will send non-coordinate data to a firebase Node, and will then send coordinates to a geofire node.
 Currently, the default names are "locations" and "geofire" respectively.  Default names for coordinates
-are 'lat' and 'lon'. These keys are only necessary for communicating with your controller; Geofire follows
+are `lat` and `lon`. These keys are only necessary for communicating with your controller; Geofire follows
 its own methodology.
 
 *REQs*:
-* Your controller/view will need to save coordinates in a data object with 'lat'/'lon' keys. See below for 
+* Your controller/view will need to save coordinates in a data object with `lat`/`lon` keys. See below for 
 renaming these keys.
 * Your app will need to specify two separate fireBase nodes(as well as angular services) for fuel
 to work properly. For example:
@@ -276,10 +278,11 @@ By adding `session: true` to the options hash, fuel adds a very simple API for s
 data between your app's session and the given firebase node.  
 
 *REQs*:
-1. _injector_: fuel will try to inject a 'session' service.  Make sure it's available. 
+
+* _injector_: fuel will try to inject a 'session' service.  Make sure it's available. 
 See below for overriding these names.
 
-2. _IdMethod_: fuel also expects the session service to have a method for querying ids stored
+* _IdMethod_: fuel also expects the session service to have a method for querying ids stored
 in session.  The default is 'getId'.  See below for overriding this name.
 
 Again, very simple but it allows your service to maintain a current Record with very little code.
@@ -293,7 +296,7 @@ By adding `user: true` to the options hash, fuel will:
 
 *REQs*
 
-1. _index_: fuel will look for an index with the same name as the main node.
+* _index_: fuel will look for an index with the same name as the main node.
 You need to specify the index in your security rules.
 
 For example:
@@ -303,10 +306,10 @@ For example:
 	 };
 //make sure that 'https://your-firebase.firebaseio.com/users/userId/trips' is defined!
 ```
-2. _injector_: fuel will try to inject a 'user' service.  Make sure it's
+* _injector_: fuel will try to inject a 'user' service.  Make sure it's
  available. See below for overriding these names.
 
-3. _uid_: Your security rules will need to allow for a uid property. To opt-out of
+* _uid_: Your security rules will need to allow for a uid property. To opt-out of
 this functionality simply add `uid: false` to the options hash.  You can also specify a
 a different name via the 'uidProperty' option, as described below.
 
@@ -341,8 +344,8 @@ longitude| String| "lon"
 uidProperty| String | "uid"
 
 ### Authentication Helper
-Fuel does not expose the $firebaseAuth service.  To do so, inject `fuelAuth`.  This factory will return a $firebaseAuth
-service at the url specified by the `fuelConfigurationProvider`, as specifided above.
+Fuel does not expose the $firebaseAuth service.  To do so, inject `fuelAuth`.  This factory will return 
+a $firebaseAuth service at the url specified by the `fuelConfigurationProvider`, as specified above.
 
 
 ## Contributing
