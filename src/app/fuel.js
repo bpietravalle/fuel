@@ -414,6 +414,21 @@
                 }
 
 
+                /* @param{Array} location data to save
+                 * @return{Array} [null, fireBaseRef of mainlocation]
+                 */
+
+                function createLocations(locs) {
+                    if (!angular.isArray(locs)) {
+                        locs = [locs];
+                    }
+
+                    return self._q.all(locs.map(function(item) {
+                        return createLocation(item);
+                    }))
+
+                }
+
                 /* @param{Object} location data to save
                  * @return{Array} [null, fireBaseRef of mainlocation]
                  */
@@ -701,7 +716,7 @@
                     };
 
                     newProp[saveRec] = function(rec) {
-											// can pass array as well
+                        // can pass array as well
                         return saveMaster(rec);
                     };
 
@@ -726,10 +741,10 @@
 
                 function save(res) {
                     switch (Array.isArray(res)) {
-											/* to save array record */
+                        /* to save array record */
                         case true:
                             return saveArray(res);
-											/* to save object */
+                            /* to save object */
                         case false:
                             return saveObject(res);
                     }
