@@ -139,6 +139,10 @@
                             return ref.parent().parent().parent().parent();
                         case 5:
                             return ref.parent().parent().parent().parent().parent();
+                        case 6:
+                            return ref.parent().parent().parent().parent().parent().parent();
+                        case 7:
+                            return ref.parent().parent().parent().parent().parent().parent().parent();
                         default:
                             //TODO fix so dynamically calls parent() based on idx
                             reset();

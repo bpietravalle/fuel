@@ -185,13 +185,13 @@
                 }
 
                 if (self._gps === true) {
-                    entity.createLocation = createLocation;
+                    entity.createLocation = createLocations;
                     entity.removeLocation = removeLocation;
                 }
 
                 if (self._user !== true && self._gps === true) {
-                    entity.add = createWithGeo;
-                    entity.remove = removeWithGeo;
+                    entity.add = createWithGps;
+                    entity.remove = removeWithGps;
                 }
 
                 if (self._user === true && self._gps !== true) {
@@ -200,8 +200,8 @@
                 }
 
                 if (self._user === true && self._gps === true) {
-                    entity.add = createWithUserAndGeo;
-                    entity.remove = removeWithUserAndGeo;
+                    entity.add = createWithUserAndGps;
+                    entity.remove = removeWithUserAndGps;
                 }
 
                 if (self._session === true) {
@@ -372,7 +372,6 @@
                         .then(commandSuccess)
                         .catch(standardError);
 
-                    //TODO add specs for below
                     function checkParam(param) {
                         if (angular.isString(param)) {
                             return mainRecord(key)
@@ -474,8 +473,40 @@
                 }
 
 
-                /* @param{Object} location data to save
+                /* @param{Array} location data to save
                  * @return{Array} [null, fireBaseRef of mainlocation]
+                 */
+
+                function createLocations(locs, flag) {
+                    if (!angular.isArray(locs)) {
+                        locs = [locs];
+                    }
+
+                    return self._q.all(locs.map(function(item) {
+                        return createLocation(item, flag)
+                    })).then(setReturnValue);
+
+
+                    function setReturnValue(res) {
+                        return self._utils.flatten(res);
+                    }
+
+                }
+
+                function removeIndexedLocations(mainRecId) {
+                    return getIndexKeys(mainRecId, self._locationNode)
+                        .then(completeRemove);
+
+                    function completeRemove(res) {
+                        return self._q.all(res.map(function(key) {
+                            return removeLocation(key);
+                        }));
+                    }
+
+                }
+
+                /* @param{Object} location data to save
+                 * @return{firebaseRef} fireBaseRef of mainlocation
                  */
 
                 function createLocation(data) {
@@ -485,11 +516,16 @@
                     };
                     return qAll(self._locationObject.addLoc(self._path, data, true), [coords.lat, coords.lon])
                         .then(addGeofireAndPassLocKey)
+                        .then(setReturnValue)
                         .catch(standardError);
 
 
                     function addGeofireAndPassLocKey(res) {
                         return qAll(geofireSet(res[0].key(), res[1]), res[0]);
+                    }
+
+                    function setReturnValue(res) {
+                        return res[1];
                     }
                 }
 
@@ -591,40 +627,35 @@
 
 
 
-                function createWithGeo(data, loc) {
-
-                    return self._q.all([createMainRecord(data), createLocation(loc, true)])
+                function createWithGps(data, loc) {
+                    return self._q.all([createMainRecord(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function addLocationIndexAndPassKey(res) {
-                        return qAll(addIndex(res[0].key(), self._locationNode, res[1][1].key()), res[0]);
+                        return qAll(addLocationIndices(res), res[0]);
                     }
+
 
                     function setReturnValue(res) {
                         return res[1];
                     }
                 }
 
-                function removeWithGeo(mainRecId) {
+                function addLocationIndices(res) {
+                    return self._q.all(res[1].map(function(loc) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                        return qAll(addIndex(res[0].key(), self._locationNode, loc.key()));
+                    }));
+                }
+
+                function removeWithGps(mainRecId) {
+
+                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
-
-                    function removeLocations(mainRecId) {
-                        return getIndexKeys(mainRecId, self._locationNode)
-                            .then(completeRemove);
-
-                        function completeRemove(res) {
-                            return self._q.all(res.map(function(key) {
-                                return removeLocation(key);
-                            }));
-                        }
-
-                    }
 
                     function removeMainRec(res) {
                         return removeMainRecord(res[1]);
@@ -637,16 +668,16 @@
                  *
                  */
 
-                function createWithUserAndGeo(data, loc) {
+                function createWithUserAndGps(data, loc) {
 
-                    return self._q.all([createWithUser(data), createLocation(loc, true)])
+                    return self._q.all([createWithUser(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function addLocationIndexAndPassKey(res) {
-                        return qAll(addIndex(res[0][1].key(), self._locationNode, res[1][1].key()), res[0][1]);
+                        return qAll(addLocationIndices([res[0][1], res[1]]), res[0][1]);
                     }
 
                     function setReturnValue(res) {
@@ -654,23 +685,12 @@
                     }
                 }
 
-                function removeWithUserAndGeo(mainRecId) {
+                function removeWithUserAndGps(mainRecId) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
-                    function removeLocations(mainRecId) {
-                        return getIndexKeys(mainRecId, self._locationNode)
-                            .then(completeRemove);
-
-                        function completeRemove(res) {
-                            return self._q.all(res.map(function(key) {
-                                return removeLocation(key);
-                            }));
-                        }
-
-                    }
 
                     function removeMainRec(res) {
                         return removeWithUser(res[1]);
@@ -761,7 +781,7 @@
                     };
 
                     newProp[saveRec] = function(rec) {
-											// can pass array as well
+                        // can pass array as well
                         return saveMaster(rec);
                     };
 
@@ -786,10 +806,10 @@
 
                 function save(res) {
                     switch (Array.isArray(res)) {
-											/* to save array record */
+                        /* to save array record */
                         case true:
                             return saveArray(res);
-											/* to save object */
+                            /* to save object */
                         case false:
                             return saveObject(res);
                     }
@@ -892,9 +912,7 @@
 
                     function completeAction(res) {
                         return self._timeout(function() {
-                                var data = {};
-                                data[res[1]] = true;
-                                return res[0].update(data);
+                                return res[0].child(res[1]).set(true);
                             })
                             .then(function() {
                                 return res[0];
@@ -910,9 +928,7 @@
 
                     function completeAction(res) {
                         return self._timeout(function() {
-                                var data = {};
-                                data[res[1]] = null;
-                                return res[0].update(data);
+                                return res[0].child(res[1]).update(null);
                             })
                             .then(function() {
                                 return res[0];
@@ -1215,6 +1231,10 @@
                             return ref.parent().parent().parent().parent();
                         case 5:
                             return ref.parent().parent().parent().parent().parent();
+                        case 6:
+                            return ref.parent().parent().parent().parent().parent().parent();
+                        case 7:
+                            return ref.parent().parent().parent().parent().parent().parent().parent();
                         default:
                             //TODO fix so dynamically calls parent() based on idx
                             reset();

@@ -130,8 +130,8 @@
                 }
 
                 if (self._user !== true && self._gps === true) {
-                    entity.add = createWithGeo;
-                    entity.remove = removeWithGeo;
+                    entity.add = createWithGps;
+                    entity.remove = removeWithGps;
                 }
 
                 if (self._user === true && self._gps !== true) {
@@ -140,8 +140,8 @@
                 }
 
                 if (self._user === true && self._gps === true) {
-                    entity.add = createWithUserAndGeo;
-                    entity.remove = removeWithUserAndGeo;
+                    entity.add = createWithUserAndGps;
+                    entity.remove = removeWithUserAndGps;
                 }
 
                 if (self._session === true) {
@@ -312,7 +312,6 @@
                         .then(commandSuccess)
                         .catch(standardError);
 
-                    //TODO add specs for below
                     function checkParam(param) {
                         if (angular.isString(param)) {
                             return mainRecord(key)
@@ -568,7 +567,7 @@
 
 
 
-                function createWithGeo(data, loc) {
+                function createWithGps(data, loc) {
                     return self._q.all([createMainRecord(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
@@ -592,7 +591,7 @@
                     }));
                 }
 
-                function removeWithGeo(mainRecId) {
+                function removeWithGps(mainRecId) {
 
                     return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
@@ -609,7 +608,7 @@
                  *
                  */
 
-                function createWithUserAndGeo(data, loc) {
+                function createWithUserAndGps(data, loc) {
 
                     return self._q.all([createWithUser(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
@@ -626,7 +625,7 @@
                     }
                 }
 
-                function removeWithUserAndGeo(mainRecId) {
+                function removeWithUserAndGps(mainRecId) {
 
                     return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)

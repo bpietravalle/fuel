@@ -77,14 +77,31 @@
                     fuelConfigurationProvider.setRoot(rootPath);
                 })
                 .factory("location", function($q) {
-                    function getStr() {
-                        var s = generateRandomString();
-                        pushStr(s);
-                        return s;
-                    }
                     var location = {
-                        addLoc: keyMock(getStr(), $q),
-                        removeLoc: keyMock("remove", $q)
+                        addLoc: jasmine.createSpy("addLoc").and.callFake(function(path, data, flag) {
+                            if (flag === true) {
+                                delete data.lat;
+                                delete data.lon;
+                            }
+
+                            ref = new MockFirebase("locations").child(path);
+
+                            ref.push(data);
+                            ref.flush();
+                            var key = ref._lastAutoId;
+                            pushStr(key);
+                            return $q.when(ref.child(key));
+                        }),
+                        removeLoc: jasmine.createSpy("removeLoc").and.callFake(function(id) {
+
+                            var mock = {
+                                key: function() {
+                                    return id;
+                                }
+                            }
+                            return $q.when(mock);
+
+                        })
 
                     };
 
@@ -103,7 +120,7 @@
 
                             ref.push(data);
                             ref.flush();
-														var key = ref._lastAutoId;
+                            var key = ref._lastAutoId;
                             diffLoc.push(key);
                             return $q.when(ref.child(key));
                         })
@@ -111,7 +128,6 @@
                     };
 
                     return location;
-
                 })
                 .factory("geofire", function($q) {
                     var geofire = {
@@ -179,128 +195,136 @@
             fuel = null;
         });
 
-        // describe("With GPS Options", function() {
-        //     beforeEach(function() {
-        //         options = {
-        //             gps: true,
-										// locationService: "differentLocation"
-        //         };
-        //         subject = fuel("trips", options);
-        //     });
-        //     describe("Commands: ", function() {
-        //         beforeEach(function() {
-        //             test = subject.add(newRecord, locData);
-        //             flush();
-        //             this.data = subject.ref().getData();
-        //             this.path = subject.path();
-        //             this.key = subject.parent().key();
-        //             $timeout.flush();
-        //             flush();
-        //             this.key1 = diffLoc[0];
-        //             this.key2 = diffLoc[1];
-        //         });
-        //         describe("add()", function() {
-        //             it("should be a promise", function() {
-        //                 expect(test).toBeAPromise();
-        //             });
-        //             it("should add record to main array", function() {
-        //                 var mainRef = subject.ref().root().child("trips/" + this.key);
-        //                 var loc = mainRef.child("locations");
-        //                 expect(mainRef.getData()).toEqual(jasmine.objectContaining(newRecord));
-        //                 expect(loc.getData()[this.key1]).toEqual(true);
-        //             });
-        //             it("should not add uid property to main record", function() {
-        //                 var mainRef = subject.ref().root().child("trips/" + this.key);
-        //                 expect(mainRef.getData().uid).not.toBeDefined();
-        //                 expect(mainRef.getData()).toBeDefined();
-        //             });
-        //             it("should not call user.addIndex", function() {
-        //                 expect(user.addIndex).not.toHaveBeenCalled();
-        //             });
-        //             it("should call location.addLoc twice", function() {
-        //                 expect(location.addLoc.calls.count()).toEqual(2);
-        //             });
-        //             it("should add both records to main location array", function() {
-        //                 expect(location.addLoc.calls.argsFor(0)[0]).toEqual("trips");
-        //                 expect(location.addLoc.calls.argsFor(0)[1]).toEqual(locData[0]);
-        //                 expect(location.addLoc.calls.argsFor(0)[2]).toEqual(true);
-        //                 expect(location.addLoc.calls.argsFor(1)[0]).toEqual("trips");
-        //                 expect(location.addLoc.calls.argsFor(1)[1]).toEqual(locData[1]);
-        //                 expect(location.addLoc.calls.argsFor(1)[2]).toEqual(true);
-        //             });
-        //             it("should call geofire.set() twice", function() {
-        //                 expect(geofire.set.calls.count()).toEqual(2);
-        //             });
-        //             it("should call geofire object with correct path, main location key and coordinates", function() {
-        //                 expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
-        //                 expect(geofire.set.calls.argsFor(0)[1]).toEqual(this.key1);
-        //                 expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
-        //                 expect(geofire.set.calls.argsFor(1)[0]).toEqual("trips");
-        //                 // expect(geofire.set.calls.argsFor(1)[1]).not.toEqual(this.key1);
-        //                 // expect(geofire.set.calls.argsFor(1)[1]).toEqual(this.key2);
-        //                 expect(geofire.set.calls.argsFor(1)[2]).toEqual([45, 100]);
-        //             });
-        //             it("should add location index to main record and set ref to main record", function() {
-        //                 expect(this.path).toEqual(rootPath + "/trips/" + this.key + "/locations");
-        //                 expect(this.data).toEqual(null);
-        //                 $rootScope.$digest();
-        //                 expect(subject.ref().child("locations").getData()[this.key1]).toEqual(true);
-        //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
-        //             });
-        //             qReject(0);
-        //         });
+        describe("With GPS Options", function() {
+            beforeEach(function() {
+                options = {
+                    gps: true,
+                };
+                subject = fuel("trips", options);
+            });
+            describe("Commands: ", function() {
+                beforeEach(function() {
+                    test = subject.add(newRecord, locData);
+                    flush();
+                    this.data = subject.ref().getData();
+                    this.path = subject.path();
+                    this.key = subject.parent().key();
+                    $timeout.flush();
+                    flush();
+                    this.key1 = nameArr[0];
+                    this.key2 = nameArr[1];
+                });
+                describe("add()", function() {
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should add record to main array", function() {
+                        var mainRef = subject.ref().root().child("trips/" + this.key);
+                        var loc = mainRef.child("locations");
+                        expect(mainRef.getData()).toEqual(jasmine.objectContaining(newRecord));
+                        expect(loc.getData()[this.key1]).toEqual(true);
+                        expect(loc.getData()[this.key2]).toEqual(true);
+                    });
+                    it("should not add uid property to main record", function() {
+                        var mainRef = subject.ref().root().child("trips/" + this.key);
+                        expect(mainRef.getData().uid).not.toBeDefined();
+                        expect(mainRef.getData()).toBeDefined();
+                    });
+                    it("should not call user.addIndex", function() {
+                        expect(user.addIndex).not.toHaveBeenCalled();
+                    });
+                    it("should call location.addLoc twice", function() {
+                        expect(location.addLoc.calls.count()).toEqual(2);
+                    });
+                    it("should add both records to main location array", function() {
+                        expect(location.addLoc.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(location.addLoc.calls.argsFor(0)[1]).toEqual(locData[0]);
+                        expect(location.addLoc.calls.argsFor(0)[2]).toEqual(true);
+                        expect(location.addLoc.calls.argsFor(1)[0]).toEqual("trips");
+                        expect(location.addLoc.calls.argsFor(1)[1]).toEqual(locData[1]);
+                        expect(location.addLoc.calls.argsFor(1)[2]).toEqual(true);
+                    });
+                    it("should call geofire.set() twice", function() {
+                        expect(geofire.set.calls.count()).toEqual(2);
+                    });
+                    it("should call geofire object with correct path, main location key and coordinates", function() {
+                        expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(geofire.set.calls.argsFor(0)[1]).toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
+                        expect(geofire.set.calls.argsFor(1)[0]).toEqual("trips");
+                        expect(geofire.set.calls.argsFor(1)[1]).not.toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(1)[1]).toEqual(this.key2);
+                        expect(geofire.set.calls.argsFor(1)[2]).toEqual([45, 100]);
+                    });
+                    it("should add location index to main record and set ref to main record", function() {
+                        expect(this.path).toEqual(rootPath + "/trips/" + this.key + "/locations");
+                        expect(this.data).toEqual(null);
+                        expect(subject.ref().child("locations").getData()[this.key1]).toEqual(true);
+                        expect(subject.ref().child("locations").getData()[this.key2]).toEqual(true);
+                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
+                    });
+                    qReject(0);
+                });
 
-        //         describe("remove()", function() {
-        //             beforeEach(function() {
-        //                 this.idxKey = Object.keys(subject.ref().child("locations").getData())[0];
-        //                 test = subject.remove(this.key);
-        //                 $rootScope.$digest();
-        //                 flush();
-        //                 flush();
-        //             });
-        //             it("should remove location with key from index", function() {
-        //                 expect(this.idxKey).toEqual(diffLoc[0]);
-        //                 expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
-        //             });
-        //             it("should call remove on geofire with key from main location array", function() {
-        //                 expect(geofire.remove).toHaveBeenCalledWith('trips', "removeKey");
-        //             });
-        //             it("should remove the data from firebase", function() {
-        //                 expect(subject.ref().getData()).toEqual(null);
-        //             });
-        //             it("should return the firebaseRef from the removed record", function() {
-        //                 expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
-        //             });
-        //             it("should not call user.removeIndex()", function() {
-        //                 expect(user.removeIndex).not.toHaveBeenCalled();
-        //             });
-        //             qReject(0);
-        //         });
-        //     });
-        //     describe("Separating Location Data", function() {
-        //         beforeEach(function() {
-        //             subject = fuel("trips", {
-        //                 gps: true,
-        //                 locationService: "differentLocation"
-        //             });
-        //             test = subject.createLocation(locData[0]);
-        //             $rootScope.$digest();
-        //             $rootScope.$digest();
-        //         });
-        //         it("should not save coordinate data to location array", function() {
-        //             expect(getPromValue(test)[0]).toBeAFirebaseRef();
-        //             expect(dataKeys(getPromValue(test)[0])).toBeDefined();
-        //             expect(dataKeys(getPromValue(test)[0]).lat).not.toBeDefined();
-        //             expect(dataKeys(getPromValue(test)[0]).lon).not.toBeDefined();
-        //         });
-        //         it("should call geofire object with correct path, main location key and coordinates", function() {
-        //             expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
-        //             expect(geofire.set.calls.argsFor(0)[1]).toEqual(diffLoc[0]);
-        //             expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
-        //         });
-        //         qReject(0);
-        //     });
-        // });
+                describe("remove()", function() {
+                    beforeEach(function() {
+                        this.idxKey = Object.keys(subject.ref().child("locations").getData());
+                        test = subject.remove(this.key);
+                        $rootScope.$digest();
+                        flush();
+                        flush();
+                    });
+                    it("should remove location with key from index", function() {
+                        expect(this.idxKey[0]).toEqual(nameArr[0]);
+                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey[0]);
+                        expect(this.idxKey[1]).toEqual(nameArr[1]);
+                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey[1]);
+                    });
+                    it("should call geofire.remove() twice", function() {
+                        expect(geofire.remove.calls.count()).toEqual(2);
+                    });
+                    it("should call remove on geofire with keys from main location index", function() {
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual('trips');
+                        expect(geofire.remove.calls.argsFor(1)[0]).toEqual('trips');
+                        expect(geofire.remove.calls.argsFor(0)[1]).toEqual(nameArr[0]);
+                        expect(geofire.remove.calls.argsFor(1)[1]).toEqual(nameArr[1]);
+                    });
+                    it("should remove the data from firebase", function() {
+                        expect(subject.ref().getData()).toEqual(null);
+                    });
+                    it("should return the firebaseRef from the removed record", function() {
+                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
+                    });
+                    it("should not call user.removeIndex()", function() {
+                        expect(user.removeIndex).not.toHaveBeenCalled();
+                    });
+                    qReject(0);
+                });
+            });
+            describe("Separating Location Data", function() {
+                beforeEach(function() {
+                    subject = fuel("trips", {
+                        gps: true,
+                        locationService: "differentLocation"
+                    });
+                    test = subject.createLocation(locData[0]);
+                    $rootScope.$digest();
+                    $rootScope.$digest();
+                });
+                it("should not save coordinate data to location array", function() {
+                    expect(getPromValue(test)[0]).toBeAFirebaseRef();
+                    expect(dataKeys(getPromValue(test)[0])).toBeDefined();
+                    expect(dataKeys(getPromValue(test)[0]).lat).not.toBeDefined();
+                    expect(dataKeys(getPromValue(test)[0]).lon).not.toBeDefined();
+                });
+                it("should call geofire object with correct path, main location key and coordinates", function() {
+                    expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
+                    expect(geofire.set.calls.argsFor(0)[1]).toEqual(diffLoc[0]);
+                    expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
+                });
+                qReject(0);
+            });
+        });
 
 
 

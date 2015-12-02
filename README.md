@@ -1,6 +1,8 @@
+
 # Fuel
 
 [![Build Status](https://travis-ci.org/bpietravalle/fuel.svg?branch=master)](https://travis-ci.org/bpietravalle/fuel)
+[![npm version](https://badge.fury.io/js/firebase.fuel.svg)](https://badge.fury.io/js/firebase.fuel)
 
 Fuel is a lightweight provider useful for DRYing up common command and query operations 
 across your angular services while maintaing a flat, scalable JSON data structure. 
@@ -124,7 +126,7 @@ are: 'session','user','location','geofire'.
 
 ## Configuration
 
-You can configure Fuel by adding predefined keys to the options hash.  There are 5 core
+You can configure Fuel by adding predefined keys to the options hash.  There are 6 core
 options.
 
 options[key] | Type | Result
@@ -133,6 +135,7 @@ geofire| Boolean | adds methods to persist/query geospatial data to/in Geofire
 gps| Boolean | adds a simple API to your app's geofire service
 nestedArrays| Array | `["child","nodes",]`
 session | Boolean | adds a simple API for your app's session service/object
+timeStamp | Boolean | adds timestamp properties to main and nested records
 user | Boolean | adds a simple API for your app's user service (and session as well) 
 
 ##### gps vs geofire
@@ -279,13 +282,23 @@ data between your app's session and the given firebase node.
 
 *REQs*:
 
-* _injector_: fuel will try to inject a 'session' service.  Make sure it's available. 
+* _injector_: fuel will try to inject a `session` service.  Make sure it's available. 
 See below for overriding these names.
 
 * _IdMethod_: fuel also expects the session service to have a method for querying ids stored
-in session.  The default is 'getId'.  See below for overriding this name.
+in session.  The default is `getId`.  See below for overriding this name.
 
 Again, very simple but it allows your service to maintain a current Record with very little code.
+
+### *TimeStamp*
+By adding `timeStamp: true` to the options hash, fuel will add `createdAt` and `updatedAt`
+properties to all persisted records.  See below for overriding these default names.
+
+Currently, fuel won't allow you to opt out of timestamps for nested records.  Maybe 
+for the next iteration.
+
+*REQs*:
+ * Make sure you have added the timeStamp properties to your security rules
 
 ### *User Interface*
 
@@ -306,12 +319,12 @@ For example:
 	 };
 //make sure that 'https://your-firebase.firebaseio.com/users/userId/trips' is defined!
 ```
-* _injector_: fuel will try to inject a 'user' service.  Make sure it's
+* _injector_: fuel will try to inject a `user` service.  Make sure it's
  available. See below for overriding these names.
 
 * _uid_: Your security rules will need to allow for a uid property. To opt-out of
 this functionality simply add `uid: false` to the options hash.  You can also specify a
-a different name via the 'uidProperty' option, as described below.
+a different name via the `uidProperty` option, as described below.
 
 _Note_: This option also provides the session mngt functionality described above.  No need
 to add `session: true`, however if you want to be redundant redundant, please be my guest.
@@ -339,9 +352,11 @@ userService | String | singular of userNode
 
 options[key] | Type | Default Value
 -------------|------|--------------
+createTime | String | "createdAt"
 latitude| String| "lat"
 longitude| String| "lon"
 uidProperty| String | "uid"
+updateTime| String | "updatedAt"
 
 ### Authentication Helper
 Fuel does not expose the $firebaseAuth service.  To do so, inject `fuelAuth`.  This factory will return 
@@ -354,7 +369,8 @@ Yes, please.  Below should get you setup.
 ```bash
 $ git clone https://github.com/bpietravalle/fuel.git
 $ cd fuel
-$ npm install               # install dependencies
+$ npm install               # install devDependencies
+$ bower install               # install dependencies
 ```
 Refer to the [generator-gulp-angular](https://github.com/Swiip/generator-gulp-angular) for a full list of commands. The commands
 for unit tests are:

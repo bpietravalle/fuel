@@ -2,9 +2,11 @@
     "use strict";
 
     describe("Fuel Factory", function() {
-        var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var nameArr, diffLoc, firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
         beforeEach(function() {
+            nameArr = [];
+            diffLoc = [];
             rootPath = "https://your-firebase.firebaseio.com";
             arrData = [{
                 phone: "123456890",
@@ -69,8 +71,30 @@
                 })
                 .factory("location", function($q) {
                     var location = {
-                        addLoc: keyMock("add", $q),
-                        removeLoc: keyMock("remove", $q),
+                        addLoc: jasmine.createSpy("addLoc").and.callFake(function(path, data, flag) {
+                            if (flag === true) {
+                                delete data.lat;
+                                delete data.lon;
+                            }
+
+                            ref = new MockFirebase("locations").child(path);
+
+                            ref.push(data);
+                            ref.flush();
+                            var key = ref._lastAutoId;
+                            nameArr.push(key);
+                            return $q.when(ref.child(key));
+                        }),
+                        removeLoc: jasmine.createSpy("removeLoc").and.callFake(function(id) {
+
+                            var mock = {
+                                key: function() {
+                                    return id;
+                                }
+                            }
+                            return $q.when(mock);
+
+                        })
 
                     };
 
@@ -79,21 +103,24 @@
                 })
                 .factory("differentLocation", function($q) {
                     var location = {
-                        addLoc: function(path, data, flag) {
+                        addLoc: jasmine.createSpy("addLoc").and.callFake(function(path, data, flag) {
                             if (flag === true) {
                                 delete data.lat;
                                 delete data.lon;
                             }
-                            ref = new MockFirebase("locations")
-                            ref.set(data);
+
+                            ref = new MockFirebase("locations").child(path);
+
+                            ref.push(data);
                             ref.flush();
-                            return ref;
-                        }
+                            var key = ref._lastAutoId;
+                            diffLoc.push(key);
+                            return $q.when(ref.child(key));
+                        })
 
                     };
 
                     return location;
-
                 })
                 .factory("geofire", function($q) {
                     var geofire = {
@@ -186,11 +213,15 @@
             });
             describe("Commands: ", function() {
                 beforeEach(function() {
-                    test = subject.add(newRecord, locData[0]);
-                    $rootScope.$digest();
-                    subject.ref().flush();
-                    $rootScope.$digest();
+                    test = subject.add(newRecord, locData);
+										flush();
+                    this.data = subject.ref().getData();
+                    this.path = subject.path();
                     this.key = subject.parent().key();
+                    $timeout.flush();
+                    flush();
+                    this.key1 = nameArr[0];
+                    this.key2 = nameArr[1];
                 });
 
                 describe("add()", function() {
@@ -199,7 +230,10 @@
                     });
                     it("should add record to main array", function() {
                         var mainRef = subject.ref().root().child("trips/" + this.key);
-                        expect(mainRef.getData()).toEqual(newRecord);
+                        var loc = mainRef.child("locations");
+                        expect(mainRef.getData()).toEqual(jasmine.objectContaining(newRecord));
+                        expect(loc.getData()[this.key1]).toEqual(true);
+                        expect(loc.getData()[this.key2]).toEqual(true);
                     });
                     it("should add uid property to main record", function() {
                         var mainRef = subject.ref().root().child("trips/" + this.key);
@@ -208,48 +242,54 @@
                     it("should call user.addIndex with correct path and main record key", function() {
                         expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.key);
                     });
-                    it("should add record to main location array", function() {
-                        expect(location.addLoc).toHaveBeenCalledWith("trips", {
-                            lat: 90,
-                            lon: 100,
-                            place_id: "string",
-                            placeType: "a place",
-                            distance: 1234,
-                            closeBy: true
-                        }, true);
+                    it("should add records to main location array", function() {
+                        expect(location.addLoc.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(location.addLoc.calls.argsFor(0)[1]).toEqual(locData[0]);
+                        expect(location.addLoc.calls.argsFor(0)[2]).toEqual(true);
+                        expect(location.addLoc.calls.argsFor(1)[0]).toEqual("trips");
+                        expect(location.addLoc.calls.argsFor(1)[1]).toEqual(locData[1]);
+                        expect(location.addLoc.calls.argsFor(1)[2]).toEqual(true);
                     });
-                    it("should call geofire object with correct path, main location key and coordinates", function() {
-                        expect(geofire.set).toHaveBeenCalledWith("trips", "addKey", [90, 100]);
+                    it("should call geofire object with correct path, main location keys and coordinates", function() {
+                        expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(geofire.set.calls.argsFor(0)[1]).toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
+                        expect(geofire.set.calls.argsFor(1)[0]).toEqual("trips");
+                        expect(geofire.set.calls.argsFor(1)[1]).not.toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(1)[1]).toEqual(this.key2);
+                        expect(geofire.set.calls.argsFor(1)[2]).toEqual([45, 100]);
                     });
-                    it("should add location index to main record and set ref to main record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key + "/locations");
-                        expect(subject.ref().getData()).toEqual(null);
-                        $timeout.flush();
-                        flush();
-                        expect(subject.ref().child("locations").getData()).toEqual({
-                            "addKey": true
-                        });
+                    it("should add location indices to main record and set ref to main record", function() {
+                        expect(this.path).toEqual(rootPath + "/trips/" + this.key + "/locations");
+                        expect(this.data).toEqual(null);
+                        expect(subject.ref().child("locations").getData()[this.key1]).toBeTruthy();
+                        expect(subject.ref().child("locations").getData()[this.key2]).toBeTruthy();
                         expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
                     });
                     qReject(0);
                 });
                 describe("remove()", function() {
                     beforeEach(function() {
-                        $timeout.flush();
-                        flush();
-                        this.idxKey = Object.keys(subject.ref().child("locations").getData())[0];
+                        this.idxKeys = Object.keys(subject.ref().child("locations").getData());
                         test = subject.remove(this.key);
                         $rootScope.$digest();
                         flush();
                         flush();
                     });
-                    // logCheck();
-                    it("should remove location with key from index", function() {
-                        expect(this.idxKey).toEqual("addKey");
-                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKey);
+                    it("should remove location with keys from index", function() {
+                        expect(this.idxKeys[0]).toEqual(nameArr[0]);
+                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKeys[0]);
+                        expect(this.idxKeys[1]).toEqual(nameArr[1]);
+                        expect(location.removeLoc).toHaveBeenCalledWith(this.idxKeys[1]);
                     });
-                    it("should call remove on geofire with key from main location array", function() {
-                        expect(geofire.remove).toHaveBeenCalledWith('trips', "removeKey");
+                    it("should call geofire.remove() twice", function() {
+                        expect(geofire.remove.calls.count()).toEqual(2);
+                    });
+                    it("should call remove on geofire with keys from main location index", function() {
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual('trips');
+                        expect(geofire.remove.calls.argsFor(1)[0]).toEqual('trips');
+                        expect(geofire.remove.calls.argsFor(0)[1]).toEqual(nameArr[0]);
+                        expect(geofire.remove.calls.argsFor(1)[1]).toEqual(nameArr[1]);
                     });
                     it("should remove the data from firebase", function() {
                         expect(subject.ref().getData()).toEqual(null);
