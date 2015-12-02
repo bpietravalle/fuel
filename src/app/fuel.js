@@ -125,7 +125,7 @@
                 }
 
                 if (self._gps === true) {
-                    entity.createLocation = createLocation;
+                    entity.createLocation = createLocations;
                     entity.removeLocation = removeLocation;
                 }
 
@@ -418,19 +418,36 @@
                  * @return{Array} [null, fireBaseRef of mainlocation]
                  */
 
-                function createLocations(locs) {
+                function createLocations(locs, flag) {
                     if (!angular.isArray(locs)) {
                         locs = [locs];
                     }
 
                     return self._q.all(locs.map(function(item) {
-                        return createLocation(item);
-                    }))
+                        return createLocation(item, flag)
+                    })).then(setReturnValue);
+
+
+                    function setReturnValue(res) {
+                        return self._utils.flatten(res);
+                    }
+
+                }
+
+                function removeIndexedLocations(mainRecId) {
+                    return getIndexKeys(mainRecId, self._locationNode)
+                        .then(completeRemove);
+
+                    function completeRemove(res) {
+                        return self._q.all(res.map(function(key) {
+                            return removeLocation(key);
+                        }));
+                    }
 
                 }
 
                 /* @param{Object} location data to save
-                 * @return{Array} [null, fireBaseRef of mainlocation]
+                 * @return{firebaseRef} fireBaseRef of mainlocation
                  */
 
                 function createLocation(data) {
@@ -440,11 +457,16 @@
                     };
                     return qAll(self._locationObject.addLoc(self._path, data, true), [coords.lat, coords.lon])
                         .then(addGeofireAndPassLocKey)
+                        .then(setReturnValue)
                         .catch(standardError);
 
 
                     function addGeofireAndPassLocKey(res) {
                         return qAll(geofireSet(res[0].key(), res[1]), res[0]);
+                    }
+
+                    function setReturnValue(res) {
+                        return res[1];
                     }
                 }
 
@@ -547,39 +569,34 @@
 
 
                 function createWithGeo(data, loc) {
-
-                    return self._q.all([createMainRecord(data), createLocation(loc, true)])
+                    return self._q.all([createMainRecord(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function addLocationIndexAndPassKey(res) {
-                        return qAll(addIndex(res[0].key(), self._locationNode, res[1][1].key()), res[0]);
+                        return qAll(addLocationIndices(res), res[0]);
                     }
+
 
                     function setReturnValue(res) {
                         return res[1];
                     }
                 }
 
+                function addLocationIndices(res) {
+                    return self._q.all(res[1].map(function(loc) {
+
+                        return qAll(addIndex(res[0].key(), self._locationNode, loc.key()));
+                    }));
+                }
+
                 function removeWithGeo(mainRecId) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
-
-                    function removeLocations(mainRecId) {
-                        return getIndexKeys(mainRecId, self._locationNode)
-                            .then(completeRemove);
-
-                        function completeRemove(res) {
-                            return self._q.all(res.map(function(key) {
-                                return removeLocation(key);
-                            }));
-                        }
-
-                    }
 
                     function removeMainRec(res) {
                         return removeMainRecord(res[1]);
@@ -594,14 +611,14 @@
 
                 function createWithUserAndGeo(data, loc) {
 
-                    return self._q.all([createWithUser(data), createLocation(loc, true)])
+                    return self._q.all([createWithUser(data), createLocations(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function addLocationIndexAndPassKey(res) {
-                        return qAll(addIndex(res[0][1].key(), self._locationNode, res[1][1].key()), res[0][1]);
+                        return qAll(addLocationIndices([res[0][1], res[1]]), res[0][1]);
                     }
 
                     function setReturnValue(res) {
@@ -611,21 +628,10 @@
 
                 function removeWithUserAndGeo(mainRecId) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
-                    function removeLocations(mainRecId) {
-                        return getIndexKeys(mainRecId, self._locationNode)
-                            .then(completeRemove);
-
-                        function completeRemove(res) {
-                            return self._q.all(res.map(function(key) {
-                                return removeLocation(key);
-                            }));
-                        }
-
-                    }
 
                     function removeMainRec(res) {
                         return removeWithUser(res[1]);
@@ -847,9 +853,7 @@
 
                     function completeAction(res) {
                         return self._timeout(function() {
-                                var data = {};
-                                data[res[1]] = true;
-                                return res[0].update(data);
+                                return res[0].child(res[1]).set(true);
                             })
                             .then(function() {
                                 return res[0];
@@ -865,9 +869,7 @@
 
                     function completeAction(res) {
                         return self._timeout(function() {
-                                var data = {};
-                                data[res[1]] = null;
-                                return res[0].update(data);
+                                return res[0].child(res[1]).update(null);
                             })
                             .then(function() {
                                 return res[0];
