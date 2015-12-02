@@ -131,6 +131,7 @@
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
             ["nestedRef", "trips/1", "1"],
+            ["nestedRef", "trips/1/hotels", "1","hotels"],
             ["nestedArray", "trips/hotels", "hotels", undefined],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],

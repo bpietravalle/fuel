@@ -28,8 +28,6 @@ module.exports = function(config) {
     var configuration = {
         files: listFiles(),
 
-        singleRun: true,
-
 
         autoWatch: true,
         autoWatchBatchDelay: 750,

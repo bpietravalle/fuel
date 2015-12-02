@@ -320,59 +320,51 @@
                         qReject(0);
                     });
                 });
-                describe("addIndex", function() {
+                describe("Indices", function() {
                     beforeEach(function() {
                         test = subject.addIndex("1", "hotels", "string");
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        subject.ref().flush();
-                        $rootScope.$digest();
+                        flushTime();
+                        this.idx = subject.ref();
                     });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should set ref to user Index", function() {
-                        expect(subject.path()).toEqual(rootPath + "/trips/1/hotels");
-                    });
-                    it("should add data the user index", function() {
-                        expect(subject.ref().getData()).toEqual({
-                            "string": true
+                    describe("addIndex", function() {
+                        it("should be a promise", function() {
+                            expect(test).toBeAPromise();
                         });
+                        it("should set ref to user Index", function() {
+                            expect(subject.path()).toEqual(rootPath + "/trips/1/hotels");
+                        });
+                        it("should add data to index", function() {
+                            expect(this.idx.getData()).toEqual({
+                                "string": true
+                            });
+                        });
+                        it("should return the firebaseRef of the records index", function() {
+                            expect(getPromValue(test)).toBeAFirebaseRef();
+                            expect(getPromValue(test).path).toEqual(subject.path());
+                        });
+                        qReject(0);
                     });
-                    it("should return the firebaseRef of the user index", function() {
-                        expect(getPromValue(test)).toBeAFirebaseRef();
-                        expect(getPromValue(test).path).toEqual(subject.path());
+                    describe("removeIndex", function() {
+                        beforeEach(function() {
+                            test = subject.removeIndex("1", "hotels", "string");
+                            flushTime();
+                        });
+                        it("should be a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should set ref to user Index", function() {
+                            expect(subject.path()).toEqual(rootPath + "/trips/1/hotels");
+                        });
+                        it("should remove the key from the user index", function() {
+                            expect(getPromValue(test).getKeys()).toBeEmpty();
+                            expect(subject.ref().getData()).toBe(null);
+                        });
+                        it("should return the firebaseRef of the user index", function() {
+                            expect(getPromValue(test)).toBeAFirebaseRef();
+                            expect(getPromValue(test).path).toEqual(subject.path());
+                        });
+                        qReject(0);
                     });
-                    qReject(0);
-                });
-                describe("removeIndex", function() {
-                    beforeEach(function() {
-                        test = subject.addIndex("1", "hotels", "string");
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        subject.ref().flush();
-                        $rootScope.$digest();
-                        test = subject.removeIndex("1", "hotels", "string");
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        subject.ref().flush();
-                        $rootScope.$digest();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should set ref to user Index", function() {
-                        expect(subject.path()).toEqual(rootPath + "/trips/1/hotels");
-                    });
-                    it("should remove the key from the user index", function() {
-                        expect(getPromValue(test).getKeys()).toBeEmpty();
-                        expect(subject.ref().getData()).toBe(null);
-                    });
-                    it("should return the firebaseRef of the user index", function() {
-                        expect(getPromValue(test)).toBeAFirebaseRef();
-                        expect(getPromValue(test).path).toEqual(subject.path());
-                    });
-                    qReject(0);
                 });
                 describe("removeMainRecord", function() {
                     beforeEach(function() {

@@ -240,7 +240,7 @@
                         expect(mainRef.getData().uid).toEqual(1);
                     });
                     it("should call user.addIndex with correct path and main record key", function() {
-                        expect(user.addIndex).toHaveBeenCalledWith(1, "trips", this.key);
+                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", this.key);
                     });
                     it("should add records to main location array", function() {
                         expect(location.addLoc.calls.argsFor(0)[0]).toEqual("trips");
@@ -298,7 +298,7 @@
                         expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
                     });
                     it("should call user.removeIndex() with correct key", function() {
-                        expect(user.removeIndex).toHaveBeenCalledWith(1, 'trips', this.key);
+                        expect(user.removeIndex).toHaveBeenCalledWith(null, 'trips', this.key);
                     });
                     qReject(0);
                 });
