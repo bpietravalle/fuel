@@ -356,7 +356,7 @@
 
                 }
 
-                function createMainRecord(data, geoFlag, userFlag) {
+                function createMainRecord(data, userFlag) {
                     if (userFlag === true) {
                         data[self._uidProperty] = sessionId();
                     }
@@ -549,12 +549,12 @@
 
                 function addUserIndex(key) {
                     return self._userObject
-                        .addIndex(sessionId(), self._path, key);
+                        .addIndex(null, self._path, key);
                 }
 
                 function removeUserIndex(key) {
                     return self._userObject
-                        .removeIndex(sessionId(), self._path, key);
+                        .removeIndex(null, self._path, key);
                 }
 
 
@@ -592,11 +592,8 @@
                  *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record created)]
                  */
 
-                function createWithUser(data, geoFlag, userFlag) {
-                    if (!userFlag) {
-                        userFlag = self._uid;
-                    }
-                    return createMainRecord(data, geoFlag, userFlag)
+                function createWithUser(data) {
+                    return createMainRecord(data, self._uid)
                         .then(passKeyToUser)
                         .catch(standardError);
 
@@ -906,6 +903,9 @@
 
                 function addIndex(recId, arrName, key) {
 
+                    if (!angular.isString(recId) && self._session === true) {
+                        recId = sessionId();
+                    }
                     return qAll(nestedRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
@@ -922,13 +922,18 @@
                 }
 
                 function removeIndex(recId, arrName, key) {
+
+                    if (!angular.isString(recId) && self._session === true) {
+                        recId = sessionId();
+                    }
+
                     return qAll(nestedRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
 
                     function completeAction(res) {
                         return self._timeout(function() {
-                                return res[0].child(res[1]).update(null);
+                                return res[0].child(res[1]).set(null);
                             })
                             .then(function() {
                                 return res[0];
