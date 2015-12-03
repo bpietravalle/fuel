@@ -106,6 +106,7 @@
                 /*Queries*/
                 entity.load = load;
                 entity.getRecord = getMainRecord;
+                entity.queryByChild = queryByChild;
                 entity.getIndexKeys = getIndexKeys;
                 entity.bindTo = bindTo;
 
@@ -196,6 +197,10 @@
 
                 /******************************/
 
+                function mainRef() {
+                    return self._pathMaster.main();
+                }
+
                 function mainArray() {
                     return self._pathMaster.mainArray();
                 }
@@ -275,6 +280,11 @@
                         .then(getRecord)
                         .then(querySuccess)
                         .catch(standardError);
+
+                }
+
+                function queryByChild(key, val) {
+                    return mainRef().orderByChild(key).equalTo(val);
 
                 }
 
@@ -888,6 +898,7 @@
                  * @param{string} index name
                  * @return{array} of index keys;
                  */
+
 
                 function getIndexKeys(recId, arrName) {
                     return indexAf(recId, arrName, "array")

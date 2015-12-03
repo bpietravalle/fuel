@@ -530,6 +530,21 @@
                     });
                     qReject(0);
                 });
+                describe("queryByKey", function() {
+                    beforeEach(function() {
+                        subject = fuel("trips", {
+                            user: true,
+                        });
+                        extendRef(subject.ref());
+                        test = subject.queryByChild();
+                        // flush();
+                    });
+                    it("should work", function() {
+                        expect(test).toBeAFirebaseRef();
+                        expect(subject.ref().orderByChild).toBeDefined();
+                    });
+
+                });
             });
         });
 
