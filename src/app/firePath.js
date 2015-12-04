@@ -207,7 +207,12 @@
                 /*************** geoFire ***************/
 
                 function makeGeo(path) {
-                    return build(self._utils.toArray([self._path, path]), "geo");
+                    switch (angular.isString(path)||angular.isArray(path)) {
+                        case true:
+                            return build(self._utils.toArray([self._path, path]), "geo");
+                        case false:
+                            return build(self._path, "geo");
+                    }
                 }
 
                 /************ Absolute Paths ****************/

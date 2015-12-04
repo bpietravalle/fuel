@@ -36,6 +36,12 @@
             this._session = this._utils.paramCheck(this._options.session, "bool", false);
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
             this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
+						if(this._gps ===true && this._geofire === true){
+							throw new Error("Please select either 'gps' or 'geofire'. You can't have your coordinates and eat 'em too.");
+						}
+						if(this._user ===true && this._geofire === true){
+							throw new Error("Invalid option.  Please remove 'user' or 'geofire' from your options hash.");
+						}
 
             /******************
              * Additional Config
@@ -158,7 +164,6 @@
                     entity.remove = removeGf;
                     entity.set = setGf;
                     entity.query = queryGf;
-                    entity.addLoc = addLoc;
                     entity.removeLoc = removeLoc;
                 }
 
@@ -237,6 +242,7 @@
                  * ***************/
 
                 /*Queries*/
+
                 function load(id) {
                     if (angular.isUndefined(id)) {
                         return loadMainArray();
@@ -266,11 +272,9 @@
                         .catch(standardError);
 
                     function loadRecs(arr) {
-
                         return self._q.all(arr.map(function(key) {
                             return load(key);
                         }));
-
 
                     }
                 }
@@ -306,11 +310,15 @@
 
                 }
 
-                function createMainRecord(data, userFlag) {
-                    if (userFlag === true) {
+                function createMainRecord(data, flag) {
+                    if (flag === true && self._user===true) {
                         data[self._uidProperty] = sessionId();
                     }
 
+                    if (flag === true && self._geofire===true) {
+                        delete data[self._latitude]
+                        delete data[self._longitude]
+                    }
                     return qAll(mainArray(), data)
                         .then(add)
                         .then(commandSuccess)
@@ -337,45 +345,31 @@
                     return save(keyIdxorRec)
                         .then(commandSuccess)
                         .catch(standardError);
-
                 }
 
                 /* GPS Option */
-                function geofireSet(k, c) {
-                    return self._geofireObject.set(self._path, k, c);
+                function geofireSet(k, c, path) {
+                    return self._geofireObject.set(k, c, path);
                 }
 
                 function geofireRemove(k) {
-                    return self._geofireObject.remove(self._path, k);
+                    return self._geofireObject.remove(k);
                 }
 
                 function geofireGet(k) {
-                    return self._geofireObject.get(self._path, k);
+                    return self._geofireObject.get(k);
                 }
 
-
                 /* Geofire Service Option */
-                function removeLoc(path, key) {
-                    return nestedRecord(path, key)
+                function removeLoc(key) {
+                    return mainRecord(key)
                         .then(remove)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
 
-                function addLoc(path, data, flag) {
-                    if (flag === true) {
-                        delete data[self._latitude]
-                        delete data[self._longitude]
-                    }
 
-                    return qAll(nestedArray(path), checkTimeStampAtCreate(data))
-                        .then(add)
-                        .then(commandSuccess)
-                        .catch(standardError);
-                }
-
-
-                function setGf(path, key, coords) {
+                function setGf(key, coords, path) {
                     return qAll(makeGeo(path), [key, coords])
                         .then(setGeo)
                         .then(commandSuccess)
@@ -387,7 +381,7 @@
 
                 }
 
-                function queryGf(path, data) {
+                function queryGf(data, path) {
                     return qAll(makeGeo(path), data)
                         .then(queryGeo)
                         .then(querySuccess)
@@ -399,7 +393,7 @@
 
                 }
 
-                function getGf(path, key) {
+                function getGf(key, path) {
                     return qAll(makeGeo(path), key)
                         .then(getGeo)
                         .then(querySuccess)
@@ -410,7 +404,7 @@
                     }
                 }
 
-                function removeGf(path, key) {
+                function removeGf(key, path) {
                     return qAll(makeGeo(path), key)
                         .then(removeGeo)
                         .then(commandSuccess)
@@ -464,7 +458,7 @@
                         lat: data[self._latitude],
                         lon: data[self._longitude]
                     };
-                    return qAll(self._locationObject.addLoc(self._path, data, true), [coords.lat, coords.lon])
+                    return qAll(self._locationObject.add(data,true), [coords.lat, coords.lon])
                         .then(addGeofireAndPassLocKey)
                         .then(setReturnValue)
                         .catch(standardError);
@@ -479,7 +473,7 @@
                     }
                 }
 
-                /* @param{String} key of main location to remove
+                /* @param{String} id of main location to remove
                  * @return{Array} [null, fireBaseRef of mainlocation]
                  */
 

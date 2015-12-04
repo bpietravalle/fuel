@@ -293,7 +293,7 @@
                         geofire: true,
                         timeStamp: true
                     });
-                    subject.addLoc("trips", locData[0]);
+                    subject.add(locData[0]);
                     flush();
                     this.key = subject.ref().key();
                     this.createTime = subject.ref().getData().createdAt;

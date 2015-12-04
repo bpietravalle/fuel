@@ -1,7 +1,7 @@
 (function() {
     "use strict";
 
-    describe("Fuel Factory", function() {
+    describe("Geofire Option", function() {
         var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
         beforeEach(function() {
@@ -69,7 +69,7 @@
                 })
                 .factory("location", function($q) {
                     var location = {
-                        addLoc: keyMock("add", $q),
+                        add: keyMock("add", $q),
                         removeLoc: keyMock("remove", $q),
 
                     };
@@ -79,7 +79,7 @@
                 })
                 .factory("differentLocation", function($q) {
                     var location = {
-                        addLoc: function(path, data, flag) {
+                        add: function(data, flag) {
                             if (flag === true) {
                                 delete data.lat;
                                 delete data.lon;
@@ -175,162 +175,160 @@
         });
 
 
-        describe("With Geofire Option", function() {
-            describe("Geofire API", function() {
+        describe("Geofire API", function() {
+            beforeEach(function() {
+                options = {
+                    geofire: true
+                };
+                subject = fuel("geofire", options);
+            });
+            describe("set", function() {
                 beforeEach(function() {
-                    options = {
-                        geofire: true
-                    };
-                    subject = fuel("geofire", options);
+                    test = subject.set("trips", "key", [90, 100]);
+                    test1 = subject.set("trips", "key2", [50, 100]);
+                    flushTime();
                 });
-                describe("set", function() {
-                    beforeEach(function() {
-                        test = subject.set("trips", "key", [90, 100]);
-                        test1 = subject.set("trips", "key2", [50, 100]);
-                        flushTime();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should add data to correct node", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/trips");
-                        expect(subject.ref().getData()).toEqual({
-                            key: {
-                                g: jasmine.any(String),
-                                l: [90, 100]
-                            },
-                            key2: {
-                                g: jasmine.any(String),
-                                l: [50, 100]
-                            }
-                        });
-                    });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
                 });
-                describe("remove", function() {
-                    beforeEach(function() {
-                        subject.set("trips", "key", [90, 100]);
-                        subject.set("trips", "key2", [50, 100]);
-                        flushTime();
-                        test = subject.remove("trips", "key");
-                        flushTime();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should remove the record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/trips");
-                        expect(subject.ref().getData()).toEqual({
-                            key2: {
-                                g: jasmine.any(String),
-                                l: [50, 100]
-                            }
-                        });
-                    });
-                });
-                describe("get", function() {
-                    beforeEach(function() {
-                        subject.set("trips", "key", [90, 100]);
-                        subject.set("trips", "key2", [50, 100]);
-                        flushTime();
-                        test = subject.get("trips", "key");
-                        $rootScope.$digest();
-                        $timeout.flush();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should retrieve the correct record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/trips");
-                    });
-                });
-                describe("query", function() {
-                    beforeEach(function() {
-                        subject.set("trips", "key2", [50, 100]);
-                        flushTime();
-                        extendMockFb(subject.ref());
-                        test = subject.query("trips", {
-                            center: [90, 100],
-                            radius: 10
-                        });
-                        $rootScope.$digest();
-                        $timeout.flush();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should retrieve the correct record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/trips");
-                    });
-                    it("should return a geoQuery", function() {
-                        expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-                            updateCriteria: jasmine.any(Function),
-                            radius: jasmine.any(Function),
-                            center: jasmine.any(Function),
-                            cancel: jasmine.any(Function),
-                            on: jasmine.any(Function)
-                        }));
+                it("should add data to correct node", function() {
+                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    expect(subject.ref().getData()).toEqual({
+                        key: {
+                            g: jasmine.any(String),
+                            l: [90, 100]
+                        },
+                        key2: {
+                            g: jasmine.any(String),
+                            l: [50, 100]
+                        }
                     });
                 });
             });
-            describe("Main Location Array", function() {
+            describe("remove", function() {
                 beforeEach(function() {
-                    options = {
-                        geofire: true
-                    };
-                    subject = fuel("locations", options);
+                    subject.set("trips", "key", [90, 100]);
+                    subject.set("trips", "key2", [50, 100]);
+                    flushTime();
+                    test = subject.remove("trips", "key");
+                    flushTime();
                 });
-                describe("addLoc", function() {
-                    beforeEach(function() {
-                        test = subject.addLoc("trips", locData[0], true);
-                        flush();
-                        this.key = subject.ref().key();
-                        test1 = subject.addLoc("trips", locData[1], true);
-                        flush();
-                        this.key1 = subject.ref().key();
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should remove the record", function() {
+                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    expect(subject.ref().getData()).toEqual({
+                        key2: {
+                            g: jasmine.any(String),
+                            l: [50, 100]
+                        }
                     });
-                    useParentRef();
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                        expect(test1).toBeAPromise();
+                });
+            });
+            describe("get", function() {
+                beforeEach(function() {
+                    subject.set("trips", "key", [90, 100]);
+                    subject.set("trips", "key2", [50, 100]);
+                    flushTime();
+                    test = subject.get("trips", "key");
+                    $rootScope.$digest();
+                    $timeout.flush();
+                });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should retrieve the correct record", function() {
+                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                });
+            });
+            describe("query", function() {
+                beforeEach(function() {
+                    subject.set("key2", [50, 100]);
+                    flushTime();
+                    extendMockFb(subject.ref());
+                    test = subject.query({
+                        center: [90, 100],
+                        radius: 10
                     });
-                    it("should return correct ref", function() {
-                        expect(getPromValue(test).path).toEqual(rootPath + "/locations/trips/" + this.key);
-                        expect(subject.path()).toEqual(rootPath + "/locations/trips/" + this.key1);
-                    });
-                    it("should remove coordinate data", function() {
-                        expect(getPromValue(test).getData()).toBeDefined();
-                        expect(getPromValue(test).getData().lat).not.toBeDefined();
-                        expect(getPromValue(test).getData().lat).not.toBeDefined();
+                    $rootScope.$digest();
+                    $timeout.flush();
+                });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should retrieve the correct record", function() {
+                    expect(subject.path()).toEqual(rootPath + "/geofire");
+                });
+                it("should return a geoQuery", function() {
+                    expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                        updateCriteria: jasmine.any(Function),
+                        radius: jasmine.any(Function),
+                        center: jasmine.any(Function),
+                        cancel: jasmine.any(Function),
+                        on: jasmine.any(Function)
+                    }));
+                });
+            });
+        });
+        describe("Main Location Array", function() {
+            beforeEach(function() {
+                options = {
+                    geofire: true
+                };
+                subject = fuel("locations", options);
+            });
+            describe("add", function() {
+                beforeEach(function() {
+                    test = subject.add(locData[0], true);
+                    flush();
+                    this.key = subject.ref().key();
+                    test1 = subject.add(locData[1], true);
+                    flush();
+                    this.key1 = subject.ref().key();
+                });
+                useParentRef();
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                    expect(test1).toBeAPromise();
+                });
+                it("should return correct ref", function() {
+                    expect(getPromValue(test).path).toEqual(rootPath + "/locations/" + this.key);
+                    expect(subject.path()).toEqual(rootPath + "/locations/" + this.key1);
+                });
+                it("should remove coordinate data", function() {
+                    expect(getPromValue(test).getData()).toBeDefined();
+                    expect(getPromValue(test).getData().lat).not.toBeDefined();
+                    expect(getPromValue(test).getData().lat).not.toBeDefined();
 
-                    });
-                    it("should add the data to firebase", function() {
-                        expect(getPromValue(test).getData()).toEqual(locData[0]);
-                        expect(getPromValue(test1).getData()).toEqual(locData[1]);
-                    });
-                    qReject(0);
                 });
-                describe("removeLoc", function() {
-                    beforeEach(function() {
-                        $rootScope.$digest();
-                        subject.ref().child("locations/trips").push(locData[0]);
-                        subject.ref().child("locations/trips").push(locData[1]);
-                        subject.ref().flush();
-                        this.keys = Object.keys(subject.ref().child("locations/trips").children);
-                        test = subject.removeLoc("trips", this.keys[0]);
-                        flush();
-                    });
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should return correct ref", function() {
-                        expect(subject.path()).toEqual(rootPath + "/locations/trips/" + this.keys[0]);
-                    });
-                    it("should remove the data to firebase", function() {
-                        expect(getPromValue(test).getData()).toEqual(null);
-                        expect(subject.ref().getData()).toEqual(null);
-                    });
-                    qReject(0);
+                it("should add the data to firebase", function() {
+                    expect(getPromValue(test).getData()).toEqual(locData[0]);
+                    expect(getPromValue(test1).getData()).toEqual(locData[1]);
                 });
+                qReject(0);
+            });
+            describe("removeLoc", function() {
+                beforeEach(function() {
+                    $rootScope.$digest();
+                    subject.ref().child("locations").push(locData[0]);
+                    subject.ref().child("locations").push(locData[1]);
+                    subject.ref().flush();
+                    this.keys = Object.keys(subject.ref().child("locations").children);
+                    test = subject.removeLoc(this.keys[0]);
+                    flush();
+                });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should return correct ref", function() {
+                    expect(subject.path()).toEqual(rootPath + "/locations/" + this.keys[0]);
+                });
+                it("should remove the data to firebase", function() {
+                    expect(getPromValue(test).getData()).toEqual(null);
+                    expect(subject.ref().getData()).toEqual(null);
+                });
+                qReject(0);
             });
         });
 

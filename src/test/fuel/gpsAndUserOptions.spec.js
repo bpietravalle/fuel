@@ -71,13 +71,13 @@
                 })
                 .factory("location", function($q) {
                     var location = {
-                        addLoc: jasmine.createSpy("addLoc").and.callFake(function(path, data, flag) {
+                        add: jasmine.createSpy("add").and.callFake(function(data, s, flag) {
                             if (flag === true) {
                                 delete data.lat;
                                 delete data.lon;
                             }
 
-                            ref = new MockFirebase("locations").child(path);
+                            ref = new MockFirebase("locations");
 
                             ref.push(data);
                             ref.flush();
@@ -103,13 +103,13 @@
                 })
                 .factory("differentLocation", function($q) {
                     var location = {
-                        addLoc: jasmine.createSpy("addLoc").and.callFake(function(path, data, flag) {
+                        add: jasmine.createSpy("add").and.callFake(function(data, s, flag) {
                             if (flag === true) {
                                 delete data.lat;
                                 delete data.lon;
                             }
 
-                            ref = new MockFirebase("locations").child(path);
+                            ref = new MockFirebase("locations");
 
                             ref.push(data);
                             ref.flush();
@@ -243,21 +243,15 @@
                         expect(user.addIndex).toHaveBeenCalledWith(null, "trips", this.key);
                     });
                     it("should add records to main location array", function() {
-                        expect(location.addLoc.calls.argsFor(0)[0]).toEqual("trips");
-                        expect(location.addLoc.calls.argsFor(0)[1]).toEqual(locData[0]);
-                        expect(location.addLoc.calls.argsFor(0)[2]).toEqual(true);
-                        expect(location.addLoc.calls.argsFor(1)[0]).toEqual("trips");
-                        expect(location.addLoc.calls.argsFor(1)[1]).toEqual(locData[1]);
-                        expect(location.addLoc.calls.argsFor(1)[2]).toEqual(true);
+                        expect(location.add.calls.argsFor(0)[0]).toEqual(locData[0]);
+                        expect(location.add.calls.argsFor(1)[0]).toEqual(locData[1]);
                     });
                     it("should call geofire object with correct path, main location keys and coordinates", function() {
-                        expect(geofire.set.calls.argsFor(0)[0]).toEqual("trips");
-                        expect(geofire.set.calls.argsFor(0)[1]).toEqual(this.key1);
-                        expect(geofire.set.calls.argsFor(0)[2]).toEqual([90, 100]);
-                        expect(geofire.set.calls.argsFor(1)[0]).toEqual("trips");
-                        expect(geofire.set.calls.argsFor(1)[1]).not.toEqual(this.key1);
-                        expect(geofire.set.calls.argsFor(1)[1]).toEqual(this.key2);
-                        expect(geofire.set.calls.argsFor(1)[2]).toEqual([45, 100]);
+                        expect(geofire.set.calls.argsFor(0)[0]).toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(0)[1]).toEqual([90, 100]);
+                        expect(geofire.set.calls.argsFor(1)[0]).not.toEqual(this.key1);
+                        expect(geofire.set.calls.argsFor(1)[0]).toEqual(this.key2);
+                        expect(geofire.set.calls.argsFor(1)[1]).toEqual([45, 100]);
                     });
                     it("should add location indices to main record and set ref to main record", function() {
                         expect(this.path).toEqual(rootPath + "/trips/" + this.key + "/locations");
@@ -286,10 +280,8 @@
                         expect(geofire.remove.calls.count()).toEqual(2);
                     });
                     it("should call remove on geofire with keys from main location index", function() {
-                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual('trips');
-                        expect(geofire.remove.calls.argsFor(1)[0]).toEqual('trips');
-                        expect(geofire.remove.calls.argsFor(0)[1]).toEqual(nameArr[0]);
-                        expect(geofire.remove.calls.argsFor(1)[1]).toEqual(nameArr[1]);
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual(nameArr[0]);
+                        expect(geofire.remove.calls.argsFor(1)[0]).toEqual(nameArr[1]);
                     });
                     it("should remove the data from firebase", function() {
                         expect(subject.ref().getData()).toEqual(null);

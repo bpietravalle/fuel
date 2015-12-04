@@ -69,7 +69,7 @@
                 })
                 .factory("location", function($q) {
                     var location = {
-                        addLoc: keyMock("add", $q),
+                        add: keyMock("add", $q),
                         removeLoc: keyMock("remove", $q),
 
                     };
@@ -79,7 +79,7 @@
                 })
                 .factory("differentLocation", function($q) {
                     var location = {
-                        addLoc: function(path, data, flag) {
+                        add: function(path, data, flag) {
                             if (flag === true) {
                                 delete data.lat;
                                 delete data.lon;
@@ -207,7 +207,7 @@
             }
 
             var sessionAdded = ["session", "sessionId", "bindCurrent"];
-            var geofireAdded = ["get", "remove", "set", "addLoc", "removeLoc", "query"];
+            var geofireAdded = ["get", "remove", "set", "add", "removeLoc", "query"];
             var gpsAdded = ["createLocation", "removeLocation"];
             var userAdded = ["userRecordsByUID", "loadUserRecords"];
             var noOptionApi = ["base", "ref", "path", "parent", "pathHistory",
@@ -295,8 +295,7 @@
                     subject = fuel("trips", {
                         user: true,
                         gps: true,
-                        timeStamp: true,
-                        geofire: true
+                        timeStamp: true
                     });
                 });
                 describe("Nodes: ", function() {
@@ -308,8 +307,25 @@
                 describe("Properties: ", function() {
                     defaultProps.forEach(defaultValues);
                 });
-
             });
+            describe("Invalid Options", function() {
+
+							var opts = ["gps","user"];
+							function invalidOpt(y){
+                it("should throw error if select geofire and " + y, function() {
+									var options = {};
+
+									options['geofire'] = true;
+									options[y] = true;
+                    expect(function() {
+                        fuel("trips", options);
+                    }).toThrow();
+                });
+							}
+
+							opts.forEach(invalidOpt);
+            });
+
         });
 
 
