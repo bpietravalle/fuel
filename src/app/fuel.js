@@ -36,12 +36,12 @@
             this._session = this._utils.paramCheck(this._options.session, "bool", false);
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
             this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
-						if(this._gps ===true && this._geofire === true){
-							throw new Error("Please select either 'gps' or 'geofire'. You can't have your coordinates and eat 'em too.");
-						}
-						if(this._user ===true && this._geofire === true){
-							throw new Error("Invalid option.  Please remove 'user' or 'geofire' from your options hash.");
-						}
+            if (this._gps === true && this._geofire === true) {
+                throw new Error("Please select either 'gps' or 'geofire'. You can't have your coordinates and eat 'em too.");
+            }
+            if (this._user === true && this._geofire === true) {
+                throw new Error("Invalid option.  Please remove 'user' or 'geofire' from your options hash.");
+            }
 
             /******************
              * Additional Config
@@ -54,10 +54,14 @@
                 this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
                 this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
                 this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
+                this._typeIndex = this._utils.paramCheck(this._options.typeIndex, "bool", false);
+                this._geoType = this._utils.paramCheck(this._options.geoType, "str", this._path);
 
                 this._pathOptions.geofire = true;
                 this._pathOptions.locationNode = this._locationNode;
                 this._pathOptions.geofireNode = this._geofireNode;
+                this._pathOptions.type = this._geoType; //to add index of current location types
+                this._pathOptions.typeIndex = this._typeIndex;
             }
 
             if (this._gps === true) {
@@ -128,12 +132,11 @@
 
                 if (self._user === true) {
                     entity.loadUserRecords = loadUserRecords;
-                    entity.userRecordsByUID = userRecordsByUID;
                 }
 
                 if (self._gps === true) {
                     entity.createLocation = createLocations;
-                    entity.removeLocation = removeLocation;
+                    entity.removeLocation = removeLocations;
                 }
 
                 if (self._user !== true && self._gps === true) {
@@ -228,8 +231,12 @@
 
                 function nestedRecord(mainId, name, recId) {
                     return self._pathMaster.nestedRecord(mainId, name, recId);
-
                 }
+
+                function buildFire(type, path, flag) {
+                    return self._pathMaster.buildFire(type, path, flag);
+                }
+
 
                 /* Geofire Interface */
 
@@ -265,17 +272,16 @@
                         .catch(standardError);
                 }
 
+								//TODO: spec without spies
                 function loadUserRecords() {
-                    return self._userObject
-                        .getIndexKeys(sessionId(), self._path)
-                        .then(loadRecs)
+                    return currentUserRecords()
+                        .then(wrapArray)
+                        .then(load)
+                        .then(querySuccess)
                         .catch(standardError);
 
-                    function loadRecs(arr) {
-                        return self._q.all(arr.map(function(key) {
-                            return load(key);
-                        }));
-
+                    function wrapArray(res) {
+                        return buildFire("array", res, true);
                     }
                 }
 
@@ -287,12 +293,16 @@
 
                 }
 
+                function currentUserRecords() {
+                    return self._timeout(function() {
+                        return queryByChild(self._uidProperty, sessionId());
+                    });
+                }
+
                 function queryByChild(key, val) {
                     return mainRef().orderByChild(key).equalTo(val);
 
                 }
-
-
 
                 /* Commands */
 
@@ -311,11 +321,11 @@
                 }
 
                 function createMainRecord(data, flag) {
-                    if (flag === true && self._user===true) {
+                    if (flag === true && self._user === true) {
                         data[self._uidProperty] = sessionId();
                     }
 
-                    if (flag === true && self._geofire===true) {
+                    if (flag === true && self._geofire === true) {
                         delete data[self._latitude]
                         delete data[self._longitude]
                     }
@@ -348,8 +358,8 @@
                 }
 
                 /* GPS Option */
-                function geofireSet(k, c, path) {
-                    return self._geofireObject.set(k, c, path);
+                function geofireSet(k, c) {
+                    return self._geofireObject.set(k, c);
                 }
 
                 function geofireRemove(k) {
@@ -360,7 +370,88 @@
                     return self._geofireObject.get(k);
                 }
 
+
+
+                /* @param{Array} location data to save
+                 * @return{Array} [null, fireBaseRef of mainlocation]
+                 */
+
+                function createLocations(locs, flag) {
+                    if (!angular.isArray(locs)) {
+                        locs = [locs];
+                    }
+
+                    return self._q.all(locs.map(function(item) {
+                        return createLocation(item, flag)
+                    })).then(setReturnValue);
+
+                    function setReturnValue(res) {
+                        return self._utils.flatten(res);
+                    }
+
+                }
+
+                function removeLocations(mainRecId) {
+                    // if (!angular.isString(mainRecId)) {
+                    //     mainRecId = mainRecId.$id;
+                    // }
+                    return getIndexKeys(mainRecId, self._locationNode)
+                        .then(completeRemove);
+
+                    function completeRemove(res) {
+                        self._log.info('res')
+                        self._log.info(res)
+                        return self._q.all(res.map(function(key) {
+                            return removeLocation(key);
+                        }));
+                    }
+
+                }
+
+                /* @param{Object} location data to save
+                 * @return{firebaseRef} fireBaseRef of mainlocation
+                 */
+
+                function createLocation(data) {
+                    var coords = {
+                        lat: data[self._latitude],
+                        lon: data[self._longitude]
+                    };
+                    return qAll(self._locationObject.add(data, true), [coords.lat, coords.lon])
+                        .then(addGeofireAndPassLocKey)
+                        .then(setReturnValue)
+                        .catch(standardError);
+
+
+                    function addGeofireAndPassLocKey(res) {
+                        return qAll(geofireSet(res[0].key(), res[1]), res[0]);
+                    }
+
+                    function setReturnValue(res) {
+                        return res[1];
+                    }
+                }
+
+                /* @param{String} id of main location to remove
+                 * @return{Array} [null, fireBaseRef of mainlocation]
+                 */
+
+                function removeLocation(key) {
+                    self._log.info('removeLocation')
+                    self._log.info(key)
+                    return self._locationObject
+                        .removeLoc(key)
+                        .then(removeGeofireAndPassLocKey)
+                        .catch(standardError);
+
+                    function removeGeofireAndPassLocKey(res) {
+                        return qAll(geofireRemove(res.key()), res);
+                    }
+                }
+
+
                 /* Geofire Service Option */
+
                 function removeLoc(key) {
                     return mainRecord(key)
                         .then(remove)
@@ -411,82 +502,10 @@
                         .catch(standardError);
 
                     function removeGeo(res) {
-                        self._log.info(res);
                         return res[0].remove(res[1]);
                     }
                 }
 
-
-                /* @param{Array} location data to save
-                 * @return{Array} [null, fireBaseRef of mainlocation]
-                 */
-
-                function createLocations(locs, flag) {
-                    if (!angular.isArray(locs)) {
-                        locs = [locs];
-                    }
-
-                    return self._q.all(locs.map(function(item) {
-                        return createLocation(item, flag)
-                    })).then(setReturnValue);
-
-
-                    function setReturnValue(res) {
-                        return self._utils.flatten(res);
-                    }
-
-                }
-
-                function removeIndexedLocations(mainRecId) {
-                    return getIndexKeys(mainRecId, self._locationNode)
-                        .then(completeRemove);
-
-                    function completeRemove(res) {
-                        return self._q.all(res.map(function(key) {
-                            return removeLocation(key);
-                        }));
-                    }
-
-                }
-
-                /* @param{Object} location data to save
-                 * @return{firebaseRef} fireBaseRef of mainlocation
-                 */
-
-                function createLocation(data) {
-                    var coords = {
-                        lat: data[self._latitude],
-                        lon: data[self._longitude]
-                    };
-                    return qAll(self._locationObject.add(data,true), [coords.lat, coords.lon])
-                        .then(addGeofireAndPassLocKey)
-                        .then(setReturnValue)
-                        .catch(standardError);
-
-
-                    function addGeofireAndPassLocKey(res) {
-                        return qAll(geofireSet(res[0].key(), res[1]), res[0]);
-                    }
-
-                    function setReturnValue(res) {
-                        return res[1];
-                    }
-                }
-
-                /* @param{String} id of main location to remove
-                 * @return{Array} [null, fireBaseRef of mainlocation]
-                 */
-
-                function removeLocation(key) {
-                    return self._locationObject
-                        .removeLoc(key)
-                        .then(removeGeofireAndPassLocKey)
-                        .catch(standardError);
-
-                    function removeGeofireAndPassLocKey(res) {
-                        return qAll(geofireRemove(res.key()), res);
-                    }
-                }
 
 
                 /* User Interface */
@@ -548,7 +567,7 @@
                 }
 
                 /* remove main record and user index
-                 * @param{String}  key of main record to remove
+                 * @param{String|Array}  key of main record to remove or [fireBaseArray,record to remove]
                  *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
                  */
 
@@ -594,7 +613,7 @@
 
                 function removeWithGps(mainRecId) {
 
-                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
+                    return qAll(removeLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -628,7 +647,7 @@
 
                 function removeWithUserAndGps(mainRecId) {
 
-                    return qAll(removeIndexedLocations(mainRecId), mainRecId)
+                    return qAll(removeLocations(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -836,8 +855,6 @@
                 }
 
 
-
-
                 function loaded(res) {
                     return res.$loaded();
                 }
@@ -893,7 +910,6 @@
                  * @return{array} of index keys;
                  */
 
-
                 function getIndexKeys(recId, arrName) {
                     return indexAf(recId, arrName, "array")
                         .then(getKeys)
@@ -943,8 +959,8 @@
                 /**CQ*****************************/
 
                 function commandSuccess(res) {
-                    // self._log.info(res);
                     self._log.info('command success');
+                    self._log.info(res);
                     switch (angular.isString(res.key())) {
                         case true:
                             self._pathMaster.setCurrentRef(res);

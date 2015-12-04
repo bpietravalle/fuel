@@ -184,15 +184,15 @@
             });
             describe("set", function() {
                 beforeEach(function() {
-                    test = subject.set("trips", "key", [90, 100]);
-                    test1 = subject.set("trips", "key2", [50, 100]);
+                    test = subject.set("key", [90, 100]);
+                    test1 = subject.set("key2", [50, 100]);
                     flushTime();
                 });
                 it("should be a promise", function() {
                     expect(test).toBeAPromise();
                 });
                 it("should add data to correct node", function() {
-                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    expect(subject.path()).toEqual(rootPath + "/geofire");
                     expect(subject.ref().getData()).toEqual({
                         key: {
                             g: jasmine.any(String),
@@ -207,17 +207,17 @@
             });
             describe("remove", function() {
                 beforeEach(function() {
-                    subject.set("trips", "key", [90, 100]);
-                    subject.set("trips", "key2", [50, 100]);
+                    subject.set("key", [90, 100]);
+                    subject.set("key2", [50, 100]);
                     flushTime();
-                    test = subject.remove("trips", "key");
+                    test = subject.remove("key");
                     flushTime();
                 });
                 it("should be a promise", function() {
                     expect(test).toBeAPromise();
                 });
                 it("should remove the record", function() {
-                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    expect(subject.path()).toEqual(rootPath + "/geofire");
                     expect(subject.ref().getData()).toEqual({
                         key2: {
                             g: jasmine.any(String),
@@ -228,10 +228,10 @@
             });
             describe("get", function() {
                 beforeEach(function() {
-                    subject.set("trips", "key", [90, 100]);
-                    subject.set("trips", "key2", [50, 100]);
+                    subject.set("key", [90, 100]);
+                    subject.set("key2", [50, 100]);
                     flushTime();
-                    test = subject.get("trips", "key");
+                    test = subject.get("key");
                     $rootScope.$digest();
                     $timeout.flush();
                 });
@@ -239,7 +239,7 @@
                     expect(test).toBeAPromise();
                 });
                 it("should retrieve the correct record", function() {
-                    expect(subject.path()).toEqual(rootPath + "/geofire/trips");
+                    expect(subject.path()).toEqual(rootPath + "/geofire");
                 });
             });
             describe("query", function() {

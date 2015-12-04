@@ -130,16 +130,26 @@
 
             module("testutils");
             module("firebase.fuel", function($provide) {
-                $provide.provider("firePath", function() {
+                $provide.factory("firePath", function() {
 
-                    this.$get = function() {
-                        var ref = extendRef(new MockFirebase(rootPath).child('trips'));
+                    return function(p, o) {
+
+                        function getRef() {
+                            return new MockFirebase(rootPath);
+
+                        }
+
+
+                        // return jasmine.createSpyObj("firePath",["ref","main","buildFire"]);
 
                         return {
+                            main: extendRef(getRef()),
+                            ref: getRef
+                        };
 
-                            main: jasmine.createSpy("firePathSpy").and.returnValue(ref)
-                        }
-                    }
+
+                    };
+
                 });
             });
 
@@ -177,34 +187,38 @@
                 subject = fuel("trips", {
                     user: true,
                 });
-                test = subject.queryByChild();
+                test = subject.loadUserRecords();
+                $rootScope.$digest();
+                // $timeout.flush();
             });
-            // it("should work", function() {
-                // expect(test).toBeAFirebaseRef();
-                // expect(subject.ref().orderByChild).toBeDefined();
+            it("should be a promise", function() {
+                expect(test).toBeAPromise();
+            });
+            // it("should call firePath.main()", function() {
+            //     expect(getPromValue(test)).toEqual("as");
+            // });
+            // it("should call firePath.main()", function() {
+            //     ref = new MockFirebase(rootPath);
+            //     expect(extendRef(ref)).toEqual("as");
             // });
 
         });
 
         function extendRef(ref) {
-            return angular.extend(ref, {
-                orderByChild: function(key, val) {
-                    return jasmine.createSpy(key + "Spy").and.callFake(function(val) {
-                        return {
-                            equalTo: function(val) {
-                                return val;
-                            }
+
+            var extension = {
+                orderByChild: jasmine.createSpy("orderByChild").and.callFake(function(key, val) {
+                    return {
+                        equalTo: function(val) {
+                            return val;
                         }
+                    }
+
+                })
 
 
-                    });
-
-
-
-                }
-
-
-            })
+            };
+            return angular.extend(ref, extension);
         }
 
 

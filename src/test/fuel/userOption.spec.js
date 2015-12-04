@@ -416,44 +416,6 @@
                     describe("saveWithUser", function() {});
                 });
             });
-            describe("Queries", function() {
-                function pushTime(y) {
-                    subject.ref().push(y);
-                    subject.ref().flush();
-                }
-                beforeEach(function() {
-                    $rootScope.$digest();
-                    arrData.forEach(pushTime)
-                    this.keys = Object.keys(subject.ref().children);
-                    spyOn(user, "getIndexKeys").and.returnValue($q.when(this.keys));
-                    test = subject.loadUserRecords();
-                    flush();
-                });
-                it("should exist", function() {
-                    expect(test).toBeAPromise();
-                });
-                it("should call user.getIndexKeys() with sessionid and path name", function() {
-                    expect(user.getIndexKeys).toHaveBeenCalledWith('1', "trips");
-                });
-                it("should return array of firebaseObjects", function() {
-                    expect(getPromValue(test)).toBeAn("array");
-                    expect(getPromValue(test).length).toEqual(4);
-
-                    function checkFb(y) {
-                        expect(y.$ref()).toBeAFirebaseRef();
-                        var meths = ["$id", "$priority", "$bindTo"];
-
-                        function checkMeths(x) {
-                            expect(y[x]).toBeDefined();
-                        }
-                        meths.forEach(checkMeths);
-                    }
-                    getPromValue(test).forEach(checkFb)
-                });
-                it("should set the ref() with each loaded item", function() {
-                    // expect(subject.ref().key()).toEqual(this.keys[3]);
-                });
-            });
         });
 
 
