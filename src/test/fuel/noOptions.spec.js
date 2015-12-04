@@ -446,13 +446,13 @@
             });
             describe("Queries", function() {
                 beforeEach(function() {
-                    $rootScope.$digest();
                     subject.ref().push(arrData[0]);
-                    subject.ref().flush();
-                    $rootScope.$digest();
+                    flush();
+                    this.key1 = subject.ref()._lastAutoId;
                     subject.ref().push(arrData[1]);
-                    subject.ref().flush();
-                    $rootScope.$digest();
+                    flush();
+                    this.key2 = subject.ref()._lastAutoId;
+                    this.keys = [this.key1, this.key2];
                 });
                 describe("load", function() {
                     describe("Without passing an argument", function() {
