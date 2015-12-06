@@ -168,7 +168,6 @@
                     entity.removeL = removeL;
                     entity.get = getGf;
                     entity.remove = removeGf;
-                    entity.setPoints = setPoints;
                     entity.set = setGf;
                     entity.query = queryGf;
                     entity.removeLoc = removeLoc;
@@ -497,33 +496,25 @@
                     return res[0];
                 }
 
-
                 function removeL(key) {
-                    return removeLoc(key)
-                        .then(removeGeoFire)
+                    return self._q.all([removeLoc(key), removeGf(key)])
+                        .then(mainRef)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function removeGeoFire(res) {
                         return removeGf(res.key());
                     }
-                }
 
-                function setPoints(obj) {
-                    return qAll(makeGeo(), obj)
-                        .then(completeSet)
-                        // .then(commandSuccess)
-                        .catch(standardError);
-
-                    function completeSet(res) {
-                        return res[0].set(obj)
+                    function returnGeofireNode(res) {
+                        return res.root().child("geofire");
                     }
                 }
 
                 function removeLoc(key) {
                     return mainRecord(key)
                         .then(remove)
-                        // .then(commandSuccess)
+                        .then(commandSuccess)
                         .catch(standardError);
                 }
 
@@ -563,7 +554,7 @@
                 function removeGf(key) {
                     return qAll(makeGeo(), key)
                         .then(removeGeo)
-                        // .then(commandSuccess)
+                        .then(commandSuccess)
                         .catch(standardError);
                 }
 

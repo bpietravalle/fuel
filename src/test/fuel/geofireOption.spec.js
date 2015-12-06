@@ -223,80 +223,78 @@
                     subject.load();
                     flush();
                     test1 = subject.removeL(this.key);
-                    flush();
+                    flushTime();
                 });
                 it("should be a promise", function() {
                     expect(test1).toBeAPromise();
                 });
-                it("should return main array firebaseRef", function() {
-                    expect(subject.path()).toEqual(rootPath + "/geofire/" + this.key);
-                    // expect(getPromValue(test1).toString()).toEqual(rootPath + "/geofire/" + this.key);
-                });
                 it("should remove data from main array", function() {
-                    // expect(getPromValue(test1)).toEqual(null);
-                    var main = subject.load();
-										flush();
-                    expect(getPromValue(main).length).toEqual(1);
+                    var p = subject.ref().getData();
+                    expect(p).toEqual(null);
                 });
                 it("should remove the points from points node", function() {
-									$timeout.flush();
-                //     var pref = getPromValue(test1).root().child("geofire/points");
-                //     var c = pref.child(this.key1);
-                //     var c1 = pref.child(this.key2);
-                //     expect(c.getData()).toEqual(null);
-                //     expect(c1.getData()).toEqual(this.c2data);
+                    var p = subject.ref().child("points").getData();
+                    expect(p).toEqual(null);
+
+                });
+                it("should set ref to mainref", function() {
+                    expect(getPromValue(test1)).toBeAFirebaseRef();
+                    expect(subject.path()).toEqual(rootPath + "/geofire");
                 });
                 qReject(0);
-								// logCheck();
-								// logNum(3);
+            });
+        });
+
+        describe("get", function() {
+            beforeEach(function() {
+                subject.set("keyOne", [90, 100]);
+                subject.set("key2", [50, 100]);
+                flushTime();
+                test = subject.get("keyOne");
+                $rootScope.$digest();
+                $timeout.flush();
+                $rootScope.$digest();
+            });
+            it("should be a promise", function() {
+                expect(test).toBeAPromise();
+            });
+            it("should retrieve the correct record", function() {
+                expect(flushData(subject.ref()).key()).toEqual("keyOne");
+                expect(flushData(subject.ref()).getData()).toEqual({
+                    "g": jasmine.any(String),
+                    "l": [90, 100]
+                });
             });
 
         });
-
-        //     describe("get", function() {
-        //         beforeEach(function() {
-        //             subject.set("key", [90, 100]);
-        //             subject.set("key2", [50, 100]);
-        //             flushTime();
-        //             test = subject.get("key");
-        //             $rootScope.$digest();
-        //             $timeout.flush();
-        //         });
-        //         it("should be a promise", function() {
-        //             expect(test).toBeAPromise();
-        //         });
-        //         it("should retrieve the correct record", function() {
-        //             expect(subject.path()).toEqual(rootPath + "/geofire");
-        //         });
-        //     });
-        //     describe("query", function() {
-        //         beforeEach(function() {
-        //             subject.set("key2", [50, 100]);
-        //             flushTime();
-        //             extendMockFb(subject.ref());
-        //             test = subject.query({
-        //                 center: [90, 100],
-        //                 radius: 10
-        //             });
-        //             $rootScope.$digest();
-        //             $timeout.flush();
-        //         });
-        //         it("should be a promise", function() {
-        //             expect(test).toBeAPromise();
-        //         });
-        //         it("should retrieve the correct record", function() {
-        //             expect(subject.path()).toEqual(rootPath + "/geofire");
-        //         });
-        //         it("should return a geoQuery", function() {
-        //             expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-        //                 updateCriteria: jasmine.any(Function),
-        //                 radius: jasmine.any(Function),
-        //                 center: jasmine.any(Function),
-        //                 cancel: jasmine.any(Function),
-        //                 on: jasmine.any(Function)
-        //             }));
-        //         });
-        //     });
+            describe("query", function() {
+                beforeEach(function() {
+                    subject.set("key2", [50, 100]);
+                    flushTime();
+                    extendMockFb(subject.ref());
+                    test = subject.query({
+                        center: [90, 100],
+                        radius: 10
+                    });
+                    $rootScope.$digest();
+                    $timeout.flush();
+                });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                it("should retrieve the correct record", function() {
+                    expect(subject.path()).toEqual(rootPath + "/geofire/points");
+                });
+                it("should return a geoQuery", function() {
+                    expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                        updateCriteria: jasmine.any(Function),
+                        radius: jasmine.any(Function),
+                        center: jasmine.any(Function),
+                        cancel: jasmine.any(Function),
+                        on: jasmine.any(Function)
+                    }));
+                });
+            });
 
         function updateCheck() {
             it("should save new time for updatedAt", function() {
@@ -518,6 +516,18 @@
             };
             angular.extend(obj, extension);
             return obj;
+        }
+
+        function flushData(ref, key) {
+            if (!ref) {
+                ref = subject.ref();
+            }
+            if (key) {
+                return ref.getFlushQueue()[0].context[key];
+            } else {
+                return ref.getFlushQueue()[0].context;
+
+            }
         }
 
 
