@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Geofire Option", function() {
-        var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var firePath, rec1, rec2, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -70,7 +70,7 @@
                 .factory("location", function($q) {
                     var location = {
                         add: keyMock("add", $q),
-                        removeLoc: keyMock("remove", $q),
+                        removeoc: keyMock("remove", $q),
 
                     };
 
@@ -177,71 +177,163 @@
             fuel = null;
         });
         describe("Commands", function() {
-            beforeEach(function() {
-                test = subject.addL(locData[0]);
-                $rootScope.$digest();
-                this.key = subject.ref()._lastAutoId;
-                this.mainRef = subject.ref().child(this.key);
-                flush();
-                this.ptsPath = subject.path();
-                $timeout.flush();
-                subject.ref().flush();
-                $rootScope.$digest();
+            describe("*Single Record*", function() {
+                beforeEach(function() {
+                    test = subject.add(locData[0]);
+                    $rootScope.$digest();
+                    this.key = subject.ref()._lastAutoId;
+                    this.mainRef = subject.ref().child(this.key);
+                    flush();
+                    this.ptsPath = subject.path();
+                    $timeout.flush();
+                    subject.ref().flush();
+                    $rootScope.$digest();
+                });
+                describe("add", function() {
+                    useParentRef();
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should remove coordinates from main array", function() {
+                        var d = this.mainRef;
+                        expect(d).toBeDefined();
+                        expect(d.toString()).toEqual(rootPath + "/geofire/" + this.key);
+                        expect(d.lat).not.toBeDefined();
+                        expect(d.lon).not.toBeDefined();
+                    });
+                    it("should save data to main array", function() {
+                        var d = this.mainRef.getData();
+                        expect(d.place_id).toEqual("string");
+                    });
+                    it("should add coordinates to coordinates node", function() {
+                        expect(getPromValue(test)[0].child(this.key).getData()).toEqual({
+                            "g": jasmine.any(String),
+                            "l": [90, 100]
+                        });
+                    });
+                    it("should set current ref to main array record", function() {
+                        expect(getPromValue(test).toString()).toEqual(rootPath + "/geofire/" + this.key);
+                        expect(this.ptsPath).toEqual(rootPath + "/geofire/" + this.key);
+                    });
+                    qReject(0);
+                });
+                describe("remove", function() {
+                    beforeEach(function() {
+                        this.gNode = subject.ref().child("points");
+                        this.c1data = this.gNode.child(this.key).getData();
+                        subject.load();
+                        flush();
+                        test1 = subject.remove(this.key);
+                        flushTime();
+                    });
+                    it("should be a promise", function() {
+                        expect(test1).toBeAPromise();
+                    });
+                    it("should remove data from main array", function() {
+                        var p = subject.ref().getData();
+                        expect(p).toEqual(null);
+                    });
+                    it("should remove the points from points node", function() {
+                        var p = subject.ref().child("points").getData();
+                        expect(p).toEqual(null);
+
+                    });
+                    it("should set ref to mainref", function() {
+                        expect(getPromValue(test1)[0]).toBeAFirebaseRef();
+                        expect(subject.path()).toEqual(rootPath + "/geofire");
+                    });
+                    qReject(0);
+                });
             });
-            describe("add", function() {
-                useParentRef();
-                it("should be a promise", function() {
-                    expect(test).toBeAPromise();
+            describe("*Multiple Records", function() {
+                beforeEach(function() {
+                    test = subject.add(locData);
+                    flushTime();
+                    flushTime();
+                    this.keys = Object.keys(subject.ref().parent().children);
+                    this.mainRef = subject.ref().root().child("geofire");
+                    rec1 = this.mainRef.child(this.keys[0]);
+                    rec2 = this.mainRef.child(this.keys[1]);
                 });
-                it("should remove coordinates from main array", function() {
-                    var d = this.mainRef;
-                    expect(d).toBeDefined();
-                    expect(d.toString()).toEqual(rootPath + "/geofire/" + this.key);
-                    expect(d.lat).not.toBeDefined();
-                    expect(d.lon).not.toBeDefined();
-                });
-                it("should save data to main array", function() {
-                    var d = this.mainRef.getData();
-                    expect(d.place_id).toEqual("string");
-                });
-                it("should add coordinates to coordinates node", function() {
-                    expect(getPromValue(test).child(this.key).getData()).toEqual({
-                        "g": jasmine.any(String),
-                        "l": [90, 100]
+                describe("add()", function() {
+                    useParentRef();
+                    it("should be a promise", function() {
+                        expect(this.keys).toBeAn("array");
+                        expect(test).toBeAPromise();
+                    });
+                    it("should remove coordinates from main array records", function() {
+                        expect(rec1.getData()).toBeDefined();
+                        expect(rec1.getData().lat).not.toBeDefined();
+                        expect(rec1.getData().lon).not.toBeDefined();
+                        expect(rec2.getData()).toBeDefined();
+                        expect(rec2.getData().lat).not.toBeDefined();
+                        expect(rec2.getData().lon).not.toBeDefined();
                     });
                 });
-                it("should set current ref to coordinates node", function() {
-                    expect(getPromValue(test).toString()).toEqual(rootPath + "/geofire/points");
-                    expect(this.ptsPath).toEqual(rootPath + "/geofire/points");
+                it("should save data to main array", function() {
+                    expect(rec1.getData()).toEqual({
+                        place_id: "string",
+                        placeType: "a place",
+                        distance: 1234,
+                        closeBy: true
+                    });
+										
+                    // expect(rec2.getData()).toEqual({
+                    //     place_id: "different_place",
+                    //     placeType: "some place",
+                    //     distance: 1000,
+                    //     closeBy: false
+                    // });
                 });
-                qReject(0);
-            });
-            describe("removeL", function() {
-                beforeEach(function() {
-                    this.gNode = subject.ref().child("points");
-                    this.c1data = this.gNode.child(this.key).getData();
-                    subject.load();
-                    flush();
-                    test1 = subject.removeL(this.key);
-                    flushTime();
+                it("should add coordinates to coordinates node", function() {
+                    // expect(getPromValue(test)[0].root().child("geofire/points").getData()).toEqual({
+                    //     "g": jasmine.any(String),
+                    //     "l": [90, 100]
+                    // });
+                    // expect(getPromValue(test)).toEqual({
+                        // "g": jasmine.any(String),
+                        // "l": [90, 100]
+                    // });
+                    // expect(getPromValue(test)[1].getData()).toEqual({
+                    //     "g": jasmine.any(String),
+                    //     "l": [45, 100]
+                    // });
+										// expect(getPromValue(test)).toEqual("as");
                 });
-                it("should be a promise", function() {
-                    expect(test1).toBeAPromise();
-                });
-                it("should remove data from main array", function() {
-                    var p = subject.ref().getData();
-                    expect(p).toEqual(null);
-                });
-                it("should remove the points from points node", function() {
-                    var p = subject.ref().child("points").getData();
-                    expect(p).toEqual(null);
+                // it("should set current ref to main array record", function() {
+                //     expect(getPromValue(test).toString()).toEqual(rootPath + "/geofire/" + this.key);
+                //     expect(this.ptsPath).toEqual(rootPath + "/geofire/" + this.key);
+                // });
+                // qReject(0);
+                // });
+                // describe("remove", function() {
+                // beforeEach(function() {
+                //     this.gNode = subject.ref().child("points");
+                //     this.c1data = this.gNode.child(this.key).getData();
+                //     subject.load();
+                //     flush();
+                //     test1 = subject.remove(this.key);
+                //     flushTime();
+                // });
+                // it("should be a promise", function() {
+                //     expect(test1).toBeAPromise();
+                // });
+                // it("should remove data from main array", function() {
+                //     var p = subject.ref().getData();
+                //     expect(p).toEqual(null);
+                // });
+                // it("should remove the points from points node", function() {
+                //     var p = subject.ref().child("points").getData();
+                //     expect(p).toEqual(null);
 
-                });
-                it("should set ref to mainref", function() {
-                    expect(getPromValue(test1)).toBeAFirebaseRef();
-                    expect(subject.path()).toEqual(rootPath + "/geofire");
-                });
-                qReject(0);
+                // });
+                // it("should set ref to mainref", function() {
+                //     expect(getPromValue(test1)[0]).toBeAFirebaseRef();
+                //     expect(subject.path()).toEqual(rootPath + "/geofire");
+                // });
+                // qReject(0);
+
+
             });
         });
 
@@ -267,34 +359,34 @@
             });
 
         });
-            describe("query", function() {
-                beforeEach(function() {
-                    subject.set("key2", [50, 100]);
-                    flushTime();
-                    extendMockFb(subject.ref());
-                    test = subject.query({
-                        center: [90, 100],
-                        radius: 10
-                    });
-                    $rootScope.$digest();
-                    $timeout.flush();
+        describe("query", function() {
+            beforeEach(function() {
+                subject.set("key2", [50, 100]);
+                flushTime();
+                extendMockFb(subject.ref());
+                test = subject.query({
+                    center: [90, 100],
+                    radius: 10
                 });
-                it("should be a promise", function() {
-                    expect(test).toBeAPromise();
-                });
-                it("should retrieve the correct record", function() {
-                    expect(subject.path()).toEqual(rootPath + "/geofire/points");
-                });
-                it("should return a geoQuery", function() {
-                    expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-                        updateCriteria: jasmine.any(Function),
-                        radius: jasmine.any(Function),
-                        center: jasmine.any(Function),
-                        cancel: jasmine.any(Function),
-                        on: jasmine.any(Function)
-                    }));
-                });
+                $rootScope.$digest();
+                $timeout.flush();
             });
+            it("should be a promise", function() {
+                expect(test).toBeAPromise();
+            });
+            it("should retrieve the correct record", function() {
+                expect(subject.path()).toEqual(rootPath + "/geofire/points");
+            });
+            it("should return a geoQuery", function() {
+                expect(getPromValue(test)).toEqual(jasmine.objectContaining({
+                    updateCriteria: jasmine.any(Function),
+                    radius: jasmine.any(Function),
+                    center: jasmine.any(Function),
+                    cancel: jasmine.any(Function),
+                    on: jasmine.any(Function)
+                }));
+            });
+        });
 
         function updateCheck() {
             it("should save new time for updatedAt", function() {

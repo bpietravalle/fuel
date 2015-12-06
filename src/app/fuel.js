@@ -126,7 +126,7 @@
                 entity.addIndex = addIndex;
                 entity.removeIndex = removeIndex;
 
-                if (self._user !== true && self._gps !== true) {
+                if (self._user !== true && self._gps !== true && self._geofire !== true) {
                     entity.add = createMainRecord;
                     entity.remove = removeMainRecord;
                 }
@@ -136,8 +136,8 @@
                 }
 
                 if (self._gps === true) {
-                    entity.createLocation = createLocations;
-                    entity.removeLocation = removeLocations;
+                    entity.createLocation = sendToGeofireToAdd;
+                    entity.removeLocation = sendToGeofireForRemoval;
                 }
 
                 if (self._user !== true && self._gps === true) {
@@ -164,13 +164,12 @@
                 }
 
                 if (self._geofire === true) {
-                    entity.addL = addLocations;
-                    entity.removeL = removeL;
-                    entity.get = getGf;
-                    entity.remove = removeGf;
-                    entity.set = setGf;
-                    entity.query = queryGf;
-                    entity.removeLoc = removeLoc;
+                    entity.add = addLocations;
+                    entity.remove = removeLocations;
+                    entity.geofireRef = makeGeo;
+                    entity.get = getGeofire;
+                    entity.set = setGeofire;
+                    entity.query = queryGeofire;
                 }
 
                 getCurrentRef();
@@ -256,6 +255,26 @@
 
                 /*Queries*/
 
+
+                function getIndexKeys(recId, arrName) {
+                    return indexAf(recId, arrName, "array")
+                        .then(getKeys)
+                        .then(setReturnValue)
+                        .catch(standardError);
+
+                    function getKeys(res) {
+                        return qAll(res.$loaded(), []);
+
+                    }
+
+                    function setReturnValue(res) {
+                        self._q.all(res[0].map(function(item) {
+                            res[1].push(item.$id);
+                        }));
+                        return res[1];
+                    }
+                }
+
                 function load(id) {
                     if (angular.isUndefined(id)) {
                         return loadMainArray();
@@ -311,7 +330,51 @@
                 }
 
                 /* Commands */
+                function addIndex(recId, arrName, key) {
 
+                    if (!angular.isString(recId) && self._session === true) {
+                        recId = sessionId();
+                    }
+                    return qAll(nestedRef(recId, arrName), key)
+                        .then(completeAction)
+                        .catch(standardError);
+
+                    function completeAction(res) {
+                        return self._timeout(function() {
+                                return res[0].child(res[1]).set(true);
+                            })
+                            .then(function() {
+                                return res[0];
+                            })
+                            .catch(standardError);
+                    }
+                }
+
+                function removeIndex(recId, arrName, key) {
+
+                    if (!angular.isString(recId) && self._session === true) {
+                        recId = sessionId();
+                    }
+
+                    return qAll(nestedRef(recId, arrName), key)
+                        .then(completeAction)
+                        .catch(standardError);
+
+                    function completeAction(res) {
+                        return self._timeout(function() {
+                                return res[0].child(res[1]).set(null);
+                            })
+                            .then(function() {
+                                return res[0];
+                            })
+                            .catch(standardError);
+                    }
+                }
+
+                /* @param{string} id of current record
+                 * @param{string} index name
+                 * @return{array} of index keys;
+                 */
                 function bindTo(id, scope, varName) {
                     switch (angular.isString(id)) {
                         case true:
@@ -363,208 +426,157 @@
                         .catch(standardError);
                 }
 
-                /* GPS Option */
+                /************
+								* GPS Option 
+								* ***********/
                 function geofireSet(k, c) {
                     return self._geofireObject.set(k, c);
-                }
-
-                function geofireRemove(k) {
-                    return self._geofireObject.remove(k);
                 }
 
                 function geofireGet(k) {
                     return self._geofireObject.get(k);
                 }
 
-
-
-                /* @param{Array} location data to save
-                 * @return{Array} [null, fireBaseRef of mainlocation]
+                /* @param{Object|Array} location data to save
+                 * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+                 * @return{Array} [fireBaseRef of mainlocation]
                  */
 
-                function createLocations(locs, flag) {
-                    if (!angular.isArray(locs)) {
-                        locs = [locs];
-                    }
-
-                    return self._q.all(locs.map(function(item) {
-                        return createLocation(item, flag)
-                    })).then(setReturnValue);
-
-                    function setReturnValue(res) {
-                        return self._utils.flatten(res);
-                    }
-
+                function sendToGeofireToAdd(locs, flag) {
+                    return self._geofireObject.add(locs, flag);
                 }
 
-                function removeLocations(mainRecId) {
-                    // if (!angular.isString(mainRecId)) {
-                    //     mainRecId = mainRecId.$id;
-                    // }
+                /* @param{Object|Array} keys of records to remove
+                 * @param{Boolean} true if only wish to remove coordinates, otherwise leave undefined
+                 * @return{Array} [fireBaseRefs of removed main records]
+                 */
+
+                function sendToGeofireForRemoval(mainRecId, flag) {
                     return getIndexKeys(mainRecId, self._locationNode)
                         .then(completeRemove);
 
                     function completeRemove(res) {
-                        self._log.info('res')
-                        self._log.info(res)
-                        return self._q.all(res.map(function(key) {
-                            return removeLocation(key);
-                        }));
+                        return self._geofireObject.remove(res, flag);
                     }
 
                 }
 
-                /* @param{Object} location data to save
-                 * @return{firebaseRef} fireBaseRef of mainlocation
+                /*****************
+                 * Geofire Option
+                 * ***************/
+
+                /* @param{Object|Array} 
+                 * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+                 * @return{Array} firebaseRefs of created records
                  */
 
-                function createLocation(data) {
+                function addLocations(locs, flag) {
+                    if (!angular.isArray(locs)) {
+                        locs = [locs];
+                    }
+
+                    return self._q.all(locs.map(function(loc) {
+                        return addLocation(loc, flag);
+                    }));
+                }
+
+                /* @param{Object|Array} 
+                 * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+                 * @return{Array} firebaseRefs of deleted main array record
+                 */
+
+                function removeLocations(keys, flag) {
+                    if (!angular.isArray(keys)) {
+                        keys = [keys];
+                    }
+
+                    return self._q.all(keys.map(function(key) {
+                        return removeLocation(key, flag);
+                    }));
+                }
+
+
+                function addLocation(data, flag) {
+                    switch (flag) {
+                        case true:
+                            return setGeofire(data[0],data[1]);
+                        default:
+                            return addFullLocationRecord(data);
+                    }
+                }
+
+                function removeLocation(key, flag) {
+                    switch (flag) {
+                        case true:
+                            return removeGeofire(key);
+                        default:
+                            return removeFullLocationRecord(key);
+                    }
+
+                }
+
+                function addFullLocationRecord(data) {
                     var coords = {
                         lat: data[self._latitude],
                         lon: data[self._longitude]
                     };
-                    return qAll(self._locationObject.add(data, true), [coords.lat, coords.lon])
-                        .then(addGeofireAndPassLocKey)
-                        .then(setReturnValue)
-                        .catch(standardError);
 
-
-                    function addGeofireAndPassLocKey(res) {
-                        return qAll(geofireSet(res[0].key(), res[1]), res[0]);
-                    }
-
-                    function setReturnValue(res) {
-                        return res[1];
-                    }
-                }
-
-                /* @param{String} id of main location to remove
-                 * @return{Array} [null, fireBaseRef of mainlocation]
-                 */
-
-                function removeLocation(key) {
-                    self._log.info('removeLocation')
-                    self._log.info(key)
-                    return self._locationObject
-                        .removeLoc(key)
-                        .then(removeGeofireAndPassLocKey)
-                        .catch(standardError);
-
-                    function removeGeofireAndPassLocKey(res) {
-                        return qAll(geofireRemove(res.key()), res);
-                    }
-                }
-
-
-                /* Geofire Service Option */
-
-                function addLocations(data, coords) {
-                    if (!coords) {
-                        coords = {
-                            lat: data[self._latitude],
-                            lon: data[self._longitude]
-                        };
-                    }
-
-                    return qAll(addData(data, true), coords)
-                        .then(setGfireAndPass)
-                        .then(setReturnValueToFirst)
-                        .then(commandSuccess)
-                        .catch(standardError);
-
-                    function addData(d, f) {
-                        if (f === true) {
-                            delete d[self._latitude]
-                            delete d[self._longitude]
-                        }
-                        return qAll(mainArray(), d)
-                            .then(add)
-                    }
-
-                    function setGfireAndPass(res) {
-                        return qAll(setGfire(res), res)
-                    }
-
-                    function setGfire(res) {
-                        return qAll(makeGeo(), [res[0].key(), [res[1].lat, res[1].lon]])
-                            .then(setGeo);
-                    }
-
-                }
-
-                function setReturnValueToFirst(res) {
-                    return res[0];
-                }
-
-                function removeL(key) {
-                    return self._q.all([removeLoc(key), removeGf(key)])
+                    return qAll(createMainRecord(data, true), coords)
+                        .then(setAndPass)
+                        // .then(setReturnValueToFirst)
                         .then(mainRef)
                         .then(commandSuccess)
                         .catch(standardError);
 
-                    function removeGeoFire(res) {
-                        return removeGf(res.key());
+                    function setAndPass(res) {
+                        return qAll(setGeofire(res[0].key(), [res[1].lat, res[1].lon]), res);
                     }
 
-                    function returnGeofireNode(res) {
-                        return res.root().child("geofire");
+                    function setReturnValueToFirst(res) {
+                        return res[0];
                     }
                 }
 
-                function removeLoc(key) {
-                    return mainRecord(key)
-                        .then(remove)
+
+                function removeFullLocationRecord(key) {
+                    return self._q.all([removeMainRecord(key), removeGeofire(key)])
+                        .then(mainRef)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
 
-                function setGf(key, coords, path) {
-                    return qAll(makeGeo(path), [key, coords])
-                        .then(setGeo)
-                        .catch(standardError);
-                }
 
-                function setGeo(res) {
-                    return res[0].set(res[1][0], res[1][1]);
-                }
-
-                function queryGf(data, path) {
-                    return qAll(makeGeo(path), data)
-                        .then(queryGeo)
-                        .then(querySuccess)
-                        .catch(standardError);
-
-                    function queryGeo(res) {
-                        return qAll(res[0], res[0].query(res[1]));
-                    }
-
-                }
-
-                function getGf(key, path) {
+                function getGeofire(key, path) {
                     return qAll(makeGeo(path), key)
                         .then(getGeo)
                         .then(querySuccess)
                         .catch(standardError);
-
-                    function getGeo(res) {
-                        return qAll(res[0], res[0].get(res[1]));
-                    }
                 }
 
-                function removeGf(key) {
+                function queryGeofire(data, path) {
+                    return qAll(makeGeo(path), data)
+                        .then(queryGeo)
+                        .then(querySuccess)
+                        .catch(standardError);
+                }
+
+                function removeGeofire(key) {
                     return qAll(makeGeo(), key)
                         .then(removeGeo)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
 
-                function removeGeo(res) {
-                    return res[0].remove(res[1]);
+                function setGeofire(key, coords, path) {
+                    return qAll(makeGeo(path), [key, coords])
+                        .then(setGeo)
+                        .catch(standardError);
                 }
 
 
-
-                /* User Interface */
+                /*************
+								* User Option
+								* ************/
 
                 function addUserIndex(key) {
                     return self._userObject
@@ -577,7 +589,10 @@
                 }
 
 
-                /*Session Access */
+                /****************
+								* Session Option
+								* ***************/
+
                 function bindCurrent(s, v) {
                     return bindTo(sessionId(), s, v);
                 }
@@ -608,7 +623,7 @@
 
                 /* save main record and to user index
                  * @param{Object} data to save to user array - just saving key for now
-                 *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record created)]
+                 * @return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record created)]
                  */
 
                 function createWithUser(data) {
@@ -624,7 +639,7 @@
 
                 /* remove main record and user index
                  * @param{String|Array}  key of main record to remove or [fireBaseArray,record to remove]
-                 *@return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
+                 * @return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
                  */
 
                 function removeWithUser(key) {
@@ -644,7 +659,7 @@
 
 
                 function createWithGps(data, loc) {
-                    return self._q.all([createMainRecord(data), createLocations(loc, true)])
+                    return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
@@ -663,13 +678,13 @@
                 function addLocationIndices(res) {
                     return self._q.all(res[1].map(function(loc) {
 
-                        return qAll(addIndex(res[0].key(), self._locationNode, loc.key()));
+                        return addIndex(res[0].key(), self._locationNode, loc.key());
                     }));
                 }
 
                 function removeWithGps(mainRecId) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                    return qAll(sendToGeofireForRemoval(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -686,7 +701,7 @@
 
                 function createWithUserAndGps(data, loc) {
 
-                    return self._q.all([createWithUser(data), createLocations(loc, true)])
+                    return self._q.all([createWithUser(data), sendToGeofireToAdd(loc, true)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
@@ -703,7 +718,7 @@
 
                 function removeWithUserAndGps(mainRecId) {
 
-                    return qAll(removeLocations(mainRecId), mainRecId)
+                    return qAll(sendToGeofireForRemoval(mainRecId), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -915,73 +930,22 @@
                     return res.$loaded();
                 }
 
-                /* For Indices */
-
-
-                function addIndex(recId, arrName, key) {
-
-                    if (!angular.isString(recId) && self._session === true) {
-                        recId = sessionId();
-                    }
-                    return qAll(nestedRef(recId, arrName), key)
-                        .then(completeAction)
-                        .catch(standardError);
-
-                    function completeAction(res) {
-                        return self._timeout(function() {
-                                return res[0].child(res[1]).set(true);
-                            })
-                            .then(function() {
-                                return res[0];
-                            })
-                            .catch(standardError);
-                    }
+                function getGeo(res) {
+                    return qAll(res[0], res[0].get(res[1]));
                 }
 
-                function removeIndex(recId, arrName, key) {
-
-                    if (!angular.isString(recId) && self._session === true) {
-                        recId = sessionId();
-                    }
-
-                    return qAll(nestedRef(recId, arrName), key)
-                        .then(completeAction)
-                        .catch(standardError);
-
-                    function completeAction(res) {
-                        return self._timeout(function() {
-                                return res[0].child(res[1]).set(null);
-                            })
-                            .then(function() {
-                                return res[0];
-                            })
-                            .catch(standardError);
-                    }
+                function setGeo(res) {
+                    return res[0].set(res[1][0], res[1][1]);
                 }
 
-                /* @param{string} id of current record
-                 * @param{string} index name
-                 * @return{array} of index keys;
-                 */
-
-                function getIndexKeys(recId, arrName) {
-                    return indexAf(recId, arrName, "array")
-                        .then(getKeys)
-                        .then(setReturnValue)
-                        .catch(standardError);
-
-                    function getKeys(res) {
-                        return qAll(res.$loaded(), []);
-
-                    }
-
-                    function setReturnValue(res) {
-                        self._q.all(res[0].map(function(item) {
-                            res[1].push(item.$id);
-                        }));
-                        return res[1];
-                    }
+                function queryGeo(res) {
+                    return qAll(res[0], res[0].query(res[1]));
                 }
+
+                function removeGeo(res) {
+                    return res[0].remove(res[1]);
+                }
+
 
                 function checkNestedParams(recId, arrName, flag) {
                     if (flag === true) {
