@@ -216,7 +216,6 @@
                 });
                 qReject(0);
             });
-
             describe("removeL", function() {
                 beforeEach(function() {
                     this.gNode = subject.ref().child("points");
@@ -241,9 +240,6 @@
                 });
                 it("should remove the points from points node", function() {
 									$timeout.flush();
-									// $rootScope.$digest();
-
-
                 //     var pref = getPromValue(test1).root().child("geofire/points");
                 //     var c = pref.child(this.key1);
                 //     var c1 = pref.child(this.key2);
@@ -252,7 +248,7 @@
                 });
                 qReject(0);
 								// logCheck();
-								logNum(3);
+								// logNum(3);
             });
 
         });

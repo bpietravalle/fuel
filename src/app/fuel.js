@@ -1023,7 +1023,7 @@
 
                 function commandSuccess(res) {
                     self._log.info('command success');
-                    self._log.info(res);
+                    // self._log.info(res);
                     switch (angular.isString(res.key())) {
                         case true:
                             self._pathMaster.setCurrentRef(res);
@@ -1048,7 +1048,6 @@
                             switch (angular.isObject(res[1])) {
                                 case true:
                                     //record in $firebaseArray or result from geofire.get()/geofire.query()
-                                    self._log.info(res);
                                     self._log.info("setting ref to current parent");
                                     self._pathMaster.setCurrentRef(res[0].$ref());
                                     self._pathMaster.setBase(res[0]);
