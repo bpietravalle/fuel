@@ -191,6 +191,8 @@
             }
 
             function mainRecord(id) {
+							self._log.info('in firepath');
+							self._log.info(id);
                 return build(mainRecordPath(id), "object");
             }
 

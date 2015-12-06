@@ -371,9 +371,7 @@
                         subject.ref().child("trips").push(arrData);
                         $rootScope.$digest();
                         test = subject.remove('0');
-                        $rootScope.$digest();
-                        subject.ref().flush();
-                        $rootScope.$digest();
+												flush();
                     });
                     it("should remove the record and return a firebaseRef", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();

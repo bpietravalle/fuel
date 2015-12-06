@@ -37,7 +37,7 @@
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
             this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
             if (this._gps === true && this._geofire === true) {
-                throw new Error("Please select either 'gps' or 'geofire'. You can't have your coordinates and eat 'em too.");
+                throw new Error("Please select either 'gps' or 'geofire'");
             }
             if (this._user === true && this._geofire === true) {
                 throw new Error("Invalid option.  Please remove 'user' or 'geofire' from your options hash.");
@@ -62,6 +62,7 @@
                 this._pathOptions.geofireNode = this._geofireNode;
                 this._pathOptions.type = this._geoType; //to add index of current location types
                 this._pathOptions.typeIndex = this._typeIndex;
+                this._points = this._utils.paramCheck(this._options.points, "str", "points");
             }
 
             if (this._gps === true) {
@@ -163,8 +164,11 @@
                 }
 
                 if (self._geofire === true) {
+                    entity.addL = addLocations;
+                    entity.removeL = removeL;
                     entity.get = getGf;
                     entity.remove = removeGf;
+                    entity.setPoints = setPoints;
                     entity.set = setGf;
                     entity.query = queryGf;
                     entity.removeLoc = removeLoc;
@@ -241,6 +245,9 @@
                 /* Geofire Interface */
 
                 function makeGeo(path) {
+                    if (!path) {
+                        path = self._points;
+                    }
                     return self._pathMaster.makeGeo(path);
                 }
 
@@ -272,7 +279,7 @@
                         .catch(standardError);
                 }
 
-								//TODO: spec without spies
+                //TODO: spec without spies
                 function loadUserRecords() {
                     return currentUserRecords()
                         .then(wrapArray)
@@ -452,24 +459,82 @@
 
                 /* Geofire Service Option */
 
+                function addLocations(data, coords) {
+                    if (!coords) {
+                        coords = {
+                            lat: data[self._latitude],
+                            lon: data[self._longitude]
+                        };
+                    }
+
+                    return qAll(addData(data, true), coords)
+                        .then(setGfireAndPass)
+                        .then(setReturnValueToFirst)
+                        .then(commandSuccess)
+                        .catch(standardError);
+
+                    function addData(d, f) {
+                        if (f === true) {
+                            delete d[self._latitude]
+                            delete d[self._longitude]
+                        }
+                        return qAll(mainArray(), d)
+                            .then(add)
+                    }
+
+                    function setGfireAndPass(res) {
+                        return qAll(setGfire(res), res)
+                    }
+
+                    function setGfire(res) {
+                        return qAll(makeGeo(), [res[0].key(), [res[1].lat, res[1].lon]])
+                            .then(setGeo);
+                    }
+
+                }
+
+                function setReturnValueToFirst(res) {
+                    return res[0];
+                }
+
+
+                function removeL(key) {
+                    return removeLoc(key)
+                        .then(removeGeoFire)
+                        .then(commandSuccess)
+                        .catch(standardError);
+
+                    function removeGeoFire(res) {
+                        return removeGf(res.key());
+                    }
+                }
+
+                function setPoints(obj) {
+                    return qAll(makeGeo(), obj)
+                        .then(completeSet)
+                        // .then(commandSuccess)
+                        .catch(standardError);
+
+                    function completeSet(res) {
+                        return res[0].set(obj)
+                    }
+                }
+
                 function removeLoc(key) {
                     return mainRecord(key)
                         .then(remove)
-                        .then(commandSuccess)
+                        // .then(commandSuccess)
                         .catch(standardError);
                 }
-
 
                 function setGf(key, coords, path) {
                     return qAll(makeGeo(path), [key, coords])
                         .then(setGeo)
-                        .then(commandSuccess)
                         .catch(standardError);
+                }
 
-                    function setGeo(res) {
-                        return res[0].set(res[1][0], res[1][1]);
-                    }
-
+                function setGeo(res) {
+                    return res[0].set(res[1][0], res[1][1]);
                 }
 
                 function queryGf(data, path) {
@@ -495,15 +560,15 @@
                     }
                 }
 
-                function removeGf(key, path) {
-                    return qAll(makeGeo(path), key)
+                function removeGf(key) {
+                    return qAll(makeGeo(), key)
                         .then(removeGeo)
-                        .then(commandSuccess)
+                        // .then(commandSuccess)
                         .catch(standardError);
+                }
 
-                    function removeGeo(res) {
-                        return res[0].remove(res[1]);
-                    }
+                function removeGeo(res) {
+                    return res[0].remove(res[1]);
                 }
 
 
@@ -900,11 +965,8 @@
                                 return res[0];
                             })
                             .catch(standardError);
-
                     }
                 }
-
-
 
                 /* @param{string} id of current record
                  * @param{string} index name

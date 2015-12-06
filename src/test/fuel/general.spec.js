@@ -1,7 +1,7 @@
 (function() {
     "use strict";
 
-    describe("Fuel Factory", function() {
+    describe("General", function() {
         var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
         beforeEach(function() {
@@ -216,12 +216,10 @@
             ];
             var defaultNodes = [
                 ["userNode", "users"],
-                ["locationNode", "locations"],
                 ["geofireNode", "geofire"]
             ];
             var defaultServices = [
                 ["userService", "user"],
-                ["locationService", "location"],
                 ["sessionService", "session"],
                 ["geofireService", "geofire"]
             ];
