@@ -132,12 +132,12 @@
             ["mainArray", "trips"],
             ["mainRecord", "trips/1", "1"],
             ["nestedRef", "trips/1", "1"],
-            ["nestedRef", "trips/1/hotels", "1","hotels"],
+            ["nestedRef", "trips/1/hotels", "1", "hotels"],
             ["nestedArray", "trips/hotels", "hotels", undefined],
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeofire", "trips/points", []],
+            ["makeGeofire", "trips/points"],
         ];
 
         function testPaths(y) {
@@ -293,6 +293,42 @@
             });
 
         });
+
+        //from geofire-js
+        function getFirebaseData(ref) {
+            return new RSVP.Promise(function(resolve, reject) {
+                ref.once("value", function(dataSnapshot) {
+                    resolve(dataSnapshot.exportVal());
+                });
+            });
+        };
+
+        function Checklist(items, expect, done) {
+            var eventsToComplete = items;
+
+            /* Removes a task from the events list */
+            this.x = function(item) {
+                var index = eventsToComplete.indexOf(item);
+                if (index === -1) {
+                    expect("Attempting to delete unexpected item '" + item + "' from Checklist").toBeFalsy();
+                } else {
+                    eventsToComplete.splice(index, 1);
+                    if (this.isEmpty()) {
+                        done();
+                    }
+                }
+            };
+
+            /* Returns the length of the events list */
+            this.length = function() {
+                return eventsToComplete.length;
+            };
+
+            /* Returns true if the events list is empty */
+            this.isEmpty = function() {
+                return (this.length() === 0);
+            };
+        };
 
         function getPromValue(obj, flag) {
             return testutils.getPromValue(obj, flag);

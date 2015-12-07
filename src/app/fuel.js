@@ -50,7 +50,7 @@
             /* GPS & Geofire */
             if (this._gps === true || this._geofire === true) {
 
-                this._locationNode = this._utils.paramCheck(this._options.locationNode, "str", "locations");
+                this._geofireIndex = this._utils.paramCheck(this._options.locationNode, "str", "locations");
                 this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
                 this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
                 this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
@@ -58,7 +58,6 @@
                 this._geoType = this._utils.paramCheck(this._options.geoType, "str", this._path);
 
                 this._pathOptions.geofire = true;
-                this._pathOptions.locationNode = this._locationNode;
                 this._pathOptions.geofireNode = this._geofireNode;
                 this._pathOptions.type = this._geoType; //to add index of current location types
                 this._pathOptions.typeIndex = this._typeIndex;
@@ -67,9 +66,7 @@
             }
 
             if (this._gps === true) {
-                this._locationService = this._utils.paramCheck(this._options.locationService, "str", this._utils.singularize(this._locationNode));
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
-                this._locationObject = this._injector.get(this._locationService);
                 this._geofireObject = this._injector.get(this._geofireService);
             }
 
@@ -404,6 +401,7 @@
                 }
 
                 function removeMainRecord(key) {
+									
                     return checkParam(key)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -444,7 +442,7 @@
                  */
 
                 function sendToGeofireForRemoval(mainRecId, flag) {
-                    return getIndexKeys(mainRecId, self._locationNode)
+                    return getIndexKeys(mainRecId, self._geofireIndex)
                         .then(completeRemove);
 
                     function completeRemove(res) {
@@ -523,7 +521,7 @@
 
                     return qAll(createMainRecord(data, true), coords)
                         .then(setAndPass)
-                        .then(setReturnValueToFirst)
+                        .then(setReturnValueToSecond)
                         .catch(standardError);
 
                     function setAndPass(res) {
@@ -535,7 +533,6 @@
                 function removeFullLocationRecord(key) {
                     return self._q.all([removeMainRecord(key), removeGeofire(key)])
                         .then(setReturnValueToFirst)
-                        // .then(mainRef)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
@@ -548,7 +545,7 @@
                         .catch(standardError);
                 }
 
-                function queryGeofire(data, path) {
+                function queryGeofire(data) {
                     return qAll(makeGeofire(), data)
                         .then(queryGeo)
                         .then(querySuccess)
@@ -569,11 +566,6 @@
                         .catch(standardError);
                 }
 
-                function setReturnValueToFirst(res) {
-                    return self._timeout(function() {
-                        return res[1];
-                    });
-                }
 
                 /*************
                  * User Option
@@ -679,7 +671,7 @@
                 function addLocationIndices(res) {
                     return self._q.all(res[1].map(function(loc) {
 
-                        return addIndex(res[0].key(), self._locationNode, loc.key());
+                        return addIndex(res[0].key(), self._geofireIndex, loc.key());
                     }));
                 }
 
@@ -702,7 +694,7 @@
 
                 function createWithUserAndGps(data, loc) {
 
-                    return self._q.all([createWithUser(data), sendToGeofireToAdd(loc, true)])
+                    return self._q.all([createWithUser(data), sendToGeofireToAdd(loc)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
@@ -923,9 +915,7 @@
 
                 function bindObject(res) {
                     return res[0].$bindTo(res[1][0], res[1][1]);
-
                 }
-
 
                 function loaded(res) {
                     return res.$loaded();
@@ -944,9 +934,10 @@
                 }
 
                 function removeGeo(res) {
+									self._log.info("in removeGeo");
+									self._log.info(res);
                     return res[0].remove(res[1]);
                 }
-
 
                 function checkNestedParams(recId, arrName, flag) {
                     if (flag === true) {
@@ -955,7 +946,16 @@
                         return qWrap(nestedArray(recId, arrName));
                     }
                 }
-
+                function setReturnValueToFirst(res) {
+                    return self._timeout(function() {
+                        return res[0];
+                    });
+                }
+                function setReturnValueToSecond(res) {
+                    return self._timeout(function() {
+                        return res[1];
+                    });
+                }
 
                 /* For Queries */
 
@@ -979,7 +979,7 @@
 
                 function commandSuccess(res) {
                     self._log.info('command success');
-                    self._log.info(res);
+                    // self._log.info(res);
                     switch (angular.isString(res.key())) {
                         case true:
                             self._pathMaster.setCurrentRef(res);

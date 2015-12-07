@@ -17,8 +17,6 @@
 
     }
 
-    // ];
-
     FirePath = function(utils, $q, $log, $injector, fuelConfiguration, path, options) {
         this._utils = utils;
         this._q = $q;
@@ -42,7 +40,6 @@
         }
         if (this._geofire === true) {
             //TODO currently unused- remove
-            this._locationNode = this._options.locationNode;
             this._geofireNode = this._options.geofireNode;
             this._points = this._options.points;
         }
@@ -93,6 +90,12 @@
             function build(path, type, flag) {
                 switch (isInMainNode(path)) {
                     case false:
+                        self._log.info("mainPath");
+                        self._log.info(mainPath());
+                        self._log.info("fulPath");
+                        self._log.info(fullPath(path));
+                        self._log.info("args");
+                        self._log.info(path);
                         throw new Error("You cannot switch to a new main node");
                     case true:
                         switch (type) {
@@ -121,10 +124,6 @@
                 }
                 return ref;
             }
-
-            // function toParent(r) {
-            //     return r.parent();
-            // }
 
             function useCurrent(idx) {
                 var ref = getCurrentRef();
@@ -210,7 +209,7 @@
             /*************** geoFire ***************/
 
             function makeGeofire() {
-                return buildFire("geo",setCurrentRef(geofireRef()),true);
+                return buildFire("geo", setCurrentRef(geofireRef()), true);
             }
 
             function geofireRef() {
@@ -324,7 +323,7 @@
             }
 
             function fullPath(path) {
-                return self._utils.stringify([rootPath(), self._utils.relativePath(path)]);
+                return self._utils.stringify([self._utils.removeSlash(rootPath()), self._utils.relativePath(path)]);
             }
 
             function inspect() {
