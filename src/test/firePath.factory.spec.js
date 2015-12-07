@@ -97,6 +97,7 @@
             options = {
                 session: true,
                 geofire: true,
+                points: "points",
                 sessionService: "session",
                 sessionIdMethod: "getId",
                 geofireName: "geofire"
@@ -136,7 +137,7 @@
             ["nestedArray", "trips/1/hotels", "1", "hotels"],
             ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeo", "trips/hotels", ["hotels"]],
+            ["makeGeofire", "trips/points", []],
         ];
 
         function testPaths(y) {

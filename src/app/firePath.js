@@ -44,6 +44,7 @@
             //TODO currently unused- remove
             this._locationNode = this._options.locationNode;
             this._geofireNode = this._options.geofireNode;
+            this._points = this._options.points;
         }
     };
 
@@ -81,7 +82,7 @@
             switch (self._geofire) {
                 case true:
                     return angular.extend(fire, {
-                        makeGeo: makeGeo
+                        makeGeofire: makeGeofire
                     });
             }
 
@@ -191,8 +192,6 @@
             }
 
             function mainRecord(id) {
-							self._log.info('in firepath');
-							self._log.info(id);
                 return build(mainRecordPath(id), "object");
             }
 
@@ -210,13 +209,12 @@
 
             /*************** geoFire ***************/
 
-            function makeGeo(path) {
-                switch (angular.isString(path) || angular.isArray(path)) {
-                    case true:
-                        return build(self._utils.toArray([self._path, path]), "geo");
-                    case false:
-                        return build([self._path], "geo");
-                }
+            function makeGeofire() {
+                return buildFire("geo",setCurrentRef(geofireRef()),true);
+            }
+
+            function geofireRef() {
+                return main().child(self._points);
             }
 
             /************ Absolute Paths ****************/
@@ -226,8 +224,7 @@
             }
 
             function mainPath() {
-                //this should be main().toString();
-                return fullPath(self._path);
+                return main().toString();
             }
 
             /************ Relative Paths ****************/

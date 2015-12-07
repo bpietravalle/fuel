@@ -288,22 +288,22 @@
                 });
             });
             describe("Geofire Option - Locations Array", function() {
-                beforeEach(function() {
-                    subject = fuel("trips", {
-                        geofire: true,
-                        timeStamp: true
-                    });
-                    subject.add(locData[0]);
-                    flush();
-                    this.key = subject.ref().key();
-                    this.createTime = subject.ref().getData().createdAt;
-                    this.updateTime = subject.ref().getData().updatedAt;
-                });
+                // beforeEach(function() {
+                //     subject = fuel("trips", {
+                //         geofire: true,
+                //         timeStamp: true
+                //     });
+                //     subject.add(locData[0]);
+                //     flush();
+                //     this.key = subject.ref().key();
+                //     this.createTime = subject.ref().getData().createdAt;
+                //     this.updateTime = subject.ref().getData().updatedAt;
+                // });
 
-                describe("add()", function() {
-                    createCheck();
-                    qReject(0);
-                });
+                // describe("add()", function() {
+                //     createCheck();
+                //     qReject(0);
+                // });
                 // not necessary currently
                 // describe("save()",function(){
                 // 	beforeEach(function(){

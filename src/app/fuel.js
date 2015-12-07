@@ -63,6 +63,7 @@
                 this._pathOptions.type = this._geoType; //to add index of current location types
                 this._pathOptions.typeIndex = this._typeIndex;
                 this._points = this._utils.paramCheck(this._options.points, "str", "points");
+                this._pathOptions.points = this._points;
             }
 
             if (this._gps === true) {
@@ -166,7 +167,7 @@
                 if (self._geofire === true) {
                     entity.add = addLocations;
                     entity.remove = removeLocations;
-                    entity.geofireRef = makeGeo;
+                    entity.geofireRef = makeGeofire;
                     entity.get = getGeofire;
                     entity.set = setGeofire;
                     entity.query = queryGeofire;
@@ -235,6 +236,7 @@
                     return self._pathMaster.nestedRecord(mainId, name, recId);
                 }
 
+								//TODO make private
                 function buildFire(type, path, flag) {
                     return self._pathMaster.buildFire(type, path, flag);
                 }
@@ -242,11 +244,8 @@
 
                 /* Geofire Interface */
 
-                function makeGeo(path) {
-                    if (!path) {
-                        path = self._points;
-                    }
-                    return self._pathMaster.makeGeo(path);
+                function makeGeofire() {
+                    return self._pathMaster.makeGeofire();
                 }
 
                 /*****************
@@ -427,15 +426,8 @@
                 }
 
                 /************
-								* GPS Option 
-								* ***********/
-                function geofireSet(k, c) {
-                    return self._geofireObject.set(k, c);
-                }
-
-                function geofireGet(k) {
-                    return self._geofireObject.get(k);
-                }
+                 * GPS Option
+                 * ***********/
 
                 /* @param{Object|Array} location data to save
                  * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
@@ -499,18 +491,26 @@
                 function addLocation(data, flag) {
                     switch (flag) {
                         case true:
-                            return setGeofire(data[0],data[1]);
+                            return setGeofire(data[0], data[1])
+                                .then(commandSuccess)
+                                .catch(standardError);
                         default:
-                            return addFullLocationRecord(data);
+                            return addFullLocationRecord(data)
+                                .then(commandSuccess)
+                                .catch(standardError);
                     }
                 }
 
                 function removeLocation(key, flag) {
                     switch (flag) {
                         case true:
-                            return removeGeofire(key);
+                            return removeGeofire(key)
+                                .then(commandSuccess)
+                                .catch(standardError);
                         default:
-                            return removeFullLocationRecord(key);
+                            return removeFullLocationRecord(key)
+                                .then(commandSuccess)
+                                .catch(standardError);
                     }
 
                 }
@@ -523,60 +523,61 @@
 
                     return qAll(createMainRecord(data, true), coords)
                         .then(setAndPass)
-                        // .then(setReturnValueToFirst)
-                        .then(mainRef)
-                        .then(commandSuccess)
+                        .then(setReturnValueToFirst)
                         .catch(standardError);
 
                     function setAndPass(res) {
-                        return qAll(setGeofire(res[0].key(), [res[1].lat, res[1].lon]), res);
+                        return qAll(setGeofire(res[0].key(), [res[1].lat, res[1].lon]), res[0]);
                     }
 
-                    function setReturnValueToFirst(res) {
-                        return res[0];
-                    }
                 }
-
 
                 function removeFullLocationRecord(key) {
                     return self._q.all([removeMainRecord(key), removeGeofire(key)])
-                        .then(mainRef)
+                        .then(setReturnValueToFirst)
+                        // .then(mainRef)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
 
 
-                function getGeofire(key, path) {
-                    return qAll(makeGeo(path), key)
+                function getGeofire(key) {
+                    return qAll(makeGeofire(), key)
                         .then(getGeo)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
                 function queryGeofire(data, path) {
-                    return qAll(makeGeo(path), data)
+                    return qAll(makeGeofire(), data)
                         .then(queryGeo)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
                 function removeGeofire(key) {
-                    return qAll(makeGeo(), key)
+                    return qAll(makeGeofire(), key)
                         .then(removeGeo)
                         .then(commandSuccess)
                         .catch(standardError);
                 }
 
-                function setGeofire(key, coords, path) {
-                    return qAll(makeGeo(path), [key, coords])
+                function setGeofire(key, coords) {
+                    return qAll(makeGeofire(), [key, coords])
                         .then(setGeo)
+                        .then(commandSuccess)
                         .catch(standardError);
                 }
 
+                function setReturnValueToFirst(res) {
+                    return self._timeout(function() {
+                        return res[1];
+                    });
+                }
 
                 /*************
-								* User Option
-								* ************/
+                 * User Option
+                 * ************/
 
                 function addUserIndex(key) {
                     return self._userObject
@@ -590,8 +591,8 @@
 
 
                 /****************
-								* Session Option
-								* ***************/
+                 * Session Option
+                 * ***************/
 
                 function bindCurrent(s, v) {
                     return bindTo(sessionId(), s, v);
@@ -978,7 +979,7 @@
 
                 function commandSuccess(res) {
                     self._log.info('command success');
-                    // self._log.info(res);
+                    self._log.info(res);
                     switch (angular.isString(res.key())) {
                         case true:
                             self._pathMaster.setCurrentRef(res);
