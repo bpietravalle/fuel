@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Fuel Factory", function() {
-        var firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
+        var id, firePath, differentLocation, phones, phone, geofire, differentSession, keyMock, location, $timeout, arrData, newData, newRecord, test1, session, lastRecs, recRemoved, rootPath, copy, keys, testutils, root, success, failure, recAdded, sessionSpy, locData, userId, maSpy, maSpy1, mrSpy, naSpy, nrSpy, fsMocks, geo, test, ref, objRef, objCount, arrCount, arrRef, $rootScope, data, user, location, locationSpy, $injector, inflector, fsType, userSpy, fsPath, options, fbObject, fbArray, pathSpy, $provide, fuel, subject, path, fireStarter, $q, $log;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -183,6 +183,7 @@
                 describe("add", function() {
                     beforeEach(function() {
                         test = subject.add(newRecord);
+                        $timeout.flush();
                         $rootScope.$digest();
                         subject.ref().flush();
                         $rootScope.$digest();
@@ -198,112 +199,61 @@
                         expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/" + this.key);
                     });
                     it("should save the data to firebaseRef", function() {
-                        // expect(subject.inspect("uid")).toEqual("as");
                         expect(getPromValue(test).getData()).toEqual(newRecord);
                     });
                 });
-                describe("save", function() {
+                describe("Saving Array Record", function() {
                     beforeEach(function() {
+                        test = subject.add(newRecord);
+                        $timeout.flush();
+                        $rootScope.$digest();
+                        subject.ref().flush();
+                        $rootScope.$digest();
+                        this.key = subject.ref().key();
                         $rootScope.$digest();
                         subject.ref().set(arrData);
+                        $rootScope.$digest();
+                        this.name = subject.base()[0].firstName;
+                        this.id = subject.base()[0].$id;
+                        subject.base()[0].firstName = "john jacob";
                         $rootScope.$digest();
                     });
                     afterEach(function() {
                         this.name = null;
                         this.phone = null;
-
                     });
-                    describe("If pass an array", function() {
+                    describe("If second arg is the record", function() {
                         beforeEach(function() {
-                            subject.load();
+                            test = subject.save([subject.base(), subject.base()[0]]);
                             $rootScope.$digest();
+                            $timeout.flush();
                             subject.ref().flush();
                             $rootScope.$digest();
-                            this.name = subject.base()[0].firstName;
-                            this.phone = subject.base()[1].phone;
-                            subject.base()[0].firstName = "john jacob";
-                            $rootScope.$digest();
                         });
-                        describe("If second arg is the record", function() {
-                            beforeEach(function() {
-                                test = subject.save([subject.base(), subject.base()[0]]);
-                                $rootScope.$digest();
-                                subject.ref().flush();
-                                $rootScope.$digest();
+                        it("should save record if pass an arrary with [fireBaseArray, record]", function() {
+                            expect(this.name).toEqual('sally');
+                            expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                        });
+                        it("should return a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should resolve to the correct firebaseRef", function() {
 
-                            });
-                            it("should save record if pass an arrary with [fireBaseArray, record]", function() {
-                                expect(this.name).toEqual('tom');
-                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
-                            });
-                            it("should return a promise", function() {
-                                expect(test).toBeAPromise();
-                            });
-                            it("should resolve to the correct firebaseRef", function() {
-                                expect(getPromValue(test)).toBeAFirebaseRef();
-                                expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
-                            });
-                            qReject(0);
+                            expect(getPromValue(test)).toBeAFirebaseRef();
+                            expect(getPromValue(test).path).toEqual(rootPath + "/trips/" + this.id);
                         });
-                        describe("If second arg is the record's index", function() {
-                            beforeEach(function() {
-                                test = subject.save([subject.base(), 0]);
-                                $rootScope.$digest();
-                                subject.ref().flush();
-                                $rootScope.$digest();
-                            });
-                            it("should save record ", function() {
-                                expect(this.name).toEqual('tom');
-                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
-                            });
-                            it("should return a promise", function() {
-                                expect(test).toBeAPromise();
-                            });
-                            it("should resolve to the correct firebaseRef", function() {
-                                expect(getPromValue(test)).toBeAFirebaseRef();
-                                expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
-                            });
-                            qReject(0);
-                        });
-                        describe("If second arg is the record's key", function() {
-                            beforeEach(function() {
-                                this.key = dataKeys(subject.ref())[0];
-                                test = subject.save([subject.base(), this.key]);
-                                $rootScope.$digest();
-                                subject.ref().flush();
-                                $rootScope.$digest();
-                            });
-
-                            it("should save record correctly", function() {
-                                expect(this.name).toEqual('tom');
-                                expect(getPromValue(test).getData().firstName).toEqual("john jacob");
-                            });
-                            it("should return a promise", function() {
-                                expect(test).toBeAPromise();
-                            });
-                            it("should resolve to the correct firebaseRef", function() {
-                                expect(getPromValue(test)).toBeAFirebaseRef();
-                                expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
-                            });
-                            qReject(0);
-                        });
+                        qReject(0);
                     });
-                    describe("If pass record instead of array", function() {
+                    describe("If second arg is the record's index", function() {
                         beforeEach(function() {
-                            subject.load(0);
+                            test = subject.save([subject.base(), 0]);
                             $rootScope.$digest();
-                            subject.ref().flush();
-                            $rootScope.$digest();
-                            this.name = subject.base().firstName;
-                            subject.base().firstName = "john jacob";
-                            $rootScope.$digest();
-                            test = subject.save(subject.base());
-                            $rootScope.$digest();
+                            $timeout.flush();
                             subject.ref().flush();
                             $rootScope.$digest();
                         });
-                        it("should save record", function() {
-                            expect(this.name).toEqual('tom');
+                        it("should save record ", function() {
+                            expect(this.name).toEqual('sally');
                             expect(getPromValue(test).getData().firstName).toEqual("john jacob");
                         });
                         it("should return a promise", function() {
@@ -311,18 +261,71 @@
                         });
                         it("should resolve to the correct firebaseRef", function() {
                             expect(getPromValue(test)).toBeAFirebaseRef();
-                            expect(getPromValue(test).path).toEqual(rootPath + "/trips/0");
+                            expect(getPromValue(test).path).toEqual(rootPath + "/trips/" + this.id);
                         });
-                        it("should change the ref() to the saved record's ref", function() {
-                            expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/0");
+                        qReject(0);
+                    });
+                    describe("If second arg is the record's key", function() {
+                        beforeEach(function() {
+                            test = subject.save([subject.base(), this.id]);
+                            $rootScope.$digest();
+                            $timeout.flush();
+                            subject.ref().flush();
+                            $rootScope.$digest();
+                        });
+                        it("should save record correctly", function() {
+                            expect(this.name).toEqual('sally');
+                            expect(getPromValue(test).getData().firstName).toEqual("john jacob");
+                        });
+                        it("should return a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should resolve to the correct firebaseRef", function() {
+                            expect(getPromValue(test)).toBeAFirebaseRef();
+                            expect(getPromValue(test).path).toEqual(rootPath + "/trips/" + this.id);
                         });
                         qReject(0);
                     });
                 });
+                describe("Saving Object", function() {
+                    beforeEach(function() {
+                        // subject.base()[0].firstName = "john jacob";
+                        subject.load("uniqueKey");
+                        $rootScope.$digest();
+                        $timeout.flush();
+                        subject.ref().flush();
+                        $rootScope.$digest();
+                        this.id = subject.base().$id
+                        subject.base().name = "sally";
+                        test = subject.save(subject.base());
+                        $rootScope.$digest();
+                        subject.ref().flush();
+                        $rootScope.$digest();
+                    });
+                    it("should save record", function() {
+                        expect(this.id).toEqual('uniqueKey');
+                        expect(getPromValue(test).getData().name).toEqual("sally");
+                    });
+                    it("should return a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should resolve to the correct firebaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                        expect(getPromValue(test).path).toEqual(rootPath + "/trips/" + this.id);
+                    });
+                    it("should change the ref() to the saved record's ref", function() {
+                        expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/" + this.id);
+                    });
+                    qReject(0);
+                });
                 describe("Indices", function() {
                     beforeEach(function() {
                         test = subject.addIndex("1", "hotels", "string");
-                        flushTime();
+                        $rootScope.$digest();
+                        $timeout.flush();
+                        $rootScope.$digest();
+                        subject.ref().flush();
+                        $rootScope.$digest();
                         this.idx = subject.ref();
                     });
                     describe("addIndex", function() {
@@ -368,26 +371,27 @@
                 describe("removeMainRecord", function() {
                     beforeEach(function() {
                         $rootScope.$digest();
-                        subject.ref().child("trips").push(arrData);
+                        subject.ref().push(arrData);
+                        subject.ref().flush();
+                        id = subject.ref()._lastAutoId;
                         $rootScope.$digest();
-                        test = subject.remove('0');
-												flush();
+                        test = subject.remove(id);
+                        flushTime();
                     });
                     it("should remove the record and return a firebaseRef", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();
                         expect(getPromValue(test).getData()).toEqual(null);
-                        expect(getPromValue(test).path).toEqual("https://your-firebase.firebaseio.com/trips/0");
+                        expect(getPromValue(test).path).toEqual("https://your-firebase.firebaseio.com/trips/" + id);
                     });
                     it("should change the ref() to the removed record's ref", function() {
-                        expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/0");
+                        expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/" + id);
                     });
                     qReject(0);
-                    useCurrentRef();
                 });
                 describe("bindTo", function() {
                     beforeEach(function() {
                         subject.add(arrData[0]);
-                        flush();
+                        flushTime();
                         this.key = subject.ref().key();
                         this.scope = $rootScope.$new()
                     });
@@ -397,7 +401,7 @@
                     describe("with passing key", function() {
                         beforeEach(function() {
                             test = subject.bindTo(this.key, this.scope, "testData");
-                            flush();
+                            flushTime();
                         });
                         it("should return a function", function() {
                             expect(getPromValue(test)).toEqual(jasmine.any(Function));
@@ -409,9 +413,7 @@
                             expect(this.scope['testData']).toEqual({
                                 $id: this.key,
                                 $priority: null,
-                                phone: "123456890",
-                                uid: 1,
-                                firstName: "tom"
+                                $value: null
                             });
 
                         });
@@ -419,7 +421,7 @@
                     describe("with passing a record", function() {
                         beforeEach(function() {
                             this.rec = subject.load(this.key);
-                            flush();
+                            flushTime();
                             test = subject.bindTo(this.rec, this.scope, "testData");
                             $rootScope.$digest();
                         });
@@ -433,33 +435,31 @@
                             expect(this.scope['testData']).toEqual({
                                 $id: this.key,
                                 $priority: null,
-                                phone: "123456890",
-                                uid: 1,
-                                firstName: "tom"
+                                $value: null
+                                    // phone: "123456890",
+                                    // uid: 1,
+                                    // firstName: "tom"
                             });
-
                         });
                     });
                 });
             });
             describe("Queries", function() {
                 beforeEach(function() {
-                    subject.ref().push(arrData[0]);
-                    flush();
-                    this.key1 = subject.ref()._lastAutoId;
-                    subject.ref().push(arrData[1]);
-                    flush();
-                    this.key2 = subject.ref()._lastAutoId;
-                    this.keys = [this.key1, this.key2];
+                    // subject.ref().push(arrData[0]);
+                    // subject.ref().flush();
+                    // this.key1 = subject.ref()._lastAutoId;
+                    // subject.ref().push(arrData[1]);
+                    // subject.ref().flush();
+                    // this.key2 = subject.ref()._lastAutoId;
+                    // this.keys = [this.key1, this.key2];
                 });
                 describe("load", function() {
                     describe("Without passing an argument", function() {
                         beforeEach(function() {
                             test = subject.load();
-                            $rootScope.$digest();
-                            subject.ref().flush();
-                            $rootScope.$digest();
-                            this.key = subject.base()[0].$id;
+                            flushTime();
+                            this.key = subject.base().$id;
                         });
                         it("should return a promise", function() {
                             expect(test).toBeAPromise();
@@ -479,48 +479,48 @@
                             expect(Array.isArray(getPromValue(test))).toBeTruthy();
                         });
                         it("should have length", function() {
-                            expect(getPromValue(test)).toHaveLength(2);
+                            expect(getPromValue(test)).toHaveLength(0);
                         });
-
-                        describe("With passing an argument", function() {
-                            beforeEach(function() {
-                                test = subject.load(this.key);
-                                $rootScope.$digest();
-                                subject.ref().flush();
-                                $rootScope.$digest();
-                            });
-                            it("should return a promise", function() {
-                                expect(test).toBeAPromise();
-                            });
-                            it("should return the correct object", function() {
-                                expect(getPromValue(test).$id).toEqual(this.key);
-                                expect(getPromValue(test).$ref().getData()).toEqual(arrData[0]);
-                            });
-                            it("should not be an array", function() {
-                                expect(Array.isArray(getPromValue(test))).not.toBeTruthy();
-                            });
-
+                    });
+                    describe("With passing an argument", function() {
+                        beforeEach(function() {
+                            test = subject.load("uniqueKey");
+                            flushTime();
+                        });
+                        it("should return a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should return the correct object", function() {
+                            expect(getPromValue(test).$id).toEqual("uniqueKey");
+                            expect(getPromValue(test).$ref().getData()).toEqual(null);
+                        });
+                        it("should not be an array", function() {
+                            expect(Array.isArray(getPromValue(test))).not.toBeTruthy();
                         });
                     });
                 });
                 describe("getRecord", function() {
                     beforeEach(function() {
-                        subject.ref().push(arrData[0]);
-                        subject.ref().push(arrData[1]);
-                        flush();
-                        this.ref = subject.ref();
-                        this.refKeys = dataKeys(this.ref);
-                        test = subject.getRecord(this.refKeys[0]);
-                        flush();
+                        // subject.ref().push(arrData[0]);
+                        // subject.ref().push(arrData[1]);
+                        // flush();
+                        // this.ref = subject.ref();
+                        // this.refKeys = dataKeys(this.ref);
+                        test = subject.getRecord("uniqueKey");
+                        $timeout.flush();
+                        subject.ref().set({
+                            "uniqueKey": {
+                                "phone": "123456789"
+                            }
+                        });
+                        subject.ref().flush();
+                        $rootScope.$digest();
+
                     });
                     it("should return correct record", function() {
-                        expect(getPromValue(test).$id).toEqual(this.refKeys[0]);
-                        expect(getPromValue(test).phone).toEqual(arrData[0].phone);
-                        expect(getPromValue(test).uid).toEqual(arrData[0].uid);
-                    });
-                    it("should update the currentRef to the parentRef", function() {
-                        expect(subject.ref().child(this.refKeys[0]).getData().phone).toEqual(getPromValue(test).phone);
-                        expect(subject.ref().child(this.refKeys[0]).getData().firstName).toEqual(getPromValue(test).firstName);
+                        expect(getPromValue(test).$id).toEqual("uniqueKey");
+                        expect(getPromValue(test).phone).toEqual('123456789');
+                        // expect(getPromValue(test).uid).toEqual(arrData[0].uid);
                     });
                     it("should update the base() to the mainArray", function() {
                         baseCheck("array", subject.base());

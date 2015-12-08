@@ -214,17 +214,15 @@
                 }
 
                 function mainRecord(id) {
-                    var b = self._pathMaster.mainRecord(id);
-                    self._log.info(b);
-                    return b;
+                    return self._pathMaster.mainRecord(id);
                 }
 
                 function nestedArray(id, name) {
                     return self._pathMaster.nestedArray(id, name);
                 }
 
-                function nestedRef(id, name) {
-                    return self._pathMaster.nestedRef(id, name);
+                function nestedArrayRef(id, name) {
+                    return self._pathMaster.nestedArrayRef(id, name);
                 }
 
                 function indexAf(id, name, type) {
@@ -329,27 +327,16 @@
 
                 /* Commands */
                 function addIndex(recId, arrName, key) {
-                    self._log.info("in addIndex");
 
                     if (!angular.isString(recId) && self._session === true) {
                         recId = sessionId();
                     }
-                    self._log.info('recId');
-                    self._log.info(recId);
-                    self._log.info('sessionId');
-                    self._log.info(sessionId());
-                    self._log.info('arrName');
-                    self._log.info(arrName);
-                    self._log.info('key');
-                    self._log.info(key);
-                    return qAll(nestedRef(recId, arrName), key)
+                    return qAll(nestedArrayRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
 
                     function completeAction(res) {
                         return self._timeout(function() {
-													self._log.info("in complete action");
-													self._log.info(res[0]);
                                 return res[0].child(res[1]).set(true);
                             })
                             .then(function() {
@@ -365,7 +352,7 @@
                         recId = sessionId();
                     }
 
-                    return qAll(nestedRef(recId, arrName), key)
+                    return qAll(nestedArrayRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
 
@@ -835,7 +822,7 @@
                 }
 
                 function remove(res) {
-                    if (Array.isArray(res)) {
+                    if (angular.isArray(res)) {
                         return res[0].$remove(res[1]);
                     } else {
                         return res.$remove();
@@ -843,7 +830,7 @@
                 }
 
                 function save(res) {
-                    switch (Array.isArray(res)) {
+                    switch (angular.isArray(res)) {
                         /* to save array record */
                         case true:
                             return saveArray(res);

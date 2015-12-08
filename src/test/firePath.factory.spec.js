@@ -23,7 +23,7 @@
             });
         });
         describe("with valid Config", function() {
-            var fuel, geoFactory;
+            var fuel, geoFactory, $rootScope;
             beforeEach(function() {
                 rootPath = "https://your-firebase.firebaseio.com";
                 angular.module("test", ["firebase.fuel"])
@@ -64,7 +64,7 @@
     });
 
     describe("FirePath factory", function() {
-        var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
+        var path, subject, $window, $timeout, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, firePath, $rootScope, rootPath, $q, $log, $injector;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -83,7 +83,8 @@
             module("testutils");
             module("firebase.fuel");
             MockFirebase.override();
-            inject(function(_$window_, _utils_, _testutils_, _firePath_, _$rootScope_, _$q_, _$log_, _$injector_) {
+            inject(function(_$window_, _utils_, _$timeout_, _testutils_, _firePath_, _$rootScope_, _$q_, _$log_, _$injector_) {
+                $timeout = _$timeout_;
                 testutils = _testutils_;
                 utils = _utils_;
                 $window = _$window_;
@@ -122,54 +123,55 @@
                     mainRecord: jasmine.any(Function),
                     nestedArray: jasmine.any(Function),
                     nestedRecord: jasmine.any(Function),
-                    nestedRef: jasmine.any(Function)
+                    nestedArrayRef: jasmine.any(Function)
                 }));
 
             });
         });
 
         var paths = [
-            ["mainArray", "trips"],
-            ["mainRecord", "trips/1", "1"],
-            ["nestedRef", "trips/1", "1"],
-            ["nestedRef", "trips/1/hotels", "1", "hotels"],
-            ["nestedArray", "trips/hotels", "hotels", undefined],
-            ["nestedArray", "trips/1/hotels", "1", "hotels"],
-            ["nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-            ["nestedRecord", "trips/hotels/5", "hotels", "5"],
-            ["makeGeofire", "trips/points"],
+            [null, "mainArray", "trips"],
+            [null, "makeGeofire", "trips/points"],
+            [null, "mainRecord", "trips/1", "1"],
+            ["ref", "geofireRef", "trips/points"],
+            ["ref", "mainRecordRef", "trips/1", "1"],
+            ["ref", "nestedArrayRef", "trips/1/hotels", "1", "hotels"],
+            ["ref", "nestedRecordRef", "trips/1/hotels/5", "1", "hotels","5"],
+            [null,"indexAf", "trips/1/hotels", "1", "hotels","array"],
+            [null,"nestedArray", "trips/1/hotels", "1", "hotels"],
+            [null,"nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
+            [null,"nestedRecord", "trips/hotels/5", "hotels", "5"],
+            [null,"makeGeofire", "trips/points"],
         ];
 
         function testPaths(y) {
-            describe(y[0] + "()", function() {
+            describe(y[1] + "()", function() {
                 beforeEach(function() {
                     subject.setCurrentRef(ref.child("trips"));
                     $rootScope.$digest();
-                    test = subject[y[0]](y[2], y[3], y[4]);
+                    test = subject[y[1]](y[3], y[4], y[5]);
                     $rootScope.$digest();
+                    $timeout.flush();
                 });
-                if (y[0] === "nestedRef") {
-                    it("should be a firebaseRef", function() {
-                        expect(test).toBeAFirebaseRef();
-                    });
-                } else {
-
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
+                it("should be a promise", function() {
+                    expect(test).toBeAPromise();
+                });
+                if (y[0] === null) {
                     it("should be an angularfire object/array", function() {
                         expect(getPromValue(test).$ref()).toBeAFirebaseRef();
                     });
+                } else {
+                    it("should be a firebaseRef", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                        // expect(test).toEqual("as");
+                    });
                 }
-
                 it("should create the correct path", function() {
-                    expect(subject.path()).toEqual(rootPath + "/" + y[1]);
+                    expect(subject.path()).toEqual(rootPath + "/" + y[2]);
                 });
             });
         }
-
         paths.forEach(testPaths);
-
         describe("ref", function() {
             it("shouold be defined", function() {
                 expect(subject.ref()).toBeDefined();
@@ -202,70 +204,54 @@
                     expect(subject.base()).not.toEqual(null);
                 });
             });
-
-            describe("When 2nd arg === true", function() {
-                beforeEach(function() {
-                    subject.mainArray();
-                    flush();
-                });
-                it("should set the base() to null", function() {
-                    expect(subject.base()).not.toEqual(null);
-                    subject.setCurrentRef(ref, true);
-                    $rootScope.$digest();
-                    expect(subject.base()).toEqual(null);
-                });
-
-            });
         });
-        describe("build", function() {
+        // describe("build", function() {
+        //     var params = [
 
+        //         [
+        //             "trips/1", ["trips"], "trips"
+        //         ],
+        //         [
+        //             "trips/1", ["trips", "1", "hotels", "5", "rooms"], "trips/1/hotels/5/rooms"
+        //         ],
+        //         [
+        //             "trips/1", ["trips", "1"], "trips/1"
+        //         ],
+        //         [
+        //             "trips/1/hotels", ["trips", "1"], "trips/1"
+        //         ],
+        //         [
+        //             "trips/1/rooms/53/floor", ["trips", "1", "rooms"], "trips/1/rooms"
+        //         ],
+        //         [
+        //             "trips/1/rooms/53/floor", ["trips"], "trips"
+        //         ],
+        //     ];
 
-            var params = [
+        //     function checkPathTests(y) {
+        //         describe("when path is: " + y[0], function() {
+        //             beforeEach(function() {
+        //                 ref = ref.child(y[0]);
+        //                 subject.setCurrentRef(ref);
+        //                 $rootScope.$digest();
+        //             });
+        //             it("should have a defined ref() beforehand", function() {
+        //                 expect(subject.ref()).toBeDefined();
+        //                 expect(subject.path()).toEqual(rootPath + "/" + y[0]);
+        //             });
 
-                [
-                    "trips/1", ["trips"], "trips"
-                ],
-                [
-                    "trips/1", ["trips", "1", "hotels", "5", "rooms"], "trips/1/hotels/5/rooms"
-                ],
-                [
-                    "trips/1", ["trips", "1"], "trips/1"
-                ],
-                [
-                    "trips/1/hotels", ["trips", "1"], "trips/1"
-                ],
-                [
-                    "trips/1/rooms/53/floor", ["trips", "1", "rooms"], "trips/1/rooms"
-                ],
-                [
-                    "trips/1/rooms/53/floor", ["trips"], "trips"
-                ],
-            ];
+        //             it("should set path to: " + y[2], function() {
+        //                 subject.build(y[1], "object");
+        //                 $rootScope.$digest();
+        //                 subject.ref().flush();
+        //                 $rootScope.$digest();
+        //                 expect(subject.path()).toEqual(rootPath + "/" + y[2]);
+        //             });
 
-            function checkPathTests(y) {
-                describe("when path is: " + y[0], function() {
-                    beforeEach(function() {
-                        ref = ref.child(y[0]);
-                        subject.setCurrentRef(ref);
-                        $rootScope.$digest();
-                    });
-                    it("should have a defined ref() beforehand", function() {
-                        expect(subject.ref()).toBeDefined();
-                        expect(subject.path()).toEqual(rootPath + "/" + y[0]);
-                    });
-
-                    it("should set path to: " + y[2], function() {
-                        subject.build(y[1], "object");
-                        $rootScope.$digest();
-                        subject.ref().flush();
-                        $rootScope.$digest();
-                        expect(subject.path()).toEqual(rootPath + "/" + y[2]);
-                    });
-
-                });
-            }
-            params.forEach(checkPathTests);
-        });
+        //         });
+        //     }
+        //     params.forEach(checkPathTests);
+        // });
         describe("Invalid options", function() {
             describe("session", function() {
                 it("should throw error if no sessionService is present", function() {
@@ -291,7 +277,6 @@
 
 
             });
-
         });
 
         //from geofire-js
