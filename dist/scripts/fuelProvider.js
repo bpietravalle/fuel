@@ -293,7 +293,7 @@
                     return self._pathMaster.nestedRecord(mainId, name, recId);
                 }
 
-								//TODO make private
+                //TODO make private
                 function buildFire(type, path, flag) {
                     return self._pathMaster.buildFire(type, path, flag);
                 }
@@ -387,16 +387,27 @@
 
                 /* Commands */
                 function addIndex(recId, arrName, key) {
+                    self._log.info("in addIndex");
 
                     if (!angular.isString(recId) && self._session === true) {
                         recId = sessionId();
                     }
+                    self._log.info('recId');
+                    self._log.info(recId);
+                    self._log.info('sessionId');
+                    self._log.info(sessionId());
+                    self._log.info('arrName');
+                    self._log.info(arrName);
+                    self._log.info('key');
+                    self._log.info(key);
                     return qAll(nestedRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
 
                     function completeAction(res) {
                         return self._timeout(function() {
+													self._log.info("in complete action");
+													self._log.info(res[0]);
                                 return res[0].child(res[1]).set(true);
                             })
                             .then(function() {
@@ -461,7 +472,7 @@
                 }
 
                 function removeMainRecord(key) {
-									
+
                     return checkParam(key)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -593,7 +604,6 @@
                 function removeFullLocationRecord(key) {
                     return self._q.all([removeMainRecord(key), removeGeofire(key)])
                         .then(setReturnValueToFirst)
-                        .then(commandSuccess)
                         .catch(standardError);
                 }
 
@@ -685,6 +695,8 @@
                         .catch(standardError);
 
                     function passKeyToUser(res) {
+                        self._log.info("in createwithuser");
+                        self._log.info(res);
                         return qAll(addUserIndex(res.key()), res);
                     }
 
@@ -881,8 +893,6 @@
                 }
 
                 function remove(res) {
-									self._log.info('in REMOVE');
-									self._log.info(res);
                     if (Array.isArray(res)) {
                         return res[0].$remove(res[1]);
                     } else {
@@ -996,8 +1006,8 @@
                 }
 
                 function removeGeo(res) {
-									self._log.info("in removeGeo");
-									self._log.info(res);
+                    self._log.info("in removeGeo");
+                    self._log.info(res);
                     return res[0].remove(res[1]);
                 }
 
@@ -1008,11 +1018,13 @@
                         return qWrap(nestedArray(recId, arrName));
                     }
                 }
+
                 function setReturnValueToFirst(res) {
                     return self._timeout(function() {
                         return res[0];
                     });
                 }
+
                 function setReturnValueToSecond(res) {
                     return self._timeout(function() {
                         return res[1];

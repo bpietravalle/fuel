@@ -329,16 +329,27 @@
 
                 /* Commands */
                 function addIndex(recId, arrName, key) {
+                    self._log.info("in addIndex");
 
                     if (!angular.isString(recId) && self._session === true) {
                         recId = sessionId();
                     }
+                    self._log.info('recId');
+                    self._log.info(recId);
+                    self._log.info('sessionId');
+                    self._log.info(sessionId());
+                    self._log.info('arrName');
+                    self._log.info(arrName);
+                    self._log.info('key');
+                    self._log.info(key);
                     return qAll(nestedRef(recId, arrName), key)
                         .then(completeAction)
                         .catch(standardError);
 
                     function completeAction(res) {
                         return self._timeout(function() {
+													self._log.info("in complete action");
+													self._log.info(res[0]);
                                 return res[0].child(res[1]).set(true);
                             })
                             .then(function() {
@@ -626,6 +637,8 @@
                         .catch(standardError);
 
                     function passKeyToUser(res) {
+                        self._log.info("in createwithuser");
+                        self._log.info(res);
                         return qAll(addUserIndex(res.key()), res);
                     }
 
