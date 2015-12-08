@@ -98,74 +98,13 @@
                     });
             }
 
-            // /*************** Constructor ************/
-
-            // function build(path, type, flag) {
-            //     switch (isInMainNode(path)) {
-            //         case false:
-            //             throw new Error("You cannot switch to a new main node");
-            //         case true:
-            //             switch (type) {
-            //                 case undefined:
-            //                     return nextRef(path);
-            //                 default:
-            //                     return buildFire(type, nextRef(path), true);
-
-            //             }
-
-            //     }
-            // }
-
-            // function isInMainNode(path) {
-            //     return fullPath(path).search(mainPath()) > -1;
-            // }
-
-            // function nextRef(param) {
-            //     var ref;
-            //     switch (nodeComp(param) < 0) {
-            //         case true:
-            //             ref = setCurrentRef(getCurrentRef().child(setChild(param)));
-            //         case false:
-            //             ref = setCurrentRef(useCurrent(nodeComp(param)));
-            //     }
-            //     return ref;
-            // }
-
-            // function useCurrent(idx) {
-            //     var ref = getCurrentRef();
-            //     self._log.info("setting parent at index: " + idx);
-            //     switch (idx) {
-            //         case 0:
-            //             return ref;
-            //         case 1:
-            //             return ref.parent();
-            //         case 2:
-            //             return ref.parent().parent();
-            //         case 3:
-            //             return ref.parent().parent().parent();
-            //         case 4:
-            //             return ref.parent().parent().parent().parent();
-            //         case 5:
-            //             return ref.parent().parent().parent().parent().parent();
-            //         case 6:
-            //             return ref.parent().parent().parent().parent().parent().parent();
-            //         case 7:
-            //             return ref.parent().parent().parent().parent().parent().parent().parent();
-            //         default:
-            //             //TODO fix so dynamically calls parent() based on idx
-            //             reset();
-            //             throw new Error("Too deep - construct again");
-            //     }
-            // }
-
-
-            function buildFire(type, path) {
+            function buildFire(type, path, flag) {
 
                 switch (type) {
                     case ("ref"):
                         return buildRef(path);
                     default:
-                        return buildAf(type, path);
+                        return buildAf(type, path, flag);
                 }
             }
 
@@ -175,9 +114,13 @@
                 }).then(setCurrentRef);
             }
 
-            function buildAf(type, path) {
+            function buildAf(type, path, flag) {
 
-                return self._utils.qAll(buildRef(path), type)
+                if (flag !== true) {
+                    path = buildRef(path);
+                }
+
+                return self._utils.qAll(path, type)
                     .then(setCurrentRefAndReturn)
                     .then(setCurrentFirebase)
                     .catch(standardError);
@@ -338,27 +281,6 @@
             function getPathHistory() {
                 return fire._pathHistory;
             }
-
-
-            // function nodeIdx() {
-            //     return self._utils.nodeIdx(getCurrentPath(), mainPath());
-            // }
-
-            // function setChild(param) {
-            //     return self._utils.nextPath(nodeIdx(), paramNodeIdx(param));
-            // }
-
-            // function paramNodeIdx(param) {
-            //     return self._utils.paramNodeIdx(param, self._path);
-            // }
-
-            // function nodeComp(param) {
-            //     return nodeIdx().length - paramNodeIdx(param).length;
-            // }
-
-            // function fullPath(path) {
-            //     return self._utils.stringify([self._utils.removeSlash(rootPath()), self._utils.relativePath(path)]);
-            // }
 
             function inspect() {
                 return self;

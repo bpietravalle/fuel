@@ -50,22 +50,22 @@
             /* GPS & Geofire */
             if (this._gps === true || this._geofire === true) {
 
-                this._geofireIndex = this._utils.paramCheck(this._options.locationNode, "str", "locations");
                 this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
                 this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
                 this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
-                this._typeIndex = this._utils.paramCheck(this._options.typeIndex, "bool", false);
-                this._geoType = this._utils.paramCheck(this._options.geoType, "str", this._path);
+                // this._typeIndex = this._utils.paramCheck(this._options.typeIndex, "bool", false);
+                // this._geoType = this._utils.paramCheck(this._options.geoType, "str", this._path);
 
                 this._pathOptions.geofire = true;
                 this._pathOptions.geofireNode = this._geofireNode;
-                this._pathOptions.type = this._geoType; //to add index of current location types
-                this._pathOptions.typeIndex = this._typeIndex;
+                // this._pathOptions.type = this._geoType; //to add index of current location types
+                // this._pathOptions.typeIndex = this._typeIndex;
                 this._points = this._utils.paramCheck(this._options.points, "str", "points");
                 this._pathOptions.points = this._points;
             }
 
             if (this._gps === true) {
+                this._geofireIndex = this._utils.paramCheck(this._options.geofireIndex, "str", "locations");
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
                 this._geofireObject = this._injector.get(this._geofireService);
             }
@@ -315,13 +315,17 @@
                 }
 
                 function currentUserRecords() {
-                    return self._timeout(function() {
-                        return queryByChild(self._uidProperty, sessionId());
-                    });
+                    return queryByChild(self._uidProperty, sessionId());
                 }
 
                 function queryByChild(key, val) {
-                    return mainRef().orderByChild(key).equalTo(val);
+                    return qAll(mainRef(), [key, val])
+                        .then(completeQuery)
+                        .catch(standardError);
+
+                    function completeQuery(res) {
+                        return res[0].orderByChild(res[1][0]).equalTo(res[1][1]);
+                    }
 
                 }
 
@@ -624,8 +628,6 @@
                         .catch(standardError);
 
                     function passKeyToUser(res) {
-                        self._log.info("in createwithuser");
-                        self._log.info(res);
                         return qAll(addUserIndex(res.key()), res);
                     }
 
@@ -987,7 +989,7 @@
                             return res;
                         default:
                             self._log.info(res);
-                            throw new Error("invalid command success");
+                            throw new Error("invalid return value from command");
                     }
                 }
 
@@ -1019,7 +1021,7 @@
 
                         default:
                             self._log.info(res);
-                            throw new Error("invalid query success");
+                            throw new Error("invalid return value from query");
 
                     }
                 }

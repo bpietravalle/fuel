@@ -121,7 +121,7 @@ To mainpulate nested data using a different naming convention you can do so manu
 *  *SRP*:  Fuel cannot directly manipulate/query other main firebase nodes. 
 To access other direct child nodes of your root firebaseRef, you can call methods on
 a few predefined services that are injected on initialization.  Currently, these services
-are: 'session','user','location','geofire'.
+are: 'session','user','geofire'.
 
 
 ## Configuration
@@ -133,7 +133,7 @@ options[key] | Type | Result
 -------------|------|-------------
 geofire| Boolean | adds methods to persist/query geospatial data to/in Geofire
 gps| Boolean | adds a simple API to your app's geofire service
-nestedArrays| Array | `["child","nodes",]`
+nestedArrays| Array | `["child","nodes"]`
 session | Boolean | adds a simple API for your app's session service/object
 timeStamp | Boolean | adds timestamp properties to main and nested records
 user | Boolean | adds a simple API for your app's user service (and session as well) 
@@ -178,16 +178,16 @@ By adding `geofire: true` to the options hash, fuel will persist/query any locat
 data on behalf of your other services.
 
 Fuel separates longitude and latitude from other data associated with a location (_eg_, placeIds, 
-reviews, etc.). This will allow you to associate more than one location with a given firebase node
-Fuel will send non-coordinate data to a firebase Node, and will then send coordinates to a geofire node.
-Currently, the default names are "locations" and "geofire" respectively.  Default names for coordinates
-are `lat` and `lon`. These keys are only necessary for communicating with your controller; Geofire follows
-its own methodology.
+reviews, etc.). This will allow you to associate more than one location with a given record.
+Fuel will persist non-coordinate data at a firebase Node and will then
+persist the given location's coordinates at a main child node. Currently, the default names 
+are `geofire` and `points` respectively.  Default names for coordinates are `lat` and `lon`. 
+These keys are only necessary for communicating with your controller; Geofire follows its own methodology.
 
 *REQs*:
 * Your controller/view will need to save coordinates in a data object with `lat`/`lon` keys. See below for 
 renaming these keys.
-* Your app will need to specify two separate fireBase nodes(as well as angular services) for fuel
+* Your app will need to specify an angular service for fuel
 to work properly. For example:
 ```javascript
 (function(){
@@ -199,24 +199,19 @@ to work properly. For example:
 
 
 	 /*For all location-data
-	 * https://your-firebase.firebaseio.com/locations */
+	 * https://your-firebase.firebaseio.com/geofire*/
+
+	 /*For all coordinates
+	 * https://your-firebase.firebaseio.com/geofire/points */
 
 	 /** @ngInject */
 	 function locationFactory(fuel){
-			return fuel("locations",{
-				 geofire: true
-			});
-	 }
-
-	 /*For all coordinates
-	 * https://your-firebase.firebaseio.com/geofire */
-
-	 /** @ngInject */
-	 function geofireFactory(fuel){
 			return fuel("geofire",{
 				 geofire: true
 			});
 	 }
+
+
 })();
 ```
 
@@ -225,11 +220,11 @@ to work properly. For example:
 By adding `gps: true` to the options hash, fuel will:
 
 * send location data to your Geofire services defined above
-* save/remove a location Index in your main node
+* save/remove a geofire Index in your main node
 
 *REQs*:
 * Follow setup for Geofire interface 
-* Specify a locations index in your security rules. See below for overriding
+* Specify a geofire index in your security rules. See below for overriding
 the default names.
 
 For example:
@@ -330,7 +325,6 @@ _Note_: This option also provides the session mngt functionality described above
 to add `session: true`, however if you want to be redundant redundant, please be my guest.
 
 
-
 ### Overriding Defaults 
 Here are the current defaults and the required options to override them.
 
@@ -340,8 +334,8 @@ options[key] | Type | Default Value
 -------------|------|--------------
 geofireNode | String | "geofire"
 geofireService | String | "geofire"
-locationNode | String | "locations"
-locationService | String | singular of locationNode
+geofireIndex | String | "locations"
+points | String | "points"
 sessionService | String | "session"
 sessionIdMethod | String | "getId"
 userNode | String | "users"
