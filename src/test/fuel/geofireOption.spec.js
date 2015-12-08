@@ -335,6 +335,8 @@
                     it("should set ref to mainref", function() {
                         expect(subject.path()).toEqual(rootPath + "/geofire/points");
                     });
+										// logCheck();
+										// logCount();
                     qReject(0);
                 });
             });

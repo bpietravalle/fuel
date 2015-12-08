@@ -214,7 +214,9 @@
                 }
 
                 function mainRecord(id) {
-                    return self._pathMaster.mainRecord(id);
+                    var b = self._pathMaster.mainRecord(id);
+                    self._log.info(b);
+                    return b;
                 }
 
                 function nestedArray(id, name) {
@@ -233,7 +235,7 @@
                     return self._pathMaster.nestedRecord(mainId, name, recId);
                 }
 
-								//TODO make private
+                //TODO make private
                 function buildFire(type, path, flag) {
                     return self._pathMaster.buildFire(type, path, flag);
                 }
@@ -401,7 +403,7 @@
                 }
 
                 function removeMainRecord(key) {
-									
+
                     return checkParam(key)
                         .then(commandSuccess)
                         .catch(standardError);
@@ -533,7 +535,6 @@
                 function removeFullLocationRecord(key) {
                     return self._q.all([removeMainRecord(key), removeGeofire(key)])
                         .then(setReturnValueToFirst)
-                        .then(commandSuccess)
                         .catch(standardError);
                 }
 
@@ -555,14 +556,14 @@
                 function removeGeofire(key) {
                     return qAll(makeGeofire(), key)
                         .then(removeGeo)
-                        .then(commandSuccess)
+                        // .then(commandSuccess)
                         .catch(standardError);
                 }
 
                 function setGeofire(key, coords) {
                     return qAll(makeGeofire(), [key, coords])
                         .then(setGeo)
-                        .then(commandSuccess)
+                        // .then(commandSuccess)
                         .catch(standardError);
                 }
 
@@ -934,8 +935,6 @@
                 }
 
                 function removeGeo(res) {
-									self._log.info("in removeGeo");
-									self._log.info(res);
                     return res[0].remove(res[1]);
                 }
 
@@ -946,11 +945,13 @@
                         return qWrap(nestedArray(recId, arrName));
                     }
                 }
+
                 function setReturnValueToFirst(res) {
                     return self._timeout(function() {
                         return res[0];
                     });
                 }
+
                 function setReturnValueToSecond(res) {
                     return self._timeout(function() {
                         return res[1];

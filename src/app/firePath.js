@@ -53,7 +53,7 @@
 
             fire.main = main;
             fire.reset = reset;
-            fire.nestedRef = nestedRef;
+            fire.nestedRef = nestedArrayRef;
             fire.root = root;
             fire.mainArray = mainArray;
             fire.mainRecord = mainRecord;
@@ -173,37 +173,45 @@
             }
 
             function main() {
-                return self._fuelConfiguration("ref", [self._path]);
+                return self._fuelConfiguration("ref", self._path);
             }
 
-            function nestedRef(recId, name) {
-                return build(nestedArrayPath(recId, name));
+            function mainRecordRef(id) {
+                return main().child(id);
+            }
+
+            function nestedArrayRef(recId, name) {
+                return mainRecordRef(recId).child(name);
+            }
+
+            function nestedRecordRef(recId, name, id) {
+                return nestedArrayRef(recId, name).child(id);
             }
 
             function reset() {
-                return setCurrentRef(main());
+                return mainArray();
             }
 
             /*************** angularFire ************/
 
             function mainArray() {
-                return build(self._path, "array");
+                return buildFire("array", setCurrentRef(main()), true);
             }
 
             function mainRecord(id) {
-                return build(mainRecordPath(id), "object");
+                return buildFire("object", setCurrentRef(mainRecordRef(id)), true);
             }
 
             function nestedArray(recId, name) {
-                return build(nestedArrayPath(recId, name), "array");
+                return buildFire("array", setCurrentRef(nestedArrayRef(recId,name)), true);
             }
 
-            function nestedRecord(mainRecId, arrName, recId) {
-                return build(nestedRecordPath(mainRecId, arrName, recId), "object");
+            function nestedRecord(main, arr, rec) {
+                return buildFire("object", setCurrentRef(nestedRecordRef(main,arr,rec)), true);
             }
 
             function indexAf(recId, name, type) {
-                return build(nestedArrayPath(recId, name), type);
+                return buildFire(type, setCurrentRef(nestedArrayRef(recId, name)), true);
             }
 
             /*************** geoFire ***************/
@@ -213,7 +221,7 @@
             }
 
             function geofireRef() {
-                return main().child(self._points);
+                return mainRecordRef(self._points);
             }
 
             /************ Absolute Paths ****************/
@@ -225,6 +233,7 @@
             function mainPath() {
                 return main().toString();
             }
+
 
             /************ Relative Paths ****************/
 
