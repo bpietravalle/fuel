@@ -166,16 +166,16 @@
                 subject = fuel("trips", options);
             });
             describe("Commands: ", function() {
-                beforeEach(function() {
-                    test = subject.add(newRecord, locData);
-                    flushTime();
-                    this.data = subject.ref().getData();
-                    this.path = subject.path();
-                    this.key = subject.ref().key();
-                    this.key1 = addArr[0];
-                    this.key2 = addArr[1];
-                });
                 describe("add()", function() {
+                    beforeEach(function() {
+                        test = subject.add(newRecord, locData);
+                        flushTime();
+                        this.data = subject.ref().getData();
+                        this.path = subject.path();
+                        this.key = subject.ref().key();
+                        this.key1 = addArr[0];
+                        this.key2 = addArr[1];
+                    });
                     it("should be a promise", function() {
                         expect(test).toBeAPromise();
                     });
@@ -197,40 +197,39 @@
                     it("should add location index to main record and set ref to main record", function() {
                         $rootScope.$digest();
                         $timeout.flush();
-												$rootScope.$digest();
-                    //     expect(this.path).toEqual(rootPath + "/trips/" + this.key + "/locations");
-                    //     expect(this.data).toEqual(null);
-                    //     expect(subject.ref().child("locations").getData()[this.key1]).toEqual(true);
-                    //     expect(subject.ref().child("locations").getData()[this.key2]).toEqual(true);
+                        $rootScope.$digest();
+                        // subject.ref().flush();
+                        expect(addArr).toHaveLength(2);
+                        //     expect(this.data).toEqual(null);
+                        //     expect(subject.ref().child("locations").getData()[this.key2]).toEqual(true);
                         expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
                     });
                     qReject(0);
                 });
-
                 describe("remove()", function() {
                     beforeEach(function() {
-                        this.idxKey = Object.keys(subject.ref().child("locations").getData());
-                        test = subject.remove(this.key);
-                        $rootScope.$digest();
-                        flush();
-                        flush();
+                        // this.idxKey = Object.keys(subject.ref().child("locations").getData());
+                        test = subject.remove("key");
+                            flushTime();
+                            flushTime();
                     });
-                    //                     it("should call geofire.remove() once", function() {
-                    //                         expect(geofire.remove.calls.count()).toEqual(1);
-                    //                     });
-                    //                     it("should call remove on geofire with keys from location index", function() {
-                    //                         expect(geofire.remove.calls.argsFor(0)[0]).toEqual(addArr);
-                    //                     });
-                    //                     it("should remove the data from firebase", function() {
-                    //                         expect(subject.ref().getData()).toEqual(null);
-                    //                     });
-                    //                     it("should return the firebaseRef from the removed record", function() {
-                    //                         expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
-                    //                     });
-                    //                     it("should not call user.removeIndex()", function() {
-                    //                         expect(user.removeIndex).not.toHaveBeenCalled();
-                    //                     });
-                    //                     qReject(0);
+                    it("should call geofire.remove() once", function() {
+                        expect(geofire.remove.calls.count()).toEqual(1);
+                    });
+                    it("should call remove on geofire with keys from location index", function() {
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual(addArr);
+                    });
+                    it("should remove the data from firebase", function() {
+                        expect(getPromValue(test)).toBeAFirebaseRef();
+                        expect(getPromValue(test).getData()).toEqual(null); //it was null to begin with...
+                    });
+                    it("should return the firebaseRef from the removed record", function() {
+                        expect(subject.path()).toEqual(rootPath + "/trips/key");
+                    });
+                    it("should not call user.removeIndex()", function() {
+                        expect(user.removeIndex).not.toHaveBeenCalled();
+                    });
+                    qReject(0);
                 });
             });
         });

@@ -339,25 +339,26 @@
                 return fire._pathHistory;
             }
 
-            function nodeIdx() {
-                return self._utils.nodeIdx(getCurrentPath(), mainPath());
-            }
 
-            function setChild(param) {
-                return self._utils.nextPath(nodeIdx(), paramNodeIdx(param));
-            }
+            // function nodeIdx() {
+            //     return self._utils.nodeIdx(getCurrentPath(), mainPath());
+            // }
 
-            function paramNodeIdx(param) {
-                return self._utils.paramNodeIdx(param, self._path);
-            }
+            // function setChild(param) {
+            //     return self._utils.nextPath(nodeIdx(), paramNodeIdx(param));
+            // }
 
-            function nodeComp(param) {
-                return nodeIdx().length - paramNodeIdx(param).length;
-            }
+            // function paramNodeIdx(param) {
+            //     return self._utils.paramNodeIdx(param, self._path);
+            // }
 
-            function fullPath(path) {
-                return self._utils.stringify([self._utils.removeSlash(rootPath()), self._utils.relativePath(path)]);
-            }
+            // function nodeComp(param) {
+            //     return nodeIdx().length - paramNodeIdx(param).length;
+            // }
+
+            // function fullPath(path) {
+            //     return self._utils.stringify([self._utils.removeSlash(rootPath()), self._utils.relativePath(path)]);
+            // }
 
             function inspect() {
                 return self;
