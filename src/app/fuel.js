@@ -37,10 +37,10 @@
             this._user = this._utils.paramCheck(this._options.user, "bool", false);
             this._timeStamp = this._utils.paramCheck(this._options.timeStamp, "bool", false);
             if (this._gps === true && this._geofire === true) {
-                throw new Error("Please select either 'gps' or 'geofire'");
+                throw new Error("Invalid options. Please remove either 'gps' or 'geofire' from the options hash");
             }
             if (this._user === true && this._geofire === true) {
-                throw new Error("Invalid option.  Please remove 'user' or 'geofire' from your options hash.");
+                throw new Error("Invalid options  Please remove 'user' or 'geofire' from your options hash.");
             }
 
             /******************
@@ -53,18 +53,15 @@
                 this._geofireNode = this._utils.paramCheck(this._options.geofireNode, "str", "geofire");
                 this._latitude = this._utils.paramCheck(this._options.latitude, "str", "lat");
                 this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
-                // this._typeIndex = this._utils.paramCheck(this._options.typeIndex, "bool", false);
-                // this._geoType = this._utils.paramCheck(this._options.geoType, "str", this._path);
 
                 this._pathOptions.geofire = true;
                 this._pathOptions.geofireNode = this._geofireNode;
-                // this._pathOptions.type = this._geoType; //to add index of current location types
-                // this._pathOptions.typeIndex = this._typeIndex;
                 this._points = this._utils.paramCheck(this._options.points, "str", "points");
                 this._pathOptions.points = this._points;
             }
 
             if (this._gps === true) {
+                // this._geofireFkey = this._utils.paramCheck(this._options.geofireFkey, "str", "recId");
                 this._geofireIndex = this._utils.paramCheck(this._options.geofireIndex, "str", "locations");
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
                 this._geofireObject = this._injector.get(this._geofireService);
@@ -112,6 +109,10 @@
                 entity.pathHistory = getPathHistory;
                 entity.inspect = inspect;
 
+                entity.mainRef = mainRef;
+                entity.mainArray = mainArray;
+                entity.mainRecord = mainRecord;
+
                 /*Queries*/
                 entity.load = load;
                 entity.getRecord = getMainRecord;
@@ -134,6 +135,7 @@
                 }
 
                 if (self._gps === true) {
+                    entity.getLocation = getLocationRecord;
                     entity.createLocation = sendToGeofireToAdd;
                     entity.removeLocation = sendToGeofireForRemoval;
                 }
@@ -238,7 +240,6 @@
                     return self._pathMaster.buildFire(type, path, flag);
                 }
 
-
                 /* Geofire Interface */
 
                 function makeGeofire() {
@@ -296,14 +297,18 @@
                 //TODO: spec without spies
                 function loadUserRecords() {
                     return currentUserRecords()
-                        .then(wrapArray)
-                        .then(load)
-                        .then(querySuccess)
+                        .then(wrapQuery)
+                        .then(loaded)
                         .catch(standardError);
 
-                    function wrapArray(res) {
-                        return buildFire("array", res, true);
-                    }
+                }
+
+                //untested/ - still private see below
+                function loadRecordLocations(val) {
+                    return currentRecordLocations(val)
+                        .then(wrapQuery)
+                        .then(loaded)
+                        .catch(standardError);
                 }
 
                 function getMainRecord(key) {
@@ -311,6 +316,13 @@
                         .then(getRecord)
                         .then(querySuccess)
                         .catch(standardError);
+
+                }
+
+                //untested/ - still private
+                function currentRecordLocations(val) {
+                    return self._geofireObject
+                        // .queryByChild(self._geofireFkey, val)
 
                 }
 
@@ -653,6 +665,7 @@
                 }
 
 
+                //TODO add method to update locationRecord with mainrecord id - see below;
 
                 function createWithGps(data, loc) {
                     return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc)])
@@ -695,6 +708,7 @@
                  *
                  */
 
+                //TODO add method to update locationRecord with mainrecord id - see below;
                 function createWithUserAndGps(data, loc) {
 
                     return self._q.all([createWithUser(data), sendToGeofireToAdd(loc)])
@@ -710,6 +724,27 @@
                     function setReturnValue(res) {
                         return res[1];
                     }
+                }
+
+                /* @param{Array}...lockey,mainRecKey
+                 *to update locationRecord with $id of mainRecord for querying
+                 * untested and still private - this method should fire alongside "addLocationIndexAndPassKey"
+                 */
+                function addMainRecIdToLocation(locId, mainRecId) {
+                    return qAll(getLocationRecord(locId), mainRecId)
+                        .then(addMainRecId)
+                        .catch(standardError);
+
+                    function addMainRecId(res) {
+                        res[0][self._geofireFkey] = res[1]
+                        return res[0].$save();
+                    }
+
+                }
+
+                function getLocationRecord(id) {
+                    return self._geofireObject
+                        .mainRecord(id)
                 }
 
                 function removeWithUserAndGps(mainRecId) {
@@ -960,28 +995,16 @@
                     });
                 }
 
-                /* For Queries */
-
-                //untested/unused
-                function userRecordsByUID() {
-                    return self._timeout(function() {
-                        return self._pathMaster.mainRef()
-                            .then(sortByUID)
-                            .catch(standardError);
-                    });
-
-                    function sortByUID(res) {
-                        return res.orderByChild("uid").once("value", function(snap) {
-                            return snap.val();
-                        });
-                    }
+                function wrapQuery(res) {
+                    return buildFire("array", res, true);
                 }
+
 
 
                 /**CQ*****************************/
 
                 function commandSuccess(res) {
-                    self._log.info('command success');
+                    // self._log.info('command success');
                     // self._log.info(res);
                     switch (angular.isString(res.key())) {
                         case true:
