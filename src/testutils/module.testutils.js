@@ -1,7 +1,8 @@
 (function() {
     "use strict";
+
     angular.module('testutils', ['firebase'])
-        .factory('testutils', function($firebaseUtils,$log) {
+        .factory('testutils', function($firebaseUtils, $log) {
             var utils = {
                 // FROM firebase/angularfire repo
                 ref: ref,
@@ -14,6 +15,7 @@
                 inspect: inspect,
                 currentBaseCheck: currentBaseCheck,
                 currentRefCheck: currentRefCheck,
+                lodash: lodash,
                 testCheck: testCheck,
                 logCount: logCount,
                 logNum: logNum,
@@ -29,6 +31,10 @@
 
 
             return utils;
+
+            function lodash() {
+                return window._;
+            }
 
             function ref(key, base) {
                 var ref = new MockFirebase().child(base || 'data');

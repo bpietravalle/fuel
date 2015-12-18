@@ -131,9 +131,9 @@
 
         var paths = [
             [null, "mainArray", "trips"],
-            [null, "makeGeofire", "trips/points"],
             [null, "mainRecord", "trips/1", "1"],
-            ["ref", "geofireRef", "trips/points"],
+            ["ref", "geofireRef", "trips/hotels","hotels"],
+            ["ref", "geofireRef", "trips/rooms","rooms"],
             ["ref", "mainRecordRef", "trips/1", "1"],
             ["ref", "nestedArrayRef", "trips/1/hotels", "1", "hotels"],
             ["ref", "nestedRecordRef", "trips/1/hotels/5", "1", "hotels","5"],
@@ -141,8 +141,10 @@
             [null,"nestedArray", "trips/1/hotels", "1", "hotels"],
             [null,"nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
             [null,"nestedRecord", "trips/hotels/5", "hotels", "5"],
-            [null,"makeGeofire", "trips/points"],
+            [null,"makeGeofire", "trips/hotels","hotels"],
+            [null,"makeGeofire", "trips/rooms","rooms"],
         ];
+
 
         function testPaths(y) {
             describe(y[1] + "()", function() {

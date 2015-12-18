@@ -94,7 +94,7 @@
                             return strCheck(param);
                         case "arr":
                             return arrCheck(param);
-                        case "opt":
+                        case "obj":
                             return hashCheck(param);
                     }
             }

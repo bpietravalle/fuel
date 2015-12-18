@@ -85,8 +85,6 @@
                                 l.flush();
                                 addArr.push(l.key());
                                 return l;
-
-
                             }));
                         }),
                         remove: jasmine.createSpy("remove").and.callFake(function(args) {
@@ -96,10 +94,10 @@
                                 l.flush();
                                 remArr.push(l.key());
                                 return l;
-
-
                             }));
-                        })
+                        }),
+                        addRecordKey: jasmine.createSpy("addRecordKey"),
+                        loadRecordLocations: jasmine.createSpy("loadRecordLocations")
                     };
 
                     return geofire;
@@ -125,10 +123,8 @@
                         differentMeth: function() {}
                     }
                 });
-
             module("testutils");
             module("firebase.fuel");
-
             inject(function(_user_, _testutils_, _differentSession_, _location_, _geofire_, _$timeout_, _$log_, _firePath_, _session_, _$rootScope_, _fuel_, _inflector_, _fireStarter_, _$q_) {
                 differentSession = _differentSession_;
                 geofire = _geofire_;
@@ -194,6 +190,20 @@
                     it("should call geofire.add once", function() {
                         expect(geofire.add.calls.count()).toEqual(1);
                     });
+                    it("should call geofire.add with correct path argument", function() {
+                        expect(geofire.add.calls.argsFor(0)[2]).toEqual("trips");
+                    });
+                    it("should call geofire.addRecordKey for each location added", function() {
+                        expect(geofire.addRecordKey.calls.count()).toEqual(2);
+                    });
+                    it("should call geofire.addRecordKey with correct args", function() {
+                        expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
+                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(this.key);
+                        expect(geofire.addRecordKey.calls.argsFor(1)[0]).toEqual("trips");
+                        expect(geofire.addRecordKey.calls.argsFor(1)[1]).toEqual(this.key2);
+                        expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(this.key);
+                    });
                     it("should add location index to main record and set ref to main record", function() {
                         $rootScope.$digest();
                         $timeout.flush();
@@ -206,18 +216,37 @@
                     });
                     qReject(0);
                 });
+                describe("add() If addRecordKey option set to false", function() {
+                    beforeEach(function() {
+                        subject = fuel("trips", {
+                            gps: true,
+                            addRecordKey: false
+                        });
+                        test = subject.add(newRecord, locData);
+                        flushTime();
+                    });
+                    it("should not call geofire.addRecordKey", function() {
+                        expect(geofire.addRecordKey.calls.count()).toEqual(0);
+                    });
+                    it("should call geofire.add", function() {
+                        expect(geofire.add.calls.count()).toEqual(1);
+                    });
+                });
                 describe("remove()", function() {
                     beforeEach(function() {
                         // this.idxKey = Object.keys(subject.ref().child("locations").getData());
                         test = subject.remove("key");
-                            flushTime();
-                            flushTime();
+                        flushTime();
+                        flushTime();
                     });
                     it("should call geofire.remove() once", function() {
                         expect(geofire.remove.calls.count()).toEqual(1);
                     });
                     it("should call remove on geofire with keys from location index", function() {
                         expect(geofire.remove.calls.argsFor(0)[0]).toEqual(addArr);
+                    });
+                    it("should call geofire.remove with correct path argument", function() {
+                        expect(geofire.remove.calls.argsFor(0)[2]).toEqual("trips");
                     });
                     it("should remove the data from firebase", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();
@@ -230,6 +259,18 @@
                         expect(user.removeIndex).not.toHaveBeenCalled();
                     });
                     qReject(0);
+                });
+            });
+            describe("Queries: ", function() {
+                describe("loadRecordLocations", function() {
+                    beforeEach(function() {
+                        extend(subject.ref());
+
+                        test = subject.loadRecordLocations("tripId", "uniqueKey");
+                    });
+                    it("should send property and key to geofireObject", function() {
+                        expect(geofire.loadRecordLocations).toHaveBeenCalledWith("tripId", "uniqueKey");
+                    });
                 });
             });
         });
@@ -441,6 +482,26 @@
             }
         }
 
+
+        function extend(obj) {
+            var extension = {
+                orderByChild: function() {
+                    return {
+                        startAt: function() {
+                            return {
+                                endAt: function() {
+                                    return {
+                                        on: function() {}
+                                    }
+
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            return _.merge(obj, extension);
+        }
 
         function flush() {
             $rootScope.$digest();

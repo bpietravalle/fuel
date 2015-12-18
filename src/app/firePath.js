@@ -42,7 +42,6 @@
         if (this._geofire === true) {
             //TODO currently unused- remove
             this._geofireNode = this._options.geofireNode;
-            this._points = this._options.points;
         }
     };
 
@@ -92,6 +91,7 @@
                 case true:
                     return angular.extend(fire, {
                         //@return{Promise(firebaseRef)}
+                        geofirePath: geofirePath,
                         geofireRef: geofireRef,
                         //@return{Promise(GeoFire)}
                         makeGeofire: makeGeofire
@@ -148,8 +148,8 @@
                 return self._utils.extendPath(nestedArrayPath(mainRecId, arrName), recId);
             }
 
-            function geofirePath() {
-                return mainRecordPath(self._points);
+            function geofirePath(path) {
+                return mainRecordPath(path);
             }
 
             //unused/untested
@@ -179,8 +179,8 @@
                 return buildFire("ref", nestedRecordPath(recId, name, id));
             }
 
-            function geofireRef() {
-                return buildFire("ref", geofirePath());
+            function geofireRef(path) {
+                return buildFire("ref", geofirePath(path));
             }
 
             function reset() {
@@ -211,8 +211,8 @@
 
             /*************** geoFire ***************/
 
-            function makeGeofire() {
-                return buildFire("geo", geofirePath());
+            function makeGeofire(path) {
+                return buildFire("geo", geofirePath(path));
             }
 
 
@@ -225,8 +225,6 @@
             function mainPath() {
                 return reset().toString();
             }
-
-
 
             function sessionId() {
                 return self._sessionObject[self._sessionIdMethod]();
