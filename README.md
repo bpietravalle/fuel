@@ -179,53 +179,90 @@ data on behalf of your other services.
 
 Fuel separates longitude and latitude from other data associated with a location (_eg_, placeIds, 
 reviews, etc.). This will allow you to associate more than one location with a given record.
-Fuel will persist non-coordinate data at a firebase Node and will then
-persist the given location's coordinates at a main child node. Currently, the default names 
-are `geofire` and `points` respectively.  Default names for coordinates are `lat` and `lon`. 
-These keys are only necessary for communicating with your controller; Geofire follows its own methodology.
+Fuel will persist non-coordinate data at a firebase Node (default name is `geofire`), and will then
+persist the given location's coordinates at a child node( default name is the same as the original
+record).  See the example below.  And, yes, you can change these default names.  See below.
 
-*REQs*:
-* Your controller/view will need to save coordinates in a data object with `lat`/`lon` keys. See below for 
-renaming these keys.
-* Your app will need to specify an angular service for fuel
-to work properly. For example:
+Additionally, through the GPS interface described in the next session, Fuel will,by default, 
+attempt to update each new location with the primary key of the record(_e.g._, `tripId`). 
+You must however expliticly provide the geofire service with the correct property names via 
+the `foreignKeys` option.  See following example.
+
 ```javascript
 (function(){
     "use strict";
 
     angular.module("yourApp")
-			.factory("location", locationFactory)
-			.factory("geofire", geofireFactory);
+			.factory("flights", flightsFactory)
+			.factory("trips", tripsFactory)
+			.factory("geofire", geofireFactory)
 
-
-	 /*For all location-data
-	 * https://your-firebase.firebaseio.com/geofire*/
-
-	 /*For all coordinates
-	 * https://your-firebase.firebaseio.com/geofire/points */
+	 /*Two different types of records with location data
+	 * https://your-firebase.firebaseio.com/trips
+	 * https://your-firebase.firebaseio.com/flights*/
 
 	 /** @ngInject */
-	 function locationFactory(fuel){
-			return fuel("geofire",{
-				 geofire: true
+	 function tripsFactory(fuel){
+			return fuel("trips",{
+				 gps: true
+			});
+	 }
+
+	 /** @ngInject */
+	 function flightsFactory(fuel){
+			return fuel("flights",{
+				 gps: true
 			});
 	 }
 
 
+	 /* Make sure you add these nodes to your security rules.
+
+	 * For all location-data
+	 * https://your-firebase.firebaseio.com/geofire
+
+	 * For all trip coordinates  
+	 * https://your-firebase.firebaseio.com/geofire/trips 
+
+	 * For all flight coordinates - 
+	 * https://your-firebase.firebaseio.com/geofire/flights */
+
+	 /** @ngInject */
+	 function geofireFactory(fuel){
+			return fuel("geofire",{
+				 geofire: true,
+				 foreignKeys: {
+				 "trips": "tripId",  // your-fb.com/geofire/uniqueId/tripId must be defined
+				 "flights": "flightId",  // your-fb.com/geofire/uniqueId/flightId must be defined.
+				 }
+			});
+	 }
+
 })();
 ```
+Lastly, the default names for coordinates are `lat` and `lon`.  
+These keys are only necessary for communicating with your controller; Geofire follows its own methodology.
 
+*REQs*:
+* Your controller/view will need to save coordinates in a data object with `lat`/`lon` keys. See below for 
+renaming these keys.
+* Your app will need to specify an angular service responsible for geofire in order for fuel to work properly.
+Also, you must make sure your security rules allow for the nodes and properties described above.
 
 ### *GPS Interface*
 By adding `gps: true` to the options hash, fuel will:
 
 * send location data to your Geofire services defined above
 * save/remove a geofire Index in your main node
+* add unique recordId as a property of any location Record.  See example
+below to override this behavior.
 
 *REQs*:
 * Follow setup for Geofire interface 
 * Specify a geofire index in your security rules. See below for overriding
 the default names.
+* By default, Fuel will try to add the main record's unique id to the geofire location.
+ To opt-out of this functionality simply add `addRecordKey: false` to the options hash.
 
 For example:
 ```javascript
@@ -238,7 +275,8 @@ For example:
 	 /** @ngInject */
 	 function tripFactory(fuel){
 			return fuel("trips",{
-				 gps: true
+				 gps: true,
+				 addRecordKey: false
 			});
 	 }
 	 //make sure that 'https://your-firebase.firebaseio.com/trips/tripId/locations' is defined!
@@ -268,7 +306,6 @@ loadPhones()
 removePhone(idxOrRec)
 savePhone(rec)
 ```
-
 
 ### *Session Interface*
 
@@ -335,7 +372,7 @@ options[key] | Type | Default Value
 geofireNode | String | "geofire"
 geofireService | String | "geofire"
 geofireIndex | String | "locations"
-points | String | "points"
+points | String | `path` argument of the given fuel service
 sessionService | String | "session"
 sessionIdMethod | String | "getId"
 userNode | String | "users"
