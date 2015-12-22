@@ -86,7 +86,7 @@
             this._log = $log;
             this._injector = $injector;
             this._path = path;
-            this._options = this._utils.paramCheck(options, "opt", {});
+            this._options = this._utils.paramCheck(options, "obj", {});
             this._pathOptions = {};
 
             /*Core Options */
@@ -116,12 +116,16 @@
 
                 this._pathOptions.geofire = true;
                 this._pathOptions.geofireNode = this._geofireNode;
-                this._points = this._utils.paramCheck(this._options.points, "str", "points");
-                this._pathOptions.points = this._points;
+            }
+
+
+            if (this._geofire === true) {
+                this._foreignKeys = this._utils.paramCheck(this._options.foreignKeys, "obj", {});
             }
 
             if (this._gps === true) {
-                // this._geofireFkey = this._utils.paramCheck(this._options.geofireFkey, "str", "recId");
+                this._addRecordKey = this._utils.paramCheck(this._options.addRecordKey, "bool", true);
+                this._points = this._utils.paramCheck(this._options.points, "str", this._path);
                 this._geofireIndex = this._utils.paramCheck(this._options.geofireIndex, "str", "locations");
                 this._geofireService = this._utils.paramCheck(this._options.geofireService, "str", "geofire");
                 this._geofireObject = this._injector.get(this._geofireService);
@@ -198,6 +202,10 @@
                     entity.getLocation = getLocationRecord;
                     entity.createLocation = sendToGeofireToAdd;
                     entity.removeLocation = sendToGeofireForRemoval;
+
+                    if (self._addRecordKey === true) {
+                        entity.loadRecordLocations = sendToGeoFireToLoadLocations;
+                    }
                 }
 
                 if (self._user !== true && self._gps === true) {
@@ -225,11 +233,13 @@
 
                 if (self._geofire === true) {
                     entity.add = addLocations;
-                    entity.remove = removeLocations;
-                    entity.geofireRef = makeGeofire;
+                    entity.addRecordKey = addRecordKey;
+                    entity.geofire = makeGeofire;
                     entity.get = getGeofire;
-                    entity.set = setGeofire;
+                    entity.loadRecordLocations = loadRecordLocations;
                     entity.query = queryGeofire;
+                    entity.remove = removeLocations;
+                    entity.set = setGeofire;
                 }
 
                 getCurrentRef();
@@ -302,8 +312,8 @@
 
                 /* Geofire Interface */
 
-                function makeGeofire() {
-                    return self._pathMaster.makeGeofire();
+                function makeGeofire(path) {
+                    return self._pathMaster.makeGeofire(path);
                 }
 
                 /*****************
@@ -311,7 +321,6 @@
                  * ***************/
 
                 /*Queries*/
-
 
                 function getIndexKeys(recId, arrName) {
                     return indexAf(recId, arrName, "array")
@@ -321,7 +330,6 @@
 
                     function getKeys(res) {
                         return qAll(res.$loaded(), []);
-
                     }
 
                     function setReturnValue(res) {
@@ -360,12 +368,10 @@
                         .then(wrapQuery)
                         .then(loaded)
                         .catch(standardError);
-
                 }
 
-                //untested/ - still private see below
-                function loadRecordLocations(val) {
-                    return currentRecordLocations(val)
+                function loadRecordLocations(prop, id) {
+                    return currentRecordLocations(prop, id)
                         .then(wrapQuery)
                         .then(loaded)
                         .catch(standardError);
@@ -379,11 +385,8 @@
 
                 }
 
-                //untested/ - still private
-                function currentRecordLocations(val) {
-                    return self._geofireObject
-                        // .queryByChild(self._geofireFkey, val)
-
+                function currentRecordLocations(prop, id) {
+                    return queryByChild(prop, id);
                 }
 
                 function currentUserRecords() {
@@ -508,8 +511,8 @@
                  * @return{Array} [fireBaseRef of mainlocation]
                  */
 
-                function sendToGeofireToAdd(locs, flag) {
-                    return self._geofireObject.add(locs, flag);
+                function sendToGeofireToAdd(locs, flag, path) {
+                    return self._geofireObject.add(locs, flag, path);
                 }
 
                 /* @param{Object|Array} keys of records to remove
@@ -517,14 +520,28 @@
                  * @return{Array} [fireBaseRefs of removed main records]
                  */
 
-                function sendToGeofireForRemoval(mainRecId, flag) {
+                function sendToGeofireForRemoval(mainRecId, flag, path) {
                     return getIndexKeys(mainRecId, self._geofireIndex)
                         .then(completeRemove);
 
                     function completeRemove(res) {
-                        return self._geofireObject.remove(res, flag);
+                        return self._geofireObject.remove(res, flag, path);
                     }
 
+                }
+
+
+                function addKeyToLocation(locKey, fKey) {
+                    switch (self._addRecordKey) {
+                        case true:
+                            return self._geofireObject.addRecordKey(self._path, locKey, fKey);
+                        default:
+                            null;
+                    }
+                }
+
+                function sendToGeoFireToLoadLocations(prop, id) {
+                    return self._geofireObject.loadRecordLocations(prop, id);
                 }
 
                 /*****************
@@ -536,13 +553,13 @@
                  * @return{Array} firebaseRefs of created records
                  */
 
-                function addLocations(locs, flag) {
+                function addLocations(locs, flag, path) {
                     if (!angular.isArray(locs)) {
                         locs = [locs];
                     }
 
                     return self._q.all(locs.map(function(loc) {
-                        return addLocation(loc, flag);
+                        return addLocation(loc, flag, path);
                     }));
                 }
 
@@ -551,45 +568,45 @@
                  * @return{Array} firebaseRefs of deleted main array record
                  */
 
-                function removeLocations(keys, flag) {
+                function removeLocations(keys, flag, path) {
                     if (!angular.isArray(keys)) {
                         keys = [keys];
                     }
 
                     return self._q.all(keys.map(function(key) {
-                        return removeLocation(key, flag);
+                        return removeLocation(key, flag, path);
                     }));
                 }
 
 
-                function addLocation(data, flag) {
+                function addLocation(data, flag, path) {
                     switch (flag) {
                         case true:
-                            return setGeofire(data[0], data[1])
+                            return setGeofire(data[0], data[1], path)
                                 .then(commandSuccess)
                                 .catch(standardError);
                         default:
-                            return addFullLocationRecord(data)
+                            return addFullLocationRecord(data, path)
                                 .then(commandSuccess)
                                 .catch(standardError);
                     }
                 }
 
-                function removeLocation(key, flag) {
+                function removeLocation(key, flag, path) {
                     switch (flag) {
                         case true:
-                            return removeGeofire(key)
+                            return removeGeofire(key, path)
                                 .then(commandSuccess)
                                 .catch(standardError);
                         default:
-                            return removeFullLocationRecord(key)
+                            return removeFullLocationRecord(key, path)
                                 .then(commandSuccess)
                                 .catch(standardError);
                     }
 
                 }
 
-                function addFullLocationRecord(data) {
+                function addFullLocationRecord(data, path) {
                     var coords = {
                         lat: data[self._latitude],
                         lon: data[self._longitude]
@@ -601,44 +618,64 @@
                         .catch(standardError);
 
                     function setAndPass(res) {
-                        return qAll(setGeofire(res[0].key(), [res[1].lat, res[1].lon]), res[0]);
+                        return qAll(setGeofire(res[0].key(), [res[1].lat, res[1].lon], path), res[0]);
                     }
 
                 }
 
-                function removeFullLocationRecord(key) {
-                    return self._q.all([removeMainRecord(key), removeGeofire(key)])
+                function removeFullLocationRecord(key, path) {
+                    return self._q.all([removeMainRecord(key), removeGeofire(key, path)])
                         .then(setReturnValueToFirst)
                         .catch(standardError);
                 }
 
 
-                function getGeofire(key) {
-                    return qAll(makeGeofire(), key)
+                function getGeofire(key, path) {
+                    return qAll(makeGeofire(path), key)
                         .then(getGeo)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
-                function queryGeofire(data) {
-                    return qAll(makeGeofire(), data)
+                function queryGeofire(data, path) {
+                    return qAll(makeGeofire(path), data)
                         .then(queryGeo)
                         .then(querySuccess)
                         .catch(standardError);
                 }
 
-                function removeGeofire(key) {
-                    return qAll(makeGeofire(), key)
+                function removeGeofire(key, path) {
+                    return qAll(makeGeofire(path), key)
                         .then(removeGeo)
                         // .then(commandSuccess)
                         .catch(standardError);
                 }
 
-                function setGeofire(key, coords) {
-                    return qAll(makeGeofire(), [key, coords])
+                function setGeofire(key, coords, path) {
+                    return qAll(makeGeofire(path), [key, coords])
                         .then(setGeo)
                         // .then(commandSuccess)
                         .catch(standardError);
+                }
+
+                function addRecordKey(path, locKey, fKey) {
+                    var prop = self._foreignKeys[path];
+                    switch (!angular.isString(prop)) {
+                        case true:
+                            throw new Error("Invalid key: Please check options defined for your Geofire service");
+                        case false:
+                            return mainRef()
+                                .then(updateLocationRecord)
+                                .catch(standardError);
+                    }
+
+                    function updateLocationRecord(res) {
+                        return self._timeout(function() {
+                            var obj = {};
+                            obj[prop] = fKey;
+                            return res.child(locKey).update(obj);
+                        });
+                    }
                 }
 
 
@@ -724,11 +761,10 @@
                     }
                 }
 
-
                 //TODO add method to update locationRecord with mainrecord id - see below;
 
                 function createWithGps(data, loc) {
-                    return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc)])
+                    return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc, null, self._points)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
@@ -738,7 +774,6 @@
                         return qAll(addLocationIndices(res), res[0]);
                     }
 
-
                     function setReturnValue(res) {
                         return res[1];
                     }
@@ -747,13 +782,13 @@
                 function addLocationIndices(res) {
                     return self._q.all(res[1].map(function(loc) {
 
-                        return addIndex(res[0].key(), self._geofireIndex, loc.key());
+                        return qAll(addIndex(res[0].key(), self._geofireIndex, loc.key()), addKeyToLocation(loc.key(), res[0].key()));
                     }));
                 }
 
                 function removeWithGps(mainRecId) {
 
-                    return qAll(sendToGeofireForRemoval(mainRecId), mainRecId)
+                    return qAll(sendToGeofireForRemoval(mainRecId, null, self._points), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -771,35 +806,20 @@
                 //TODO add method to update locationRecord with mainrecord id - see below;
                 function createWithUserAndGps(data, loc) {
 
-                    return self._q.all([createWithUser(data), sendToGeofireToAdd(loc)])
+                    return self._q.all([createWithUser(data), sendToGeofireToAdd(loc, null, self._path)])
                         .then(addLocationIndexAndPassKey)
                         .then(setReturnValue)
                         .then(commandSuccess)
                         .catch(standardError);
 
                     function addLocationIndexAndPassKey(res) {
-                        return qAll(addLocationIndices([res[0][1], res[1]]), res[0][1]);
+                        /*mainkey,geofire Obj*/
+                        return self._q.all([addLocationIndices([res[0][1], res[1]]), res[0][1]]);
                     }
 
                     function setReturnValue(res) {
                         return res[1];
                     }
-                }
-
-                /* @param{Array}...lockey,mainRecKey
-                 *to update locationRecord with $id of mainRecord for querying
-                 * untested and still private - this method should fire alongside "addLocationIndexAndPassKey"
-                 */
-                function addMainRecIdToLocation(locId, mainRecId) {
-                    return qAll(getLocationRecord(locId), mainRecId)
-                        .then(addMainRecId)
-                        .catch(standardError);
-
-                    function addMainRecId(res) {
-                        res[0][self._geofireFkey] = res[1]
-                        return res[0].$save();
-                    }
-
                 }
 
                 function getLocationRecord(id) {
@@ -809,7 +829,7 @@
 
                 function removeWithUserAndGps(mainRecId) {
 
-                    return qAll(sendToGeofireForRemoval(mainRecId), mainRecId)
+                    return qAll(sendToGeofireForRemoval(mainRecId, null, self._path), mainRecId)
                         .then(removeMainRec)
                         .catch(standardError);
 
@@ -818,8 +838,6 @@
                         return removeWithUser(res[1]);
                     }
                 }
-
-
 
 
                 /*********************************/
@@ -1204,7 +1222,6 @@
         if (this._geofire === true) {
             //TODO currently unused- remove
             this._geofireNode = this._options.geofireNode;
-            this._points = this._options.points;
         }
     };
 
@@ -1254,6 +1271,7 @@
                 case true:
                     return angular.extend(fire, {
                         //@return{Promise(firebaseRef)}
+                        geofirePath: geofirePath,
                         geofireRef: geofireRef,
                         //@return{Promise(GeoFire)}
                         makeGeofire: makeGeofire
@@ -1310,8 +1328,8 @@
                 return self._utils.extendPath(nestedArrayPath(mainRecId, arrName), recId);
             }
 
-            function geofirePath() {
-                return mainRecordPath(self._points);
+            function geofirePath(path) {
+                return mainRecordPath(path);
             }
 
             //unused/untested
@@ -1341,8 +1359,8 @@
                 return buildFire("ref", nestedRecordPath(recId, name, id));
             }
 
-            function geofireRef() {
-                return buildFire("ref", geofirePath());
+            function geofireRef(path) {
+                return buildFire("ref", geofirePath(path));
             }
 
             function reset() {
@@ -1373,8 +1391,8 @@
 
             /*************** geoFire ***************/
 
-            function makeGeofire() {
-                return buildFire("geo", geofirePath());
+            function makeGeofire(path) {
+                return buildFire("geo", geofirePath(path));
             }
 
 
@@ -1387,8 +1405,6 @@
             function mainPath() {
                 return reset().toString();
             }
-
-
 
             function sessionId() {
                 return self._sessionObject[self._sessionIdMethod]();
@@ -1563,7 +1579,7 @@
                             return strCheck(param);
                         case "arr":
                             return arrCheck(param);
-                        case "opt":
+                        case "obj":
                             return hashCheck(param);
                     }
             }
