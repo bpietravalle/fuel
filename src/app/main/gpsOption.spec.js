@@ -52,6 +52,9 @@
                             }));
                         }),
                         remove: jasmine.createSpy("remove").and.callFake(function(args) {
+                            if (!angular.isArray(args)) {
+                                args = Array.prototype.slice.call(arguments);
+                            }
                             locRef = new MockFirebase(rootPath).child("geofire");
                             return $q.all(args.map(function(arg) {
                                 var l = locRef.push(arg);
@@ -60,6 +63,9 @@
                                 return l;
                             }));
                         }),
+                        query: jasmine.createSpy("addRecordKey"),
+                        get: jasmine.createSpy("addRecordKey"),
+                        set: jasmine.createSpy("addRecordKey"),
                         addRecordKey: jasmine.createSpy("addRecordKey"),
                         loadRecordLocations: jasmine.createSpy("loadRecordLocations")
                     };
@@ -115,12 +121,26 @@
                 subject = fuel("trips", options);
             });
             describe("Commands: ", function() {
-							describe("setCoords",function(){
-								beforeEach(function(){
-
-								});
-
-							});
+                describe("setCoords", function() {
+                    beforeEach(function() {
+                        test = subject.setCoords("key", [50, 50]);
+                    });
+                    it("should send key, coords, and path to the geofire service", function() {
+                        expect(geofire.set.calls.argsFor(0)[0]).toEqual("key");
+                        expect(geofire.set.calls.argsFor(0)[1]).toEqual([50, 50]);
+                        expect(geofire.set.calls.argsFor(0)[2]).toEqual("trips");
+                    });
+                });
+                describe("removeCoords", function() {
+                    beforeEach(function() {
+                        test = subject.removeCoords("key");
+                    });
+                    it("should send key, boolean, and path to the geofire service", function() {
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual("key");
+                        expect(geofire.remove.calls.argsFor(0)[1]).toEqual(true);
+                        expect(geofire.remove.calls.argsFor(0)[2]).toEqual("trips");
+                    });
+                });
                 describe("add()", function() {
                     beforeEach(function() {
                         test = subject.add(newRecord, locData);
@@ -135,12 +155,12 @@
                         expect(test).toBeAPromise();
                     });
                     it("should add record to main array", function() {
-												flushTime();
+                        flushTime();
                         var ref = getPromValue(test)
                         expect(ref.getData()).toEqual(jasmine.objectContaining(newRecord));
                     });
                     it("should not add uid property to main record", function() {
-												flushTime();
+                        flushTime();
                         var ref = getPromValue(test)
                         expect(ref.getData().uid).not.toBeDefined();
                         expect(ref.getData()).toBeDefined();
@@ -158,7 +178,7 @@
                         expect(geofire.addRecordKey.calls.count()).toEqual(2);
                     });
                     it("should call geofire.addRecordKey with correct args", function() {
-												flushTime();
+                        flushTime();
                         var id = getPromValue(test).key();
                         expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
                         expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
@@ -221,6 +241,30 @@
                 });
             });
             describe("Queries: ", function() {
+                describe("getCoords", function() {
+                    beforeEach(function() {
+                        test = subject.getCoords("key");
+                    });
+                    it("should send key, and path to the geofire service", function() {
+                        expect(geofire.get.calls.argsFor(0)[0]).toEqual("key");
+                        expect(geofire.get.calls.argsFor(0)[1]).toEqual("trips");
+                    });
+                });
+                describe("geoQuery", function() {
+                    beforeEach(function() {
+                        test = subject.geoQuery({
+                            radius: 0.5,
+                            center: [50, 50]
+                        });
+                    });
+                    it("should send data obj, and path to the geofire service", function() {
+                        expect(geofire.query.calls.argsFor(0)[0]).toEqual({
+                            radius: 0.5,
+                            center: [50, 50]
+                        });
+                        expect(geofire.query.calls.argsFor(0)[1]).toEqual("trips");
+                    });
+                });
                 describe("loadRecordLocations", function() {
                     beforeEach(function() {
                         extend(subject.ref());

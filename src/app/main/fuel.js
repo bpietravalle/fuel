@@ -129,7 +129,7 @@
             }
 
             if (self._gps === true) {
-                entity.query = buildQuery;
+                entity.geoQuery = geoQuery;
                 entity.removeCoords = removeCoords;
                 entity.setCoords = setCoords;
                 entity.getCoords = getCoords;
@@ -302,7 +302,6 @@
                 return qAll(loadMainArray(), key)
                     .then(getRecord)
                     .catch(standardError);
-
             }
 
             function currentRecordLocations(prop, id) {
@@ -478,7 +477,7 @@
                 return self._geofireObject.remove(key, true, pth);
             }
 
-            function buildQuery(obj, pth) {
+            function geoQuery(obj, pth) {
                 if (!pth) {
                     pth = self._path;
                 }
