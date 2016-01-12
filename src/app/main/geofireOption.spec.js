@@ -114,6 +114,51 @@
             fuel = null;
         });
         describe("Commands", function() {
+            describe("Coordinates Only", function() {
+                beforeEach(function() {
+                    subject = fuel("geofire", {
+                        geofire: true,
+                        foreignKeys: {
+                            "trips": "tripId",
+                            "flights": "flightId"
+                        }
+                    });
+                    test = subject.set("key", [50, 50], "trips");
+                    $rootScope.$digest();
+                    $timeout.flush();
+                    subject.ref().flush();
+                });
+                describe("set", function() {
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should add the coordinates to correct node", function() {
+                        var ref = subject.ref();
+                        expect(ref.getData()["key"]).toEqual({
+                            "g": jasmine.any(String),
+                            "l": [50, 50]
+                        });
+                        expect(ref.toString()).toEqual(rootPath + "/geofire/trips");
+                    });
+                });
+                describe("remove", function() {
+                    beforeEach(function() {
+                        test = subject.remove("key", true, "trips");
+                    });
+                    it("should be a promise", function() {
+                        expect(test).toBeAPromise();
+                    });
+                    it("should remove the coordinates from the correct node", function() {
+                        var p = subject.ref().getData()["key"]
+                        expect(p.l).toEqual([50, 50]);
+                        $rootScope.$digest();
+                        $timeout.flush();
+                        subject.ref().flush();
+                        var p = subject.ref().getData()["key"]
+                        expect(p).toEqual(null);
+                    });
+                });
+            });
             describe("*Single Record*", function() {
                 describe("addRecordKey()", function() {
                     beforeEach(function() {
@@ -168,7 +213,7 @@
                     });
                     it("should save data to main array", function() {
                         var d = subject.ref().getData();
-												var id = Object.keys(d);
+                        var id = Object.keys(d);
                         expect(d[id].place_id).toEqual("string");
                         expect(d[this.key]).not.toBeDefined();
                     });
@@ -184,8 +229,8 @@
                         $rootScope.$digest();
                         var d = subject.ref().root().child("geofire/" + points);
                         d.flush();
-												var id = Object.keys(d.children)[0];
-												expect(d.getData()).not.toEqual(null);
+                        var id = Object.keys(d.children)[0];
+                        expect(d.getData()).not.toEqual(null);
                         expect(d.getData()[id]).toEqual({
                             "g": jasmine.any(String),
                             "l": [90, 100]
@@ -245,15 +290,15 @@
                             closeBy: false
                         });
                     });
-										//TODO - this test only picks up the second location
-										//need to stub firePath to catch both
+                    //TODO - this test only picks up the second location
+                    //need to stub firePath to catch both
                     it("should add coordinates to coordinates node", function() {
                         $rootScope.$digest();
                         $timeout.flush();
                         var d = subject.ref();
                         d.flush();
-												var children = Object.keys(d.children);
-												var id = children[0];
+                        var children = Object.keys(d.children);
+                        var id = children[0];
                         expect(d.toString()).toEqual(rootPath + "/geofire/" + points);
                         expect(d.getData()[id]).toEqual({
                             "g": jasmine.any(String),
@@ -318,33 +363,6 @@
                 });
                 qReject(0);
             });
-            // describe("query", function() {
-            // beforeEach(function() {
-            //         // subject.set("key2", [50, 100]);
-            //         // flushTime();
-            //         test = subject.query({
-            //             center: [90, 100],
-            //             radius: 10
-            //         });
-            //         extendMockFb(subject.ref());
-            //         $rootScope.$digest();
-            //         $timeout.flush();
-            // });
-            //     it("should be a promise", function() {
-            //         expect(test).toBeAPromise();
-            //     });
-            //     it("should retrieve the correct record", function() {
-            //         expect(subject.path()).toEqual(rootPath + "/geofire/points");
-            //     });
-            //     it("should return a geoQuery", function() {
-            //         expect(getPromValue(test)).toEqual(jasmine.objectContaining({
-            //             updateCriteria: jasmine.any(Function),
-            //             radius: jasmine.any(Function),
-            //             center: jasmine.any(Function),
-            //             cancel: jasmine.any(Function),
-            //             on: jasmine.any(Function)
-            //         }));
-            //     });
             describe("loadRecordLocations", function() {
                 beforeEach(function() {
                     test = subject.loadRecordLocations("tripId", "uniqueKey");
@@ -384,29 +402,29 @@
             $rootScope.$digest();
         }
 
-        function extend(obj) {
-            var extension = {
-                orderByChild: jasmine.createSpy("orderByChild").and.callFake(function() {
-                    return {
-                        startAt: function() {
-                            return {
-                                endAt: function() {
-                                    return {
-                                        on: function() {}
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-                })
-            };
-            return _.merge(obj, extension);
-        }
 
 
     });
 
+    function extend(obj) {
+        var extension = {
+            orderByChild: jasmine.createSpy("orderByChild").and.callFake(function() {
+                return {
+                    startAt: function() {
+                        return {
+                            endAt: function() {
+                                return {
+                                    on: function() {}
+                                }
+
+                            }
+                        }
+                    }
+                }
+            })
+        };
+        return _.merge(obj, extension);
+    }
 
 
 })();
