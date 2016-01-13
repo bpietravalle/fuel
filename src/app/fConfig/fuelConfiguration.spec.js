@@ -2,7 +2,7 @@
     "use strict";
 
     describe("fuelConfiguration provider", function() {
-        var path, subject, $window, fuel, ref, utils, testutils, fuel, session, test, options, userId, spy, options, fuelConfiguration, $rootScope, rootPath, $q, $log, $injector;
+        var subject, options, fuelConfiguration, rootPath;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";

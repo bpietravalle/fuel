@@ -2,7 +2,6 @@
     "use strict";
 
     /** @ngInject */
-
     function authObjFactory(fuelConfiguration) {
         return fuelConfiguration("auth");
     }

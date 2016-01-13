@@ -2,14 +2,13 @@
     "use strict";
 
     describe("Utils factory", function() {
-        var utils, $log, data, $q, test, rootPath, main, c, p;
+        var utils, $log, data, test, rootPath, main;
 
         beforeEach(function() {
             module("firebase.fuel.utils");
-            inject(function(_utils_, _$q_, _$log_) {
+            inject(function(_utils_, _$log_) {
                 $log = _$log_;
                 utils = _utils_;
-                $q = _$q_;
             });
             spyOn($log, "info");
             rootPath = "https://your-firebase.firebaseio.com";

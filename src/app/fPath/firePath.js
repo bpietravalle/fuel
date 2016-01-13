@@ -152,11 +152,6 @@
                 return mainRecordPath(path);
             }
 
-            //unused/untested
-            function makeNestedPath(parent, child) {
-                return self._utils.extendPath(mainArrayPath(), self._utils.extendPath(self._utils.toArray(parent), child));
-            }
-
             /*************** firebaseRefs ************/
 
             function root() {
@@ -218,17 +213,17 @@
 
             /************ Absolute Paths ****************/
 
-            function rootPath() {
-                return root().toString();
-            }
+            // function rootPath() {
+            //     return root().toString();
+            // }
 
-            function mainPath() {
-                return reset().toString();
-            }
+            // function mainPath() {
+            //     return reset().toString();
+            // }
 
-            function sessionId() {
-                return self._sessionObject[self._sessionIdMethod]();
-            }
+            // function sessionId() {
+            //     return self._sessionObject[self._sessionIdMethod]();
+            // }
 
             function getCurrentPath() {
                 if (getCurrentRef()) {

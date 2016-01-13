@@ -1,0 +1,18 @@
+{
+  "extends": "eslint:recommended",
+  "plugins": ["angular"],
+  "env": {
+    "browser": true,
+    "jasmine": true
+  },
+  "globals": {
+    "_": true,
+    "MockFirebase": true,
+    "Firebase": true,
+    "RSVP": true,
+    "angular": true,
+    "$provide": true,
+    "module": true,
+    "inject": true
+  }
+}
