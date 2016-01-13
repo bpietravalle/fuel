@@ -7,7 +7,7 @@
 
         return {
 
-            info: info,
+            info: info
 
 
 

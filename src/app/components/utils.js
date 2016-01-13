@@ -28,7 +28,7 @@
             standardError: standardError,
             singularize: singularize,
             stringify: stringify,
-            toArray: toArray,
+            toArray: toArray
         };
 
         return utils;
@@ -42,13 +42,14 @@
                         case false:
                             return invalidLen(str);
                     }
+                    break;
                 case false:
                     return invalidType(str);
             }
         }
 
         function arrCheck(arr) {
-            switch (Array.isArray(arr)) {
+            switch (angular.isArray(arr)) {
                 case true:
                     return arr;
 
@@ -57,14 +58,8 @@
             }
         }
 
-        function setNestedArr(arr) {
-            var n = [];
-
-        }
-
         function boolCheck(bool) {
             var accepted = [false, true];
-
             switch (accepted.indexOf(bool)) {
                 case -1:
                     return invalidType(bool);
@@ -161,7 +156,7 @@
         }
 
         function toArray(param) {
-            if (Array.isArray(param)) {
+            if (angular.isArray(param)) {
                 return flatten(param);
             } else {
                 return extendPath([], param);
@@ -169,7 +164,7 @@
         }
 
         function stringify(arr) {
-            if (Array.isArray(arr)) {
+            if (angular.isArray(arr)) {
                 arr = arr.join('/');
             }
             return arr;

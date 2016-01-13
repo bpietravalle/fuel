@@ -8,6 +8,7 @@
 var gulp = require('gulp');
 var wrench = require('wrench');
 var concat = require('gulp-concat');
+var ngAnnotate = require('gulp-ng-annotate');
 
 /**
  *  This will load all js or coffee files in the gulp directory
@@ -20,8 +21,11 @@ wrench.readdirSyncRecursive('./gulp').filter(function(file) {
 });
 
 gulp.task('concat', function() {
-    return gulp.src(["./src/app/index.module.js","./src/app/index.config.js","./src/app/fuelConfiguration.js","./src/app/fuel.js", "./src/app/firePath.js", "./src/app/fuelAuth.js","./src/app/utils.js","./src/app/logger.js"])
+    return gulp.src(["./src/app/**/*.module.js", "./src/app/**/*.js",
+            "!./src/app/**/*.spec.js"
+        ])
         .pipe(concat("fuelProvider.js"))
+        .pipe(ngAnnotate())
         .pipe(gulp.dest("./dist/scripts/"));
 });
 /**
