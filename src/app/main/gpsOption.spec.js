@@ -155,15 +155,14 @@
                         expect(test).toBeAPromise();
                     });
                     it("should add record to main array", function() {
-                        flushTime();
-                        var ref = getPromValue(test)
-                        expect(ref.getData()).toEqual(jasmine.objectContaining(newRecord));
+                        var key = Object.keys(this.data);
+                        expect(this.data[key]).toEqual(jasmine.objectContaining(newRecord));
                     });
                     it("should not add uid property to main record", function() {
-                        flushTime();
-                        var ref = getPromValue(test)
-                        expect(ref.getData().uid).not.toBeDefined();
-                        expect(ref.getData()).toBeDefined();
+                        var key = Object.keys(this.data);
+                        var ref = this.data[key];
+                        expect(ref.uid).not.toBeDefined();
+                        expect(ref).toBeDefined();
                     });
                     it("should not call user.addIndex", function() {
                         expect(user.addIndex).not.toHaveBeenCalled();
@@ -179,7 +178,7 @@
                     });
                     it("should call geofire.addRecordKey with correct args", function() {
                         flushTime();
-                        var id = getPromValue(test).key();
+                        var id = Object.keys(this.data)[0];
                         expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
                         expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
                         expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(id);
@@ -236,6 +235,69 @@
                     });
                     it("should not call user.removeIndex()", function() {
                         expect(user.removeIndex).not.toHaveBeenCalled();
+                    });
+                    qReject(0);
+                });
+                describe("addLocations", function() {
+                    var mainRef = new MockFirebase(rootPath).child("trips/mainRecKey");
+
+                    beforeEach(function() {
+                        mainRef.set(newRecord);
+                        mainRef.flush();
+                        test = subject.addLocations({
+                            data: [locData[0]],
+                            id: mainRef
+                        });
+                        flushTime();
+                        this.key1 = addArr[0];
+                        this.data = subject.ref().getData();
+                        this.path = subject.path();
+                        this.key = subject.ref().key();
+                    });
+                    it("should call geofire.add once", function() {
+                        expect(geofire.add.calls.count()).toEqual(1);
+                    });
+                    it("should call geofire.add with correct path argument", function() {
+                        expect(geofire.add.calls.argsFor(0)[2]).toEqual("trips");
+                    });
+                    it("should call geofire.addRecordKey for each location added", function() {
+                        expect(geofire.addRecordKey.calls.count()).toEqual(1);
+                    });
+                    it("should call geofire.addRecordKey with correct args", function() {
+                        expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
+                        expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
+                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(mainRef.key());
+                    });
+                    it("should add location index to main record and set ref to main record", function() {
+                        var locIdx = getPromValue(test)[0][0].children[addArr[0]].getData();
+                        expect(addArr).toHaveLength(1);
+                        expect(locIdx).toEqual(true);
+                    });
+
+                });
+                describe("removeLocations()", function() {
+                    beforeEach(function() {
+                        // this.idxKey = Object.keys(subject.ref().child("locations").getData());
+                        test = subject.removeLocations({
+                            id: "mainRecId",
+                            locKeys: ["loc1", "loc2"]
+                        });
+                        flushTime();
+                    });
+                    it("should call geofire.remove() once", function() {
+                        expect(geofire.remove.calls.count()).toEqual(1);
+                    });
+                    it("should call remove on geofire with keys from location index", function() {
+                        expect(geofire.remove.calls.argsFor(0)[0]).toEqual(["loc1", "loc2"]);
+                    });
+                    it("should call geofire.remove with correct path argument", function() {
+                        expect(geofire.remove.calls.argsFor(0)[2]).toEqual("trips");
+                    });
+                    it("should remove the indices", function() {
+                        expect(getPromValue(test)[0]).toBeAFirebaseRef();
+                        expect(getPromValue(test)[1]).toBeAFirebaseRef();
+                        expect(getPromValue(test)[1].toString()).toEqual(rootPath + "/trips/mainRecId/locations");
+                        expect(getPromValue(test)[0].toString()).toEqual(rootPath + "/trips/mainRecId/locations");
                     });
                     qReject(0);
                 });

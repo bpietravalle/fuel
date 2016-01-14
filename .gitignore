@@ -1,8 +1,9 @@
 node_modules/
-coverage/
 bower_components/
 .sass-cache/
 .idea/
+coverage/
+.coveralls.yml
 .tmp/
 /* dist/ */
 

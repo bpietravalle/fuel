@@ -2,17 +2,17 @@
     "use strict";
 
     describe("GeoQueries", function() {
-        var subject, Geofire, fuel, rootPath, $rootScope, firePath, test, mock;
+        var subject, fuel, rootPath, $rootScope, test, mock;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
             module('firebase.fuel',
                 function($provide) {
                     $provide.factory("firePath", function() {
-                        return jasmine.createSpy("firePath").and.callFake(function(path, opts) {
+                        return jasmine.createSpy("firePath").and.callFake(function() {
                             return {
                                 ref: function() {},
-                                makeGeofire: function(str) {
+                                makeGeofire: function() {
                                     mock = new MockFirebase(rootPath);
                                     // mock = mock.child(str);
                                     return new GeoFire(extend(mock));
@@ -23,10 +23,10 @@
 
                     });
                 })
-            inject(function(_fuel_, _firePath_,_$rootScope_) {
+            inject(function(_fuel_, _$rootScope_) {
                 fuel = _fuel_;
 								$rootScope = _$rootScope_;
-                firePath = _firePath_;
+                // firePath = _firePath_;
             });
 
             subject = fuel("trips", {
