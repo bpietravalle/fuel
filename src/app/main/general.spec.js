@@ -105,7 +105,7 @@
 
             var sessionAdded = ["session", "sessionId", "bindCurrent"];
             var geofireAdded = ["get", "remove", "set", "add", "query", "addRecordKey", "geofire"];
-            var gpsAdded = ["createLocation", "removeLocation", "getLocation"];
+            var gpsAdded = ["addLocations", "removeLocations", "getLocation","removeCoords","setCoords","getCoords","getLocation"];
             var userAdded = ["loadUserRecords"];
             var noOptionApi = ["base", "ref", "path", 
                 "inspect", "addIndex", "removeIndex", "getIndexKeys", "load",

@@ -6,12 +6,15 @@
     "jasmine": true
   },
   "globals": {
-    "_": true,
     "MockFirebase": true,
+    "_": true,
     "Firebase": true,
+    "GeoFire": true,
     "RSVP": true,
     "angular": true,
     "$provide": true,
+    "require": true,
+    "process": true,
     "module": true,
     "inject": true
   }

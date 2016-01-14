@@ -10,3 +10,5 @@ before_script:
    - 'npm install -g bower'
    - 'npm install -g gulp'
    - 'bower install'
+after_script:
+  - 'cat ./coverage/lcov-report/lcov.info | ./node_modules/coveralls/bin/coveralls.js' 

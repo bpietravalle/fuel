@@ -12,6 +12,7 @@
 (function() {
   'use strict';
 
+  config.$inject = ["$logProvider"];
   angular
     .module('firebase.fuel')
     .config(config);
@@ -22,7 +23,6 @@
     $logProvider.debugEnabled(true);
 
   }
-  config.$inject = ["$logProvider"];
 
 })();
 
@@ -30,10 +30,10 @@
     "use strict";
 
     /** @ngInject */
+    authObjFactory.$inject = ["fuelConfiguration"];
     function authObjFactory(fuelConfiguration) {
         return fuelConfiguration("auth");
     }
-    authObjFactory.$inject = ["fuelConfiguration"];
 
     angular.module("firebase.fuel.services")
         .factory("fuelAuth", authObjFactory);
@@ -43,6 +43,7 @@
     "use strict";
 
     /** @ngInject */
+    loggerFactory.$inject = ["$log"];
     function loggerFactory($log) {
 			//unused currently
 
@@ -60,7 +61,6 @@
 
 
     }
-    loggerFactory.$inject = ["$log"];
 
     angular.module("firebase.fuel.logger",[])
         .factory("logger", loggerFactory);
@@ -70,6 +70,7 @@
     "use strict";
 
 
+    utilsFactory.$inject = ["$log", "$q", "inflector"];
     angular.module("firebase.fuel.utils", ['platanus.inflector'])
         .factory("utils", utilsFactory);
 
@@ -318,7 +319,6 @@
         }
 
     }
-    utilsFactory.$inject = ["$log", "$q", "inflector"];
 
 
 
@@ -326,6 +326,41 @@
 
 (function() {
     "use strict";
+
+    FuelConfigProvider.$inject = ["fireStarterProvider"];
+    angular.module('firebase.fuel.config', ['firebase.starter'])
+
+    .provider('fuelConfiguration', FuelConfigProvider);
+
+    function FuelConfigProvider(fireStarterProvider) {
+        var prov = this;
+        prov.setRoot = function(val) {
+            fireStarterProvider.setRoot(val);
+        }
+        prov.getRoot = function() {
+            return fireStarterProvider.getRoot();
+        }
+
+        prov.$get = ["fireStarter",
+            function(fireStarter) {
+                switch (angular.isString(prov.getRoot())) {
+                    case true:
+                        return function(type, path, options) {
+                            return fireStarter(type, path, options)
+                        };
+                    case false:
+                        throw new Error("You must define a root url in your module's config block");
+                }
+            }
+        ];
+    }
+
+
+})();
+
+(function() {
+    "use strict";
+    FirePathFactory.$inject = ["$timeout", "utils", "$q", "$log", "$injector", "fuelConfiguration"];
     var FirePath;
 
     angular.module("firebase.fuel.services")
@@ -342,7 +377,6 @@
         };
 
     }
-    FirePathFactory.$inject = ["$timeout", "utils", "$q", "$log", "$injector", "fuelConfiguration"];
 
     FirePath = function($timeout, utils, $q, $log, $injector, fuelConfiguration, path, options) {
         this._timeout = $timeout;
@@ -575,40 +609,7 @@
 
 (function() {
     "use strict";
-
-    angular.module('firebase.fuel.config', ['firebase.starter'])
-
-    .provider('fuelConfiguration', FuelConfigProvider);
-
-    function FuelConfigProvider(fireStarterProvider) {
-        var prov = this;
-        prov.setRoot = function(val) {
-            fireStarterProvider.setRoot(val);
-        }
-        prov.getRoot = function() {
-            return fireStarterProvider.getRoot();
-        }
-
-        prov.$get = ["fireStarter",
-            function(fireStarter) {
-                switch (angular.isString(prov.getRoot())) {
-                    case true:
-                        return function(type, path, options) {
-                            return fireStarter(type, path, options)
-                        };
-                    case false:
-                        throw new Error("You must define a root url in your module's config block");
-                }
-            }
-        ];
-    }
-    FuelConfigProvider.$inject = ["fireStarterProvider"];
-
-
-})();
-
-(function() {
-    "use strict";
+    FuelFactory.$inject = ["$timeout", "utils", "firePath", "$q", "$log", "$injector"];
     var Fuel;
 
     angular
@@ -623,7 +624,6 @@
             return fb.construct();
         };
     }
-    FuelFactory.$inject = ["$timeout", "utils", "firePath", "$q", "$log", "$injector"];
 
     Fuel = function($timeout, utils, firePath, $q, $log, $injector, path, options) {
         this._timeout = $timeout;
@@ -739,9 +739,15 @@
             }
 
             if (self._gps === true) {
+                entity.geoQuery = geoQuery;
+                entity.removeCoords = removeCoords;
+                entity.setCoords = setCoords;
+                entity.getCoords = getCoords;
                 entity.getLocation = getLocationRecord;
-                entity.createLocation = sendToGeofireToAdd;
-                entity.removeLocation = sendToGeofireForRemoval;
+                entity.addLocations = sendToGeofireToAdd;
+                entity.removeLocations = sendToGeofireToRemove;
+
+
 
                 if (self._addRecordKey === true) {
                     entity.loadRecordLocations = sendToGeoFireToLoadLocations;
@@ -908,7 +914,6 @@
                 return qAll(loadMainArray(), key)
                     .then(getRecord)
                     .catch(standardError);
-
             }
 
             function currentRecordLocations(prop, id) {
@@ -927,7 +932,6 @@
                 function completeQuery(res) {
                     return res[0].orderByChild(res[1][0]).equalTo(res[1][1]);
                 }
-
             }
 
             /* Commands */
@@ -1025,35 +1029,87 @@
              * GPS Option
              * ***********/
 
-            /* @param{Object|Array} location data to save
-             * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+            /* @param{Object} obj
+             *
+             * @param{Object|Array} obj.data locations to save
+             * @param{Boolean} obj.flag true if only wish to save coordinates, otherwise leave undefined
+             * @param{String} obj.path child node for coordinates
+             * @param{Object|String} obj.[id] if the main record already exists pass its firebaseRef or key and method will
+             * add indexes - optional
              * @return{Array} [fireBaseRef of mainlocation]
              */
 
-            function sendToGeofireToAdd(locs, flag, path) {
-                return self._geofireObject.add(locs, flag, path);
+            function sendToGeofireToAdd(obj) {
+                if (!obj.path) {
+                    obj.path = self._points;
+                }
+                if (!obj.flag) {
+                    obj.flag = null;
+                }
+                switch (!obj.id) {
+                    case true:
+                        return self._geofireObject.add(obj.data, obj.flag, obj.path);
+                    default:
+                        return self._geofireObject.add(obj.data, obj.flag, obj.path)
+                            .then(setReturnVal)
+                            .then(addLocationIndices)
+                            .catch(standardError);
+
+                }
+
+                function setReturnVal(res) {
+                    var arr = []
+                    arr.push(obj.id);
+                    arr.push(res);
+                    self._log.info(arr);
+                    return arr;
+                }
             }
 
-            /* @param{Object|Array} keys of records to remove
-             * @param{Boolean} true if only wish to remove coordinates, otherwise leave undefined
-             * @return{Array} [fireBaseRefs of removed main records]
+
+
+            /* @param{Object} obj
+             *
+             * @param{String} obj.id "mainRecordId"
+             * @param{Boolean} obj.flag true if only wish to remove coordinates, otherwise leave undefined
+             * @param{String} obj.path child node for coordinates
+             * @param{Array} [obj.locKeys] ["array","or","locationIds"] - optional
+             * @return{Array} [fireBaseRefs of removed main location records]
              */
 
-            function sendToGeofireForRemoval(mainRecId, flag, path) {
-                return getIndexKeys(mainRecId, self._geofireIndex)
-                    .then(completeRemove);
+            function sendToGeofireToRemove(obj) {
+                if (!obj.path) {
+                    obj.path = self._points;
+                }
+                if (!obj.flag) {
+                    obj.flag = null;
+                }
+                switch (!obj.locKeys) {
+                    case true:
+                        return getIndexKeys(obj.id, self._geofireIndex)
+                            .then(completeRemove)
+                    default:
+                        return completeRemove(obj.locKeys)
+                            .then(removeLocIndices)
+                }
 
                 function completeRemove(res) {
-                    return self._geofireObject.remove(res, flag, path);
+                    return self._geofireObject.remove(res, obj.flag, obj.path);
+                }
+
+                function removeLocIndices(res) {
+                    return self._q.all(res.map(function(loc) {
+                        return removeIndex(obj.id, self._geofireIndex, loc.key());
+
+                    }));
                 }
 
             }
 
-
             function addKeyToLocation(locKey, fKey) {
                 switch (self._addRecordKey) {
                     case true:
-                        return self._geofireObject.addRecordKey(self._path, locKey, fKey);
+                        return self._geofireObject.addRecordKey(self._points, locKey, fKey);
                     default:
                         null;
                 }
@@ -1061,6 +1117,34 @@
 
             function sendToGeoFireToLoadLocations(prop, id) {
                 return self._geofireObject.loadRecordLocations(prop, id);
+            }
+
+            function setCoords(key, coords, pth) {
+                if (!pth) {
+                    pth = self._points;
+                }
+                return self._geofireObject.set(key, coords, pth);
+            }
+
+            function getCoords(key, pth) {
+                if (!pth) {
+                    pth = self._points;
+                }
+                return self._geofireObject.get(key, pth);
+            }
+
+            function removeCoords(key, pth) {
+                if (!pth) {
+                    pth = self._points;
+                }
+                return self._geofireObject.remove(key, true, pth);
+            }
+
+            function geoQuery(obj, pth) {
+                if (!pth) {
+                    pth = self._points;
+                }
+                return self._geofireObject.query(obj, pth);
             }
 
             /*****************
@@ -1082,7 +1166,7 @@
                 }));
             }
 
-            /* @param{Object|Array} 
+            /* @param{Array|String} 
              * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
              * @return{Array} firebaseRefs of deleted main array record
              */
@@ -1265,7 +1349,9 @@
             //TODO add method to update locationRecord with mainrecord id - see below;
 
             function createWithGps(data, loc) {
-                return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc, null, self._points)])
+                return self._q.all([createMainRecord(data), sendToGeofireToAdd({
+                        data: loc
+                    })])
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValue)
                     .catch(standardError);
@@ -1279,16 +1365,31 @@
                 }
             }
 
-            function addLocationIndices(res) {
-                return self._q.all(res[1].map(function(loc) {
+            /**
+             * @param{Array} arr
+             * @param{Object} arr[0] firebaseRef of Record that has the associated location data
+             * @param{Array} arr[1] array of firebaseRef of newly persisted locations
+             * @return{Array} array of location index, firebaseref of location record
+             * @summary creates indexes of persisted locations and, unless you've opted out of 'addREcordKey option
+             * this will add this record key to the location record as well
+             *
+             */
 
-                    return qAll(addIndex(res[0].key(), self._geofireIndex, loc.key()), addKeyToLocation(loc.key(), res[0].key()));
+            function addLocationIndices(arr) {
+                if (!angular.isString(arr[0])) {
+                    arr[0] = arr[0].key();
+                }
+                return self._q.all(arr[1].map(function(loc) {
+
+                    return qAll(addIndex(arr[0], self._geofireIndex, loc.key()), addKeyToLocation(loc.key(), arr[0]));
                 }));
             }
 
             function removeWithGps(mainRecId) {
 
-                return qAll(sendToGeofireForRemoval(mainRecId, null, self._points), mainRecId)
+                return qAll(sendToGeofireToRemove({
+                        id: mainRecId
+                    }), mainRecId)
                     .then(removeMainRec)
                     .catch(standardError);
 
@@ -1306,7 +1407,9 @@
             //TODO add method to update locationRecord with mainrecord id - see below;
             function createWithUserAndGps(data, loc) {
 
-                return self._q.all([createWithUser(data), sendToGeofireToAdd(loc, null, self._path)])
+                return self._q.all([createWithUser(data), sendToGeofireToAdd({
+                        data: loc
+                    })])
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValue)
                     .catch(standardError);
@@ -1328,7 +1431,9 @@
 
             function removeWithUserAndGps(mainRecId) {
 
-                return qAll(sendToGeofireForRemoval(mainRecId, null, self._path), mainRecId)
+                return qAll(sendToGeofireToRemove({
+                        id: mainRecId
+                    }), mainRecId)
                     .then(removeMainRec)
                     .catch(standardError);
 
