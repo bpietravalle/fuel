@@ -152,9 +152,6 @@
                     it("should return a firebaseRef", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();
                     });
-                    it("should change the ref() to the added record's ref", function() {
-                        expect(subject.path()).toEqual("https://your-firebase.firebaseio.com/trips/" + this.key);
-                    });
                     it("should save the data to firebaseRef", function() {
                         expect(getPromValue(test).getData()).toEqual(newRecord);
                     });

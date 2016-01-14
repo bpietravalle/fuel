@@ -97,7 +97,7 @@
 
 
             inject(function(_$timeout_, _$q_, _$rootScope_, _fuel_) {
-								$q = _$q_;
+                $q = _$q_;
                 $timeout = _$timeout_;
                 $rootScope = _$rootScope_;
                 fuel = _fuel_;
@@ -163,35 +163,33 @@
                     it("should remove coordinates from main array", function() {
                         var d = subject.ref().getData();
                         expect(d).toBeDefined();
-                        expect(subject.path()).toEqual(rootPath + "/geofire/" + this.key);
                         expect(d.lat).not.toBeDefined();
                         expect(d.lon).not.toBeDefined();
                     });
                     it("should save data to main array", function() {
                         var d = subject.ref().getData();
-                        expect(d.place_id).toEqual("string");
+												var id = Object.keys(d);
+                        expect(d[id].place_id).toEqual("string");
                         expect(d[this.key]).not.toBeDefined();
                     });
                     it("should return an array of main record firebaserefs", function() {
                         $rootScope.$digest();
                         $timeout.flush();
                         expect(getPromValue(test)[0]).toBeAFirebaseRef();
-                        expect(getPromValue(test)[0].toString()).toEqual(rootPath + "/geofire/" + this.key);
                         expect(getPromValue(test)).toBeAn("array");
                     });
                     it("should add coordinates to coordinates node", function() {
                         $rootScope.$digest();
                         $timeout.flush();
-                        var d = subject.base().ref();
+                        $rootScope.$digest();
+                        var d = subject.ref().root().child("geofire/" + points);
                         d.flush();
-                        expect(d.toString()).toEqual(rootPath + "/geofire/" + points);
-                        expect(d.getData()[this.key]).toEqual({
+												var id = Object.keys(d.children)[0];
+												expect(d.getData()).not.toEqual(null);
+                        expect(d.getData()[id]).toEqual({
                             "g": jasmine.any(String),
                             "l": [90, 100]
                         });
-                    });
-                    it("should set current ref to main array record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/" + this.key);
                     });
                     qReject(0);
                 });
@@ -224,34 +222,22 @@
                     beforeEach(function() {
                         test = subject.add(locData, null, points);
                         flushTime();
-                        $rootScope.$digest();
-                        // flushTime();
-                        $timeout.flush();
-                        // $rootScope.$digest();
-                        this.mainRef = subject.ref().root().child("geofire");
-                        this.keys = Object.keys(this.mainRef.children);
-                        rec1 = this.mainRef.child(this.keys[0]);
-                        // rec2 = this.mainRef.child(this.keys[1]);
                     });
                     it("should be a promise", function() {
-                        expect(this.keys).toBeAn("array");
                         expect(test).toBeAPromise();
                     });
                     it("should remove coordinates from main array records", function() {
+                        this.mainRef = subject.ref().root().child("geofire");
+                        this.keys = Object.keys(this.mainRef.children);
+                        rec1 = this.mainRef.child(this.keys[0]);
                         expect(rec1.getData()).toBeDefined();
                         expect(rec1.getData().lat).not.toBeDefined();
                         expect(rec1.getData().lon).not.toBeDefined();
-                        // expect(rec2.getData()).toBeDefined();
-                        // expect(rec2.getData().lat).not.toBeDefined();
-                        // expect(rec2.getData().lon).not.toBeDefined();
                     });
                     it("should save data to main array", function() {
-                        // expect(rec1.getData()).toEqual({
-                        //     place_id: "string",
-                        //     placeType: "a place",
-                        //     distance: 1234,
-                        //     closeBy: true
-                        // });
+                        this.mainRef = subject.ref().root().child("geofire");
+                        this.keys = Object.keys(this.mainRef.children);
+                        rec1 = this.mainRef.child(this.keys[0]);
                         expect(rec1.getData()).toEqual({
                             place_id: "different_place",
                             placeType: "some place",
@@ -259,26 +245,20 @@
                             closeBy: false
                         });
                     });
+										//TODO - this test only picks up the second location
+										//need to stub firePath to catch both
                     it("should add coordinates to coordinates node", function() {
-                        var d = subject.base().ref();
-                        expect(d.toString()).toEqual(rootPath + "/geofire/" + points);
+                        $rootScope.$digest();
+                        $timeout.flush();
+                        var d = subject.ref();
                         d.flush();
-                        // expect(d.getData()[this.keys[0]]).toEqual({
-                        //     "g": jasmine.any(String),
-                        //     "l": [90, 100]
-                        // });
-                        expect(d.getData()[this.keys[0]]).toEqual({
+												var children = Object.keys(d.children);
+												var id = children[0];
+                        expect(d.toString()).toEqual(rootPath + "/geofire/" + points);
+                        expect(d.getData()[id]).toEqual({
                             "g": jasmine.any(String),
                             "l": [45, 100]
                         });
-                    });
-                    // it("should return an array of firebaseRefs", function() {
-                    // $rootScope.$digest();
-                    // expect(getPromValue(test)).toEqual(rootPath + "/geofire/" + this.keys[0]);
-                    //         expect(getPromValue(test)[1].toString()).toEqual(rootPath + "/geofire/" + this.keys[1]);
-                    // });
-                    it("should set current ref to the last main array record", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/" + this.keys[0]);
                     });
                     qReject(0);
                 });
@@ -304,9 +284,6 @@
                     //     expect(p.getData()[this.keys[0]]).toEqual(null);
                     //     expect(p.getData()[this.keys[1]]).toEqual(null);
                     // });
-                    it("should set ref to mainref", function() {
-                        expect(subject.path()).toEqual(rootPath + "/geofire/" + points);
-                    });
                     qReject(0);
                 });
             });

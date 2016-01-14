@@ -107,7 +107,7 @@
             var geofireAdded = ["get", "remove", "set", "add", "query", "addRecordKey", "geofire"];
             var gpsAdded = ["createLocation", "removeLocation", "getLocation"];
             var userAdded = ["loadUserRecords"];
-            var noOptionApi = ["base", "ref", "path", "parent", "pathHistory",
+            var noOptionApi = ["base", "ref", "path", 
                 "inspect", "addIndex", "removeIndex", "getIndexKeys", "load",
                 "getRecord", "save", "bindTo", "add", "remove"
             ];
