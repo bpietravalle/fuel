@@ -52,7 +52,6 @@
             this._longitude = this._utils.paramCheck(this._options.longitude, "str", "lon");
 
             this._pathOptions.geofire = true;
-            this._pathOptions.geofireNode = this._geofireNode;
         }
 
 
@@ -84,10 +83,6 @@
             this._sessionService = this._utils.paramCheck(this._options.sessionService, "str", "session");
             this._sessionIdMethod = this._utils.paramCheck(this._options.sessionIdMethod, "str", "getId");
             this._sessionObject = this._injector.get(this._sessionService);
-
-            this._pathOptions.session = true;
-            this._pathOptions.sessionService = this._sessionService;
-            this._pathOptions.sessionIdMethod = this._sessionIdMethod;
         }
         if (this._timeStamp === true) {
             this._createTime = this._utils.paramCheck(this._options.createTime, "str", "createdAt");
@@ -106,8 +101,6 @@
             entity.base = getCurrentBase;
             entity.ref = getCurrentRef;
             entity.path = getCurrentPath;
-            entity.parent = getCurrentParentRef;
-            entity.pathHistory = getPathHistory;
             entity.inspect = inspect;
 
             entity.mainRef = mainRef;
@@ -136,6 +129,10 @@
             }
 
             if (self._gps === true) {
+                entity.query = buildQuery;
+                entity.removeCoords = removeCoords;
+                entity.setCoords = setCoords;
+                entity.getCoords = getCoords;
                 entity.getLocation = getLocationRecord;
                 entity.createLocation = sendToGeofireToAdd;
                 entity.removeLocation = sendToGeofireForRemoval;
@@ -199,16 +196,8 @@
                 return self._pathMaster.ref();
             }
 
-            function getCurrentParentRef() {
-                return self._pathMaster.parent();
-            }
-
             function getCurrentBase() {
                 return self._pathMaster.base();
-            }
-
-            function getPathHistory() {
-                return self._pathMaster.pathHistory();
             }
 
             /******************************/
@@ -402,14 +391,12 @@
                 }
                 return qAll(mainArray(), data)
                     .then(add)
-                    .then(commandSuccess)
                     .catch(standardError);
             }
 
             function removeMainRecord(key) {
 
                 return checkParam(key)
-                    .then(commandSuccess)
                     .catch(standardError);
 
                 function checkParam(param) {
@@ -425,7 +412,6 @@
 
             function saveMaster(keyIdxorRec) {
                 return save(keyIdxorRec)
-                    .then(commandSuccess)
                     .catch(standardError);
             }
 
@@ -471,6 +457,34 @@
                 return self._geofireObject.loadRecordLocations(prop, id);
             }
 
+            function setCoords(key, coords, pth) {
+                if (!pth) {
+                    pth = self._path;
+                }
+                return self._geofireObject.set(key, coords, pth);
+            }
+
+            function getCoords(key, pth) {
+                if (!pth) {
+                    pth = self._path;
+                }
+                return self._geofireObject.get(key, pth);
+            }
+
+            function removeCoords(key, pth) {
+                if (!pth) {
+                    pth = self._path;
+                }
+                return self._geofireObject.remove(key, true, pth);
+            }
+
+            function buildQuery(obj, pth) {
+                if (!pth) {
+                    pth = self._path;
+                }
+                return self._geofireObject.query(obj, pth);
+            }
+
             /*****************
              * Geofire Option
              * ***************/
@@ -510,11 +524,9 @@
                 switch (flag) {
                     case true:
                         return setGeofire(data[0], data[1], path)
-                            .then(commandSuccess)
                             .catch(standardError);
                     default:
                         return addFullLocationRecord(data, path)
-                            .then(commandSuccess)
                             .catch(standardError);
                 }
             }
@@ -523,11 +535,9 @@
                 switch (flag) {
                     case true:
                         return removeGeofire(key, path)
-                            .then(commandSuccess)
                             .catch(standardError);
                     default:
                         return removeFullLocationRecord(key, path)
-                            .then(commandSuccess)
                             .catch(standardError);
                 }
 
@@ -680,7 +690,6 @@
                 return self._q.all([createMainRecord(data), sendToGeofireToAdd(loc, null, self._points)])
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValue)
-                    .then(commandSuccess)
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
@@ -722,7 +731,6 @@
                 return self._q.all([createWithUser(data), sendToGeofireToAdd(loc, null, self._path)])
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValue)
-                    .then(commandSuccess)
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
@@ -969,23 +977,6 @@
             function wrapQuery(res) {
                 return buildFire("array", res, true);
             }
-
-
-
-            /**CQ*****************************/
-
-            function commandSuccess(res) {
-                self._pathMaster.setCurrentRef(res);
-                return res;
-                // switch (angular.isString(res.key())) {
-                //     case true:
-                //         return res;
-                //     default:
-                //         self._log.info(res);
-                //         throw new Error("invalid return value from command");
-                // }
-            }
-
 
 
             function checkTimeStampAtCreate(obj) {

@@ -26,23 +26,7 @@
         this._path = path;
         this._fuelConfiguration = fuelConfiguration;
         this._options = options;
-        this._session = this._options.session
         this._geofire = this._options.geofire
-        if (this._session === true) {
-            this._sessionService = this._options.sessionService;
-            this._sessionObject = this._injector.get(this._options.sessionService);
-            if (!this._sessionObject) {
-                throw new Error("You must provide a service to inject to access your session");
-            }
-            this._sessionIdMethod = this._options.sessionIdMethod;
-            if (!this._sessionIdMethod) {
-                throw new Error("You must provide a method to query the sessionId");
-            }
-        }
-        if (this._geofire === true) {
-            //TODO currently unused- remove
-            this._geofireNode = this._options.geofireNode;
-        }
     };
 
 
@@ -51,23 +35,14 @@
             var self = this;
             var fire = {};
 
-            /*firebaseRefs*/
-
-            /*@return{firebaseRef}
-             * these will update _ref*/
             fire.reset = reset;
             fire.root = root;
-
-            /*@return{Promise(firebaseRef)}
-             * these will update _ref*/
 
             fire.main = main;
             fire.mainRecordRef = mainRecordRef;
             fire.nestedArrayRef = nestedArrayRef;
             fire.nestedRecordRef = nestedRecordRef;
 
-            /*@return{Promise(angularFire)}
-             * these will update _ref and _base*/
             fire.mainArray = mainArray;
             fire.mainRecord = mainRecord;
             fire.nestedArray = nestedArray;
@@ -90,10 +65,8 @@
             switch (self._geofire) {
                 case true:
                     return angular.extend(fire, {
-                        //@return{Promise(firebaseRef)}
                         geofirePath: geofirePath,
                         geofireRef: geofireRef,
-                        //@return{Promise(GeoFire)}
                         makeGeofire: makeGeofire
                     });
             }
@@ -212,18 +185,6 @@
 
 
             /************ Absolute Paths ****************/
-
-            // function rootPath() {
-            //     return root().toString();
-            // }
-
-            // function mainPath() {
-            //     return reset().toString();
-            // }
-
-            // function sessionId() {
-            //     return self._sessionObject[self._sessionIdMethod]();
-            // }
 
             function getCurrentPath() {
                 if (getCurrentRef()) {

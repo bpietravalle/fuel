@@ -30,11 +30,8 @@
             });
             ref = new MockFirebase(rootPath);
             options = {
-                session: true,
                 geofire: true,
                 points: "points",
-                sessionService: "session",
-                sessionIdMethod: "getId",
                 geofireName: "geofire"
             };
             spyOn($log, "info");
@@ -138,32 +135,6 @@
                     $rootScope.$digest();
                     expect(subject.base()).not.toEqual(null);
                 });
-            });
-        });
-        describe("Invalid options", function() {
-            describe("session", function() {
-                it("should throw error if no sessionService is present", function() {
-                    expect(function() {
-                        options = {
-                            session: true,
-                            sessionIdMethod: "getId"
-                        };
-                        firePath("trips", options);
-
-                    }).toThrow(), "object";
-                });
-                it("should throw error if no sessionIdMethod is present", function() {
-                    expect(function() {
-                        options = {
-                            session: true,
-                            sessionService: "session"
-                        };
-                        firePath("trips", options);
-
-                    }).toThrow();
-                });
-
-
             });
         });
 

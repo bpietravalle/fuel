@@ -163,18 +163,19 @@
                         expect(test).toBeAPromise();
                     });
                     it("should add record to main array", function() {
-                        var mainRef = subject.ref().root().child("trips/" + this.key);
-                        // var loc = mainRef.child("locations");
-                        expect(mainRef.getData()).toEqual(jasmine.objectContaining(newRecord));
-                        // expect(loc.getData()[this.key1]).toEqual(true);
-                        // expect(loc.getData()[this.key2]).toEqual(true);
+												flushTime();
+                        var ref = getPromValue(test)
+                        expect(ref.getData()).toEqual(jasmine.objectContaining(newRecord));
                     });
                     it("should add uid property to main record", function() {
-                        var mainRef = subject.ref().root().child("trips/" + this.key);
-                        expect(mainRef.getData().uid).toEqual(1);
+												flushTime();
+                        var ref = getPromValue(test)
+                        expect(ref.getData().uid).toEqual(1);
                     });
                     it("should call user.addIndex with correct path and main record key", function() {
-                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", this.key);
+												flushTime();
+                        var id = getPromValue(test).key();
+                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", id);
                     });
                     it("should call geofire.add once", function() {
                         expect(geofire.add.calls.count()).toEqual(1);
@@ -189,21 +190,19 @@
                         expect(geofire.addRecordKey.calls.count()).toEqual(2);
                     });
                     it("should call geofire.addRecordKey with correct args", function() {
+												flushTime();
+                        var id = getPromValue(test).key();
                         expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
                         expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
-                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(this.key);
+                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(id);
                         expect(geofire.addRecordKey.calls.argsFor(1)[0]).toEqual("trips");
                         expect(geofire.addRecordKey.calls.argsFor(1)[1]).toEqual(this.key2);
-                        expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(this.key);
+                        expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(id);
                     });
                     it("should add location indices to main record and set ref to main record", function() {
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        $rootScope.$digest();
-                        expect(this.path).toEqual(rootPath + "/trips/" + this.key);
-                        // expect(subject.ref().child("locations").getData()[this.key1]).toBeTruthy();
-                        // expect(subject.ref().child("locations").getData()[this.key2]).toBeTruthy();
-                        expect(subject.path()).toEqual(rootPath + "/trips/" + this.key);
+												flushTime();
+                        var path = getPromValue(test);
+                        expect(path.toString()).toEqual(rootPath + "/trips/" + path.key());
                     });
                     qReject(0);
                 });
@@ -251,6 +250,9 @@
 
         }
 
+        function getPromValue(obj) {
+            return obj.$$state.value;
+        }
         function flushTime() {
             $rootScope.$digest();
             $timeout.flush();
