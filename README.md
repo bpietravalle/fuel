@@ -398,21 +398,12 @@ a $firebaseAuth service at the url specified by the `fuelConfigurationProvider`,
 ## Contributing
 Yes, please.  Below should get you setup.
 
-```bash
-$ git clone https://github.com/bpietravalle/fuel.git
-$ cd fuel
-$ npm install               # install devDependencies
-$ bower install               # install dependencies
-```
-Refer to the [generator-gulp-angular](https://github.com/Swiip/generator-gulp-angular) for a full list of commands. The commands
-for unit tests are:
 
 ```bash
-gulp test #run test suite once
-gulp test:auto #watch files and run tests continually
+$ git clone https://github.com/bpietravalle/fireStarter.git
+$ cd fireStarter
+$ npm i && bower i # install dependencies
+$ gulp test #run test suite once
+$ gulp test:auto #watch files and run tests continually
 ```
-
-
-
-
-
+Any pending tasks associated with this repo are tracked [here](https://www.pivotaltracker.com/n/projects/1512802). 
