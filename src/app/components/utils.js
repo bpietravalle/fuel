@@ -75,7 +75,7 @@
         }
 
         function invalidType(type) {
-            return standardError("Invalid parameter type at: " + type);
+            throw new Error("Invalid parameter type at: " + type);
         }
 
         function hashCheck(hash) {

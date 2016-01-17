@@ -115,7 +115,7 @@
             entity.bindTo = bindTo;
 
             /*Commands*/
-            entity.save = saveMaster;
+            entity.save = save;
             entity.addIndex = addIndex;
             entity.removeIndex = removeIndex;
 
@@ -396,24 +396,16 @@
 
             function removeMainRecord(key) {
 
-                return checkParam(key)
-                    .catch(standardError);
-
-                function checkParam(param) {
-                    if (angular.isString(param)) {
+                switch (angular.isString(key)) {
+                    case true:
                         return mainRecord(key)
                             .then(remove);
-                    } else {
+                    default:
                         return remove(key);
-                    }
                 }
 
             }
 
-            function saveMaster(keyIdxorRec) {
-                return save(keyIdxorRec)
-                    .catch(standardError);
-            }
 
             /************
              * GPS Option
@@ -567,7 +559,8 @@
                 }
 
                 return self._q.all(keys.map(function(key) {
-                    return removeLocation(key, flag, path);
+                    return removeLocation(key, flag, path)
+                        .catch(standardError);
                 }));
             }
 
@@ -587,10 +580,8 @@
                 switch (flag) {
                     case true:
                         return removeGeofire(key, path)
-                            .catch(standardError);
                     default:
                         return removeFullLocationRecord(key, path)
-                            .catch(standardError);
                 }
 
             }
@@ -910,7 +901,7 @@
                 };
 
                 newProp[saveRec] = function(rec) {
-                    return saveMaster(rec);
+                    return save(rec);
                 };
 
                 return newProp;
@@ -925,10 +916,13 @@
             }
 
             function remove(res) {
-                if (angular.isArray(res)) {
-                    return res[0].$remove(res[1]);
-                } else {
-                    return res.$remove();
+                switch (angular.isArray(res)) {
+                    case true:
+                        return res[0].$remove(res[1])
+                            .catch(standardError);
+                    default:
+                        return res.$remove()
+                            .catch(standardError);
                 }
             }
 
@@ -936,67 +930,37 @@
                 switch (angular.isArray(res)) {
                     /* to save array record */
                     case true:
-                        return saveArray(res);
+                        return saveArray(res)
+                            .catch(standardError);
                         /* to save object */
                     case false:
-                        return saveObject(res);
+                        res = checkTimeStampAtSave(res)
+                        return res.$save()
+                            .catch(standardError);
                 }
             }
 
-            function saveArray(res) {
-                return checkParams(res)
-                    .catch(standardError);
-
-                function checkParams(params) {
-                    /* pass key */
-                    switch (angular.isString(params[1])) {
-                        case true:
-                            switch (self._timeStamp) {
-                                case true:
-                                    return getRecord(params)
-                                        .then(updateTime)
-                                        .catch(standardError);
-                                default:
-                                    return qAll(params[0].$indexFor(params[1]), params[0])
-                                        .then(completeSave)
-                                        .catch(standardError);
-                            }
-                            break;
-                        case false:
-                            /* pass idx */
-                            switch (angular.isNumber(params[1])) {
-                                case true:
-                                    switch (self._timeStamp) {
-                                        case true:
-                                            return getRecord(params)
-                                                .then(updateTime)
-                                                .catch(standardError);
-                                        default:
-                                            return params[0].$save(checkTimeStampAtSave(params[1]));
-                                    }
-                                    break;
-                                    /* pass record */
-                                default:
-                                    return params[0].$save(checkTimeStampAtSave(params[1]));
-                            }
-
-                    }
-
+            function saveArray(params) {
+                switch (angular.isNumber(params[1])) {
+                    case true:
+                        switch (self._timeStamp) {
+                            case true:
+                                return getRecord(params)
+                                    .then(updateTime);
+                            default:
+                                return params[0].$save(params[1]);
+                        }
+                        break;
+                    default:
+                        return updateTime(params);
                 }
 
                 function updateTime(res) {
                     return res[0].$save(checkTimeStampAtSave(res[1]));
                 }
 
-                function completeSave(res) {
-                    return res[1].$save(res[0]);
-                }
             }
 
-            function saveObject(res) {
-                res = checkTimeStampAtSave(res)
-                return res.$save();
-            }
 
             function getRecord(res) {
                 if (angular.isNumber(res[1])) {
@@ -1079,11 +1043,12 @@
             }
 
             function inspect(item) {
-                if (!item) {
-                    return self;
-                } else {
-                    item = "_" + item;
-                    return self[item];
+                switch (!item) {
+                    case true:
+                        return self;
+                    case false:
+                        item = "_" + item;
+                        return self[item];
                 }
             }
 
