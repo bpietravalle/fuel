@@ -5,7 +5,6 @@ bower_components/
 coverage/
 .coveralls.yml
 .tmp/
-/* dist/ */
 
 *.swo
 *.swo

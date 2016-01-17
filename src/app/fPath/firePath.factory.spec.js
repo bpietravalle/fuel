@@ -2,7 +2,7 @@
     "use strict";
 
     describe("FirePath factory", function() {
-        var subject, $timeout, ref, testutils, test, options, userId, firePath, $rootScope, rootPath, $log;
+        var subject, $timeout, utils, ref, testutils, test, options, userId, firePath, $rootScope, rootPath, $log;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -22,6 +22,7 @@
             module("firebase.fuel");
             MockFirebase.override();
             inject(function(_utils_, _$timeout_, _testutils_, _firePath_, _$rootScope_, _$log_) {
+                utils = _utils_;
                 $timeout = _$timeout_;
                 testutils = _testutils_;
                 $rootScope = _$rootScope_;
@@ -35,7 +36,7 @@
                 geofireName: "geofire"
             };
             spyOn($log, "info");
-            subject = firePath("trips", options, rootPath);
+            subject = firePath("trips", options);
         });
         afterEach(function() {
             subject = null;
@@ -55,24 +56,38 @@
                     nestedRecord: jasmine.any(Function),
                     nestedArrayRef: jasmine.any(Function)
                 }));
+            });
+            describe("buildFire", function() {
+                var spy = jasmine.createSpy();
+                beforeEach(function() {
+                    spyOn(utils, "qAll").and.callThrough();
+                    test = subject.buildFire("object", ref, true);
+                });
+                describe("When flag === true", function() {
+                    it("should send second argument directly to fuelConfiguration", function() {
+                        expect(utils.qAll.calls.argsFor(0)[0]).toEqual(ref)
+                        expect(utils.qAll.calls.argsFor(0)[1]).toEqual("object")
 
+                    });
+
+                });
             });
         });
 
         var paths = [
             [null, "mainArray", "trips"],
             [null, "mainRecord", "trips/1", "1"],
-            ["ref", "geofireRef", "trips/hotels","hotels"],
-            ["ref", "geofireRef", "trips/rooms","rooms"],
+            ["ref", "geofireRef", "trips/hotels", "hotels"],
+            ["ref", "geofireRef", "trips/rooms", "rooms"],
             ["ref", "mainRecordRef", "trips/1", "1"],
             ["ref", "nestedArrayRef", "trips/1/hotels", "1", "hotels"],
-            ["ref", "nestedRecordRef", "trips/1/hotels/5", "1", "hotels","5"],
-            [null,"indexAf", "trips/1/hotels", "1", "hotels","array"],
-            [null,"nestedArray", "trips/1/hotels", "1", "hotels"],
-            [null,"nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
-            [null,"nestedRecord", "trips/hotels/5", "hotels", "5"],
-            [null,"makeGeofire", "trips/hotels","hotels"],
-            [null,"makeGeofire", "trips/rooms","rooms"]
+            ["ref", "nestedRecordRef", "trips/1/hotels/5", "1", "hotels", "5"],
+            [null, "indexAf", "trips/1/hotels", "1", "hotels", "array"],
+            [null, "nestedArray", "trips/1/hotels", "1", "hotels"],
+            [null, "nestedRecord", "trips/1/hotels/5", "1", "hotels", "5"],
+            [null, "nestedRecord", "trips/hotels/5", "hotels", "5"],
+            [null, "makeGeofire", "trips/hotels", "hotels"],
+            [null, "makeGeofire", "trips/rooms", "rooms"]
         ];
 
 
@@ -95,7 +110,6 @@
                 } else {
                     it("should be a firebaseRef", function() {
                         expect(getPromValue(test)).toBeAFirebaseRef();
-                        // expect(test).toEqual("as");
                     });
                 }
                 it("should create the correct path", function() {
@@ -105,8 +119,15 @@
         }
         paths.forEach(testPaths);
         describe("ref", function() {
-            it("shouold be defined", function() {
+            it("should be a firebaseRef", function() {
                 expect(subject.ref()).toBeDefined();
+                expect(subject.ref()).toBeAFirebaseRef();
+            });
+        });
+        describe("path", function() {
+            it("should be a string", function() {
+                expect(subject.path()).toBeDefined();
+                expect(subject.path()).toBeA('string');
             });
         });
 
@@ -118,6 +139,7 @@
                 expect(subject.root().path).toEqual(rootPath);
             });
         });
+
 
         describe("setCurrentRef", function() {
             beforeEach(function() {
@@ -137,6 +159,24 @@
                 });
             });
         });
+        describe("Inspect", function() {
+            it("should return 'self' object", function() {
+                test = subject.inspect();
+                expect(test).toEqual(jasmine.objectContaining({
+                    _fuelConfiguration: jasmine.any(Function),
+                    _path: jasmine.any(String),
+                    _utils: jasmine.any(Object),
+                    _q: jasmine.any(Function),
+                    _timeout: jasmine.any(Function)
+                }));
+            });
+        });
+				describe("pathHistory",function(){
+					it("should return an array",function(){
+						expect(subject.pathHistory()).toBeAn('array');
+					});
+
+				});
 
         function getPromValue(obj, flag) {
             return testutils.getPromValue(obj, flag);
