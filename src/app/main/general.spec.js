@@ -88,6 +88,33 @@
                     expect(subject.path()).toBeDefined();
                 });
             });
+            describe("inspect", function() {
+							var test;
+
+                describe("without arguments", function() {
+                    it("should return the 'self' object", function() {
+                        test = subject.inspect();
+                        expect(test).toEqual(jasmine.objectContaining({
+                            _timeout: jasmine.any(Function),
+                            _injector: jasmine.any(Object),
+                            _firePath: jasmine.any(Function),
+                            _path: jasmine.any(String),
+                            _options: jasmine.any(Object)
+                        }));
+
+                    });
+                });
+                describe("when passing an argument", function() {
+									it("should only return the specific property of the self obj",function(){
+                        test = subject.inspect("path");
+												expect(test).toBeA('string');
+                        test = subject.inspect("options");
+												expect(test).toBeAn('object');
+									});
+								
+								
+								});
+            });
         });
         describe("Options", function() {
             function definedMeth(y) {
@@ -105,9 +132,9 @@
 
             var sessionAdded = ["session", "sessionId", "bindCurrent"];
             var geofireAdded = ["get", "remove", "set", "add", "query", "addRecordKey", "geofire"];
-            var gpsAdded = ["addLocations", "removeLocations", "getLocation","removeCoords","setCoords","getCoords","getLocation"];
+            var gpsAdded = ["addLocations", "removeLocations", "getLocation", "removeCoords", "setCoords", "getCoords", "getLocation"];
             var userAdded = ["loadUserRecords"];
-            var noOptionApi = ["base", "ref", "path", 
+            var noOptionApi = ["base", "ref", "path",
                 "inspect", "addIndex", "removeIndex", "getIndexKeys", "load",
                 "getRecord", "save", "bindTo", "add", "remove"
             ];

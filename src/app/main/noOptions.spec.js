@@ -219,27 +219,6 @@
                         });
                         qReject(0);
                     });
-                    describe("If second arg is the record's key", function() {
-                        beforeEach(function() {
-                            test = subject.save([subject.base(), this.id]);
-                            $rootScope.$digest();
-                            $timeout.flush();
-                            subject.ref().flush();
-                            $rootScope.$digest();
-                        });
-                        it("should save record correctly", function() {
-                            expect(this.name).toEqual('sally');
-                            expect(getPromValue(test).getData().firstName).toEqual("john jacob");
-                        });
-                        it("should return a promise", function() {
-                            expect(test).toBeAPromise();
-                        });
-                        it("should resolve to the correct firebaseRef", function() {
-                            expect(getPromValue(test)).toBeAFirebaseRef();
-                            expect(getPromValue(test).path).toEqual(rootPath + "/trips/" + this.id);
-                        });
-                        qReject(0);
-                    });
                 });
                 describe("Saving Object", function() {
                     beforeEach(function() {
@@ -399,15 +378,6 @@
                 });
             });
             describe("Queries", function() {
-                beforeEach(function() {
-                    // subject.ref().push(arrData[0]);
-                    // subject.ref().flush();
-                    // this.key1 = subject.ref()._lastAutoId;
-                    // subject.ref().push(arrData[1]);
-                    // subject.ref().flush();
-                    // this.key2 = subject.ref()._lastAutoId;
-                    // this.keys = [this.key1, this.key2];
-                });
                 describe("load", function() {
                     describe("Without passing an argument", function() {
                         beforeEach(function() {

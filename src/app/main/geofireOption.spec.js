@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Geofire Option", function() {
-        var rec1, points, keyMock, $timeout, test1, rootPath, locData, test, ref, $rootScope, fuel, subject, $q;
+        var rec1, firePath, utils, points, keyMock, $timeout, test1, rootPath, locData, test, ref, $rootScope, fuel, subject, $q;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -96,8 +96,10 @@
                 });
 
 
-            inject(function(_$timeout_, _$q_, _$rootScope_, _fuel_) {
+            inject(function(_utils_, _firePath_, _$timeout_, _$q_, _$rootScope_, _fuel_) {
                 $q = _$q_;
+                firePath = _firePath_;
+                utils = _utils_;
                 $timeout = _$timeout_;
                 $rootScope = _$rootScope_;
                 fuel = _fuel_;
@@ -154,7 +156,7 @@
                         $rootScope.$digest();
                         $timeout.flush();
                         subject.ref().flush();
-                        var p = subject.ref().getData()["key"]
+                        p = subject.ref().getData()["key"]
                         expect(p).toEqual(null);
                     });
                 });
@@ -248,8 +250,6 @@
                     });
                     it("should remove data from main array", function() {
                         expect(Object.keys(subject.ref().parent().children)[0]).toEqual(points);
-                        //         expect(this.ref1.getData()).toEqual(locData[0]);
-                        //         expect(this.mainRef.getData()).toEqual(null);
                     });
                     it("should remove the points from points node", function() {
                         var p = subject.ref().getData().key;
@@ -258,6 +258,36 @@
                     it("should set ref to points node", function() {
                         $rootScope.$digest();
                         expect(subject.path()).toEqual(rootPath + "/geofire/" + points);
+                    });
+                    describe("Returned Value", function() {
+                        var pm;
+                        beforeEach(function() {
+                            pm = subject.inspect('pathMaster');
+                            spyOn(pm, 'mainRecord').and.callFake(function() {
+                                return {
+                                    then: function() {}
+                                };
+                            });
+                            spyOn(pm, 'makeGeofire').and.callFake(function() {
+                                return {
+                                    then: function() {}
+                                };
+                            });
+                            spyOn($q, "all").and.callFake(function() {
+                                return {
+                                    then: function() {
+                                        return ["first", "second"]
+                                    }
+                                };
+                            });
+                            spyOn(utils, "qAll").and.callFake(function() {
+                                return $q.when("As");
+                            });
+                            // test1 = subject.remove("key", null, points);
+                        });
+                        // it("should return the first arg in the array", function() {
+                        //     expect(getPromValue(test1)).toEqual("first");
+                        // });
                     });
                     qReject(0);
                 });

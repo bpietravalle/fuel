@@ -35,8 +35,10 @@
                     expect(test).toEqual(y[1]);
                 });
                 it("should call $q.reject if param is not a " + y[3], function() {
-                    utils.paramCheck(y[1], y[2], "default");
-                    expect($q.reject).toHaveBeenCalled();
+                    expect(function() {
+                        utils.paramCheck(y[2], y[0], "default");
+                    }).toThrow();
+                    // expect($q.reject).toHaveBeenCalled();
                 });
             }
             params.forEach(paramCheck);
@@ -165,10 +167,6 @@
             });
         }
         meths.forEach(inflectorTest);
-
-
-
-
     });
 
 })();

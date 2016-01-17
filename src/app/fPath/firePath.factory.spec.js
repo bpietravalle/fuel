@@ -58,7 +58,6 @@
                 }));
             });
             describe("buildFire", function() {
-                var spy = jasmine.createSpy();
                 beforeEach(function() {
                     spyOn(utils, "qAll").and.callThrough();
                     test = subject.buildFire("object", ref, true);
