@@ -14,17 +14,11 @@
             addTimeAtSave: addTimeAtSave,
             camelize: camelize,
             extendPath: extendPath,
-            flatten: flatten,
-            nextPath: nextPath,
-            nodeIdx: setNodeIdx,
             paramCheck: paramCheck,
-            paramNodeIdx: removeMainPath,
             pluralize: pluralize,
             qWrap: qWrap,
             qAll: qAll,
-            qAllResult: qAllResult,
-            relativePath: relativePath,
-            removeSlash: removeSlash,
+						removeSlash: removeSlash,
             standardError: standardError,
             singularize: singularize,
             stringify: stringify,
@@ -33,16 +27,29 @@
 
         return utils;
 
+        function paramCheck(param, type, def) {
+            switch (angular.isUndefined(param)) {
+                case true:
+                    return def;
+                case false:
+                    switch (type) {
+                        case "bool":
+                            return boolCheck(param);
+                        case "str":
+                            return strCheck(param);
+                        case "arr":
+                            return arrCheck(param);
+                        case "obj":
+                            return hashCheck(param);
+                    }
+                    break;
+            }
+        }
+
         function strCheck(str) {
             switch (angular.isString(str)) {
                 case true:
-                    switch (str.length < 100) {
-                        case true:
-                            return str;
-                        case false:
-                            return invalidLen(str);
-                    }
-                    break;
+                    return str;
                 case false:
                     return invalidType(str);
             }
@@ -52,7 +59,6 @@
             switch (angular.isArray(arr)) {
                 case true:
                     return arr;
-
                 case false:
                     return invalidType(arr);
             }
@@ -65,34 +71,11 @@
                     return invalidType(bool);
                 default:
                     return bool;
-
             }
         }
 
         function invalidType(type) {
-            throw new Error("Invalid parameter type at: " + type);
-        }
-
-        function invalidLen(len) {
-            throw new Error("Invalid parameter length at: " + len);
-        }
-
-        function paramCheck(param, fn, d) {
-            switch (angular.isUndefined(param)) {
-                case true:
-                    return d;
-                case false:
-                    switch (fn) {
-                        case "bool":
-                            return boolCheck(param);
-                        case "str":
-                            return strCheck(param);
-                        case "arr":
-                            return arrCheck(param);
-                        case "obj":
-                            return hashCheck(param);
-                    }
-            }
+            return standardError("Invalid parameter type at: " + type);
         }
 
         function hashCheck(hash) {
@@ -120,22 +103,8 @@
             return $q.all([x, qWrap(y)]);
         }
 
-        function qAllResult(res) {
-            if (res.length) {
-                $log.info("flattening results");
-                return flatten(res);
-            } else {
-                return res;
-            }
-        }
-
-
         function standardError(err) {
             return $q.reject(err);
-        }
-
-        function relativePath(path) {
-            return stringify(toArray(removeSlash(path)));
         }
 
         function removeSlash(path) {
@@ -182,55 +151,6 @@
             return arr;
         }
 
-        function setNodeIdx(path, main) {
-            path = removeSlash(path).slice(removeSlash(main).length);
-            path = path.split('/');
-            if (path[0] === "") {
-                path.shift();
-            }
-            return path;
-        }
-
-
-
-        /* @param {array} ["currentpath","relative","to","main"]
-         * @param {array} ["pathParm","relative","to","main"]
-         * @return {array} [Int - idx of deepest shared node, string - remaining childpath if any]
-         *
-         */
-
-
-        function nextPath(current, param) {
-
-            var parent = [];
-            var child = [];
-
-            param.forEach(function(val, idx) {
-                if (val === current[idx]) {
-                    parent.push(val);
-                } else {
-                    child.push(val);
-                }
-            });
-
-
-            if (child.length > 0) {
-                child = stringify(child);
-            }
-
-            return child;
-
-        }
-
-        function removeMainPath(path, main) {
-            path = toArray(path);
-            if (path[0] === main) {
-                path.shift();
-            }
-            return path;
-
-        }
-
 
         function addTimeAtCreate(obj, createtime, updatetime) {
             obj[createtime] = timeStamp();
@@ -241,7 +161,6 @@
 
         function addTimeAtSave(obj, updatetime) {
             obj[updatetime] = timeStamp();
-
             return obj;
         }
 

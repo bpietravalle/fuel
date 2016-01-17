@@ -9,9 +9,8 @@
     function FirePathFactory($timeout, utils, $q, $log, $injector, fuelConfiguration) {
         return function(path, options) {
             var fb = new FirePath($timeout, utils, $q, $log, $injector, fuelConfiguration, path, options);
-            var c = fb.construct();
-            c.reset();
-            return c;
+						fb = fb.construct();
+						return fb;
 
         };
 
@@ -34,6 +33,7 @@
         construct: function() {
             var self = this;
             var fire = {};
+						reset();
 
             fire.reset = reset;
             fire.root = root;
@@ -56,7 +56,6 @@
             fire.setBase = setCurrentFirebase;
             fire.ref = getCurrentRef;
             fire.path = getCurrentPath;
-            fire.parent = getCurrentParentRef;
             fire.pathHistory = getPathHistory;
 
             fire.setCurrentRef = setCurrentRef;
@@ -194,10 +193,6 @@
 
             function getCurrentRef() {
                 return fire._ref;
-            }
-
-            function getCurrentParentRef() {
-                return fire._ref.parent();
             }
 
             function getCurrentFirebase() {

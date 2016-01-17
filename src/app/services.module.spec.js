@@ -21,9 +21,6 @@
                 it("should depend on firebase.fuel.utils", function() {
                     expect(hasModule("firebase.fuel.utils")).toBeTruthy();
                 });
-                it("should depend on firebase.fuel.logger", function() {
-                    expect(hasModule("firebase.fuel.logger")).toBeTruthy();
-                });
                 it("should depend on firebase.fuel.config", function() {
                     expect(hasModule("firebase.fuel.config")).toBeTruthy();
                 });
