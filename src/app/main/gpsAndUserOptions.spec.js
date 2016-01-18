@@ -1,7 +1,7 @@
 (function() {
     "use strict";
 
-    describe("Fuel Factory", function() {
+    describe("GPS & User Options", function() {
         var addArr, locRef, remArr, geofire, keyMock, $timeout, newRecord, session, rootPath, locData, test, ref, $rootScope, user, options, fuel, subject, $q, $log;
 
         beforeEach(function() {
@@ -181,7 +181,7 @@
                         expect(geofire.add.calls.count()).toEqual(1);
                     });
                     it("should call geofire.add with correct path argument", function() {
-                        expect(geofire.add.calls.argsFor(0)[2]).toEqual("trips");
+                        expect(geofire.add.calls.argsFor(0)[1]).toEqual("trips");
                     });
                     it("should add records to main location array", function() {
                         expect(geofire.add.calls.argsFor(0)[0]).toEqual(locData);
