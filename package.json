@@ -8,7 +8,7 @@
   "dependencies": {
     "angular": "~1.4.4",
     "angular-inflector": "~0.2.3",
-    "firebase.starter": "~0.1.6-0"
+    "firebase.starter": "~0.1.6"
   },
   "scripts": {
     "test": "gulp test"
@@ -24,6 +24,7 @@
     "node_modules",
     "bower_components",
     "gulp",
+    "src/test",
     "src/testutils"
   ],
   "main": "dist/scripts/fuelProvider.js",

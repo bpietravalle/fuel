@@ -154,13 +154,19 @@
                     });
                 });
             });
-						describe("Without timeStamp Option",function(){
+            describe("Without timeStamp Option", function() {
                 describe("When passing object", function() {
-                    // it("should not call utils.addTimeAtSave", function() {
-                    //     subject1.save(spy);
-                    //     expect(utils.addTimeAtSave).not.toHaveBeenCalled();
-                    //     expect(utils.addTimeAtSave.calls.argsFor(0)[1]).toEqual("updatedAt");
-                    // });
+                    it("should not call utils.addTimeAtSave", function() {
+                        spy = {
+                            $save: function() {
+                                return {
+                                    catch: function() {}
+                                };
+                            }
+                        };
+                        subject1.save(spy);
+                        expect(utils.addTimeAtSave).not.toHaveBeenCalled();
+                    });
                 });
                 describe("When passing array", function() {
                     it("should not call utils.addTimeAtSave", function() {
@@ -169,7 +175,7 @@
                     });
                 });
 
-						});
+            });
 
         });
 

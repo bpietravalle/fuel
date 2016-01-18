@@ -250,27 +250,26 @@
 
             function getIndexKeys(recId, arrName) {
                 return indexAf(recId, arrName, "array")
+                    .then(loaded)
                     .then(getKeys)
-                    .then(setReturnValue)
                     .catch(standardError);
 
                 function getKeys(res) {
-                    return qAll(res.$loaded(), []);
-                }
 
-                function setReturnValue(res) {
-                    self._q.all(res[0].map(function(item) {
-                        res[1].push(item.$id);
+                    var arr = [];
+                    self._q.all(res.map(function(item) {
+                        arr.push(item.$id);
                     }));
-                    return res[1];
+                    return arr;
                 }
             }
 
             function load(id) {
-                if (angular.isUndefined(id)) {
-                    return loadMainArray();
-                } else {
-                    return loadMainRecord(id);
+                switch (angular.isUndefined(id)) {
+                    case true:
+                        return loadMainArray();
+                    case false:
+                        return loadMainRecord(id);
                 }
             }
 
@@ -300,10 +299,19 @@
                     .catch(standardError);
             }
 
-            function getMainRecord(key) {
-                return qAll(loadMainArray(), key)
-                    .then(getRecord)
-                    .catch(standardError);
+            function getMainRecord(param) {
+                switch (angular.isArray(param)) {
+                    case true:
+                        return getRecord(param);
+                    case false:
+                        switch (angular.isString(param)) {
+                            case true:
+                                return loadArrayAndGet(param);
+                            case false:
+                                return standardError("Invalid type:  must pass an array or string");
+
+                        }
+                }
             }
 
             function currentRecordLocations(prop, id) {
@@ -336,11 +344,9 @@
 
                 function completeAction(res) {
                     return self._timeout(function() {
-                            return res[0].child(res[1]).set(true);
+                            return qAll(res[0], res[0].child(res[1]).set(true))
                         })
-                        .then(function() {
-                            return res[0];
-                        })
+                        .then(setReturnValueToFirst)
                         .catch(standardError);
                 }
             }
@@ -357,11 +363,9 @@
 
                 function completeAction(res) {
                     return self._timeout(function() {
-                            return res[0].child(res[1]).set(null);
+                            return qAll(res[0], res[0].child(res[1]).set(null))
                         })
-                        .then(function() {
-                            return res[0];
-                        })
+                        .then(setReturnValueToFirst)
                         .catch(standardError);
                 }
             }
@@ -411,10 +415,10 @@
              * GPS Option
              * ***********/
 
-            /* @param{Object} obj
+            /** 
+             * @param{Object} obj
              *
              * @param{Object|Array} obj.data locations to save
-             * @param{Boolean} obj.flag true if only wish to save coordinates, otherwise leave undefined
              * @param{String} obj.path child node for coordinates
              * @param{Object|String} obj.[id] if the main record already exists pass its firebaseRef or key and method will
              * add indexes - optional
@@ -425,25 +429,20 @@
                 if (!obj.path) {
                     obj.path = self._points;
                 }
-                if (!obj.flag) {
-                    obj.flag = null;
-                }
                 switch (!obj.id) {
                     case true:
-                        return self._geofireObject.add(obj.data, obj.flag, obj.path);
+                        return self._geofireObject.add(obj.data, obj.path);
                     default:
-                        return self._geofireObject.add(obj.data, obj.flag, obj.path)
+                        return self._geofireObject.add(obj.data, obj.path)
                             .then(setReturnVal)
                             .then(addLocationIndices)
                             .catch(standardError);
-
                 }
 
                 function setReturnVal(res) {
                     var arr = []
                     arr.push(obj.id);
                     arr.push(res);
-                    self._log.info(arr);
                     return arr;
                 }
             }
@@ -533,23 +532,25 @@
              * Geofire Option
              * ***************/
 
-            /* @param{Object|Array} 
-             * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+            /**
+             * @param{Object|Array}
              * @return{Array} firebaseRefs of created records
              */
 
-            function addLocations(locs, flag, path) {
+            function addLocations(locs, path) {
                 if (!angular.isArray(locs)) {
                     locs = [locs];
                 }
 
                 return self._q.all(locs.map(function(loc) {
-                    return addLocation(loc, flag, path);
+                    return addFullLocationRecord(loc, path)
+                        .catch(standardError);
                 }));
             }
 
-            /* @param{Array|String} 
-             * @param{Boolean} true if only wish to save coordinates, otherwise leave undefined
+            /**
+             * @param{Array|String} keys
+             * @param{Boolean} flag true if only wish to remove  coordinates, otherwise leave undefined
              * @return{Array} firebaseRefs of deleted main array record
              */
 
@@ -564,17 +565,6 @@
                 }));
             }
 
-
-            function addLocation(data, flag, path) {
-                switch (flag) {
-                    case true:
-                        return setGeofire(data[0], data[1], path)
-                            .catch(standardError);
-                    default:
-                        return addFullLocationRecord(data, path)
-                            .catch(standardError);
-                }
-            }
 
             function removeLocation(key, flag, path) {
                 switch (flag) {
@@ -734,24 +724,21 @@
                         data: loc
                     })])
                     .then(addLocationIndexAndPassKey)
-                    .then(setReturnValue)
+                    .then(setReturnValueToSecond)
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
                     return qAll(addLocationIndices(res), res[0]);
                 }
 
-                function setReturnValue(res) {
-                    return res[1];
-                }
             }
 
             /**
              * @param{Array} arr
-             * @param{Object} arr[0] firebaseRef of Record that has the associated location data
+             * @param{Object|String} arr[0] firebaseRef or key of Record that has the associated location data
              * @param{Array} arr[1] array of firebaseRef of newly persisted locations
              * @return{Array} array of location index, firebaseref of location record
-             * @summary creates indexes of persisted locations and, unless you've opted out of 'addREcordKey option
+             * @summary creates indexes of persisted locations and, unless you've opted out of 'addRecordKey option
              * this will add this record key to the location record as well
              *
              */
@@ -779,7 +766,8 @@
                 }
             }
 
-            /* @param{object} data to save to main array
+            /** 
+             * @param{object} data to save to main array
              * @param{object} location data to save
              * @return{Array} [firebaseRef(location Index), firebaseRef of main record]
              *
@@ -792,7 +780,7 @@
                         data: loc
                     })])
                     .then(addLocationIndexAndPassKey)
-                    .then(setReturnValue)
+                    .then(setReturnValueToSecond)
                     .catch(standardError);
 
                 function addLocationIndexAndPassKey(res) {
@@ -800,9 +788,6 @@
                     return self._q.all([addLocationIndices([res[0][1], res[1]]), res[0][1]]);
                 }
 
-                function setReturnValue(res) {
-                    return res[1];
-                }
             }
 
             function getLocationRecord(id) {
@@ -900,16 +885,26 @@
                         .catch(standardError);
                 };
 
-                newProp[saveRec] = function(rec) {
-                    return save(rec);
+                newProp[saveRec] = function(rec, id) {
+                    switch (angular.isArray(rec)) {
+                        case true:
+                            return save(rec)
+                                .catch(standardError);
+                        case false:
+                            return qAll(newProp[arrName](id), rec)
+                                .then(save)
+                                .catch(standardError);
+                    }
+
                 };
 
                 return newProp;
             }
 
 
-            /****************
-             **** Helpers ****/
+            /**
+             *@private
+             */
 
             function add(res) {
                 return res[0].$add(checkTimeStampAtCreate(res[1]));
@@ -927,6 +922,7 @@
             }
 
             function save(res) {
+                self._log.info(res);
                 switch (angular.isArray(res)) {
                     /* to save array record */
                     case true:
@@ -945,7 +941,7 @@
                     case true:
                         switch (self._timeStamp) {
                             case true:
-                                return getRecord(params)
+                                return qAll(params[0], getRecord([params[0], keyAt(params)]))
                                     .then(updateTime);
                             default:
                                 return params[0].$save(params[1]);
@@ -963,16 +959,17 @@
 
 
             function getRecord(res) {
-                if (angular.isNumber(res[1])) {
-                    res[1] = res[0].$keyAt(res[1]);
-                }
-                return qAll(res[0].$getRecord(res[1]), res[0])
-                    .then(setReturnValue)
-                    .catch(standardError);
+                return res[0].$getRecord(res[1]);
+            }
 
-                function setReturnValue(res) {
-                    return [res[1], res[0]];
-                }
+            function loadArrayAndGet(key) {
+                return qAll(loadMainArray(), key)
+                    .then(getRecord)
+                    .catch(standardError);
+            }
+
+            function keyAt(res) {
+                return res[0].$keyAt(res[1]);
             }
 
             function bindObject(res) {

@@ -277,6 +277,7 @@
                             expect(getPromValue(test)).toBeAFirebaseRef();
                             expect(getPromValue(test).path).toEqual(subject.path());
                         });
+
                         qReject(0);
                     });
                     describe("removeIndex", function() {
@@ -369,9 +370,6 @@
                                 $id: this.key,
                                 $priority: null,
                                 $value: null
-                                    // phone: "123456890",
-                                    // uid: 1,
-                                    // firstName: "tom"
                             });
                         });
                     });
@@ -423,63 +421,74 @@
                         });
                     });
                 });
+
                 describe("getRecord", function() {
+                    var spy, pm;
+
+                    function mockArray() {
+
+                        spy = {
+                            $loaded: jasmine.createSpy("loadedSpy").and.callFake(function() {
+                                return {
+                                    $getRecord: jasmine.createSpy("$getRecord").and.callFake(function(path) {
+                                        return path;
+                                    })
+                                };
+                            })
+                        };
+                        return $q.when(spy);
+                    }
                     beforeEach(function() {
-                        // subject.ref().push(arrData[0]);
-                        // subject.ref().push(arrData[1]);
-                        // flush();
-                        // this.ref = subject.ref();
-                        // this.refKeys = dataKeys(this.ref);
+                        pm = subject.inspect('pathMaster');
+                        spyOn(pm, "mainArray").and.callFake(mockArray);
+
                         test = subject.getRecord("uniqueKey");
-                        $timeout.flush();
-                        subject.ref().set({
-                            "uniqueKey": {
-                                "phone": "123456789"
-                            }
-                        });
-                        subject.ref().flush();
                         $rootScope.$digest();
                     });
-                    // it("should return correct record", function() {
-                    //     expect(getPromValue(test).$id).toEqual("uniqueKey");
-                    //     expect(getPromValue(test).phone).toEqual('123456789');
-                    // });
-                    it("should update the base() to the mainArray", function() {
-                        baseCheck("array", subject.base());
-                        expect(subject.base().$ref().key()).toEqual("trips");
+                    describe("When arg === string", function() {
+                        it("should load the mainArray", function() {
+                            expect(spy.$loaded).toHaveBeenCalled();
+                        });
+                        it("should pass arg to $getRecord()", function() {
+                            expect(getPromValue(test)).toEqual("uniqueKey");
+                        });
                     });
+                    describe("When arg === array", function() {
+                        var obj, test1;
+                        beforeEach(function() {
+                            function getRecSpy() {
+                                return {
+                                    $getRecord: jasmine.createSpy("$getRecord").and.callFake(function(path) {
+                                        return path;
+                                    })
+
+                                }
+                            }
+                            obj = $q.when({});
+                            test1 = subject.getRecord([getRecSpy(), obj]);
+                        });
+                        it("should pass arg to $getRecord()", function() {
+                            expect(getPromValue(test1)).toEqual({});
+                        });
+                    });
+                    describe("When arg !== array || string", function() {
+                        it("should call $q.reject", function() {
+                            subject.getRecord(123912301293);
+                            $rootScope.$digest();
+                            expect($q.reject).toHaveBeenCalled();
+                        });
+                    });
+
                     qReject(0);
                 });
             });
         });
 
+
+
         function getPromValue(obj) {
             return obj.$$state.value;
         }
-
-        function baseCheck(type, val, id) {
-            switch (type) {
-                case "object":
-                    expect(val).toEqual(jasmine.objectContaining({
-                        $id: id,
-                        $priority: null,
-                        $ref: jasmine.any(Function),
-                        $value: null
-                    }));
-                    break;
-                case "array":
-                    expect(val).toEqual(jasmine.objectContaining({
-                        $keyAt: jasmine.any(Function),
-                        $indexFor: jasmine.any(Function),
-                        $remove: jasmine.any(Function),
-                        $getRecord: jasmine.any(Function),
-                        $add: jasmine.any(Function),
-                        $watch: jasmine.any(Function)
-                    }));
-                    break;
-            }
-        }
-
 
         function qReject(x, flag) {
             if (flag === true) {

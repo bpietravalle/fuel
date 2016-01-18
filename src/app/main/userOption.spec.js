@@ -106,10 +106,10 @@
                     return user;
                 })
                 $provide.factory("session", function() {
-                        return {
-                            getId: function() {}
-                        }
-                    })
+                    return {
+                        getId: function() {}
+                    }
+                })
                 $provide.factory("phone", function() {
                     return {
                         getId: function() {}
@@ -128,9 +128,9 @@
             });
 
 
-            inject(function(_user_, _differentSession_,_$timeout_, _$log_, _session_, _$rootScope_, _fuel_, _$q_) {
+            inject(function(_user_, _differentSession_, _$timeout_, _$log_, _session_, _$rootScope_, _fuel_, _$q_) {
                 user = _user_
-								differentSession = _differentSession_;
+                differentSession = _differentSession_;
                 $timeout = _$timeout_;
                 session = _session_;
                 $rootScope = _$rootScope_;
@@ -192,32 +192,18 @@
                         expect(subject.base()).toEqual(getPromValue(test));
                     });
                 });
-                //                 // describe("saveCurrent", function() {
-                //                 //     beforeEach(function() {
-                //                 //         subject = fuel("users", {
-                //                 //             session: true
-                //                 //         });
-                //                 //         spyOn(session, "getId").and.returnValue(1);
-                //                 //         test = subject.saveCurrent(arrData[0]);
-                //                 // flush();
-                //                 //     });
-                //                 //     it("should be a promise", function() {
-                //                 //         expect(test).toBeAPromise();
-                //                 //     });
-                //                 //     it("should resolve to a firebaseRef", function() {
-                //                 //         expect(getPromValue(test)).toBeAFirebaseRef();
-                //                 // //error
-                //                 //         expect(getPromValue(test).getData()).toEqual(null);
-                //                 //     });
-                //                 // it("should update currentRef",function(){
-                //                 // expect(subject.ref()).toEqual(getPromValue(test));
-                //                 // // expect(subject.ref().getData()).toEqual(arrData[0]);
-                //                 // });
-                //                 // // it("should update base",function(){
-                //                 // // 	expect(subject.base().$ref().getData()).toEqual(arrData[0]);
-                //                 // // });
-
-                //                 // });
+                describe("Current", function() {
+                    beforeEach(function() {
+                        subject = fuel("users", {
+                            session: true
+                        });
+                        test = subject.session();
+                    });
+                    it("should return the session Object", function() {
+											var ses = subject.inspect('sessionObject');
+                        expect(test).toEqual(ses);
+                    });
+                });
                 describe("bindCurrent", function() {
                     beforeEach(function() {
                         // subject.add(arrData[0]);
