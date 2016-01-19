@@ -9,6 +9,12 @@
     /** @ngInject */
     function FuelFactory($timeout, utils, firePath, $q, $log, $injector) {
 
+        /**
+         * @constructor
+         * @param{Array} path ["path", "to,"child","node"]
+         * @param{Object} options - options hash - see below
+         */
+
         return function(path, options) {
             var fb = new Fuel($timeout, utils, firePath, $q, $log, $injector, path, options);
             return fb.construct();
@@ -97,7 +103,6 @@
             var self = this;
             var entity = {};
 
-            /* fireBaseRef Mngt */
             entity.base = getCurrentBase;
             entity.ref = getCurrentRef;
             entity.path = getCurrentPath;
@@ -120,7 +125,7 @@
             entity.removeIndex = removeIndex;
 
             if (self._user !== true && self._gps !== true && self._geofire !== true) {
-                entity.add = createMainRecord;
+                entity.add = basicAdd;
                 entity.remove = removeMainRecord;
             }
 
@@ -136,8 +141,6 @@
                 entity.getLocation = getLocationRecord;
                 entity.addLocations = sendToGeofireToAdd;
                 entity.removeLocations = sendToGeofireToRemove;
-
-
 
                 if (self._addRecordKey === true) {
                     entity.loadRecordLocations = sendToGeoFireToLoadLocations;
@@ -202,19 +205,39 @@
                 return self._pathMaster.base();
             }
 
-            /******************************/
+
+            /**
+             * @public
+             * @return{Promise<Object>} - promise resolves to firebaseRef at the main node(ie rootPath/self._path)
+             */
 
             function mainRef() {
                 return self._pathMaster.main();
             }
 
+            /**
+             * @public
+             * @return{Promise<Array>} - promise resolves to a $firebaseArray of the main node
+             */
+
             function mainArray() {
                 return self._pathMaster.mainArray();
             }
 
+            /**
+             * @public
+             * @param{String} id - key of record you wish to retrieve
+             * @return{Promise<Object>} - promise resolves to a $firebaseObject of the given main record
+             */
+
             function mainRecord(id) {
                 return self._pathMaster.mainRecord(id);
             }
+
+            /**
+             * @private
+             * access nestedArrays in the constructor via the 'nestedArrays' option
+             */
 
             function nestedArray(id, name) {
                 return self._pathMaster.nestedArray(id, name);
@@ -238,6 +261,13 @@
 
             /* Geofire Interface */
 
+            /**
+             * @public if 'option.geofire' === true
+             * @param{String} path - child node of geofire node
+             * @return{Promise<Object>} - promise resolves to a geofire object
+             *
+             */
+
             function makeGeofire(path) {
                 return self._pathMaster.makeGeofire(path);
             }
@@ -247,6 +277,13 @@
              * ***************/
 
             /*Queries*/
+
+            /**
+             * @public
+             * @param{String} recId - id of main record
+             * @param{String} arrName - name of index
+             * @return{Array} ["keys","presently","in" "index"]
+             */
 
             function getIndexKeys(recId, arrName) {
                 return indexAf(recId, arrName, "array")
@@ -264,6 +301,12 @@
                 }
             }
 
+            /**
+             * @public
+             * @param{String} [id] - key of main record you wish to load; without id argument fn will load entire main array
+             * @return{Promise<Object|Array>}  - promise resolves to a $firebaseObject or $firebaseArray
+             */
+
             function load(id) {
                 switch (angular.isUndefined(id)) {
                     case true:
@@ -273,31 +316,31 @@
                 }
             }
 
+            /**
+             * @private
+             */
             function loadMainArray() {
                 return mainArray()
                     .then(loaded)
                     .catch(standardError);
             }
 
+            /**
+             * @private
+             */
             function loadMainRecord(id) {
                 return mainRecord(id)
                     .then(loaded)
                     .catch(standardError);
             }
 
-            function loadUserRecords() {
-                return currentUserRecords()
-                    .then(wrapQuery)
-                    .then(loaded)
-                    .catch(standardError);
-            }
 
-            function loadRecordLocations(prop, id) {
-                return currentRecordLocations(prop, id)
-                    .then(wrapQuery)
-                    .then(loaded)
-                    .catch(standardError);
-            }
+
+            /**
+             * @public
+             * @param{String|Array} param - either "key" or [$firebaseArray,"key"]
+             * @return{Promise<Object>}  - promise resolves to the given $firebaseArray record
+             */
 
             function getMainRecord(param) {
                 switch (angular.isArray(param)) {
@@ -314,16 +357,15 @@
                 }
             }
 
-            function currentRecordLocations(prop, id) {
-                return queryByChild(prop, id);
-            }
 
-            function currentUserRecords() {
-                return queryByChild(self._uidProperty, sessionId());
-            }
-
-            function queryByChild(key, val) {
-                return qAll(mainRef(), [key, val])
+            /**
+             * @public
+             * @param{String} col - property name used in an 'orderByChild' query;
+             * @param{String|Number|etc} val - value of child - ie arg of equalTo
+             * @return{Promise<Array>} promise resolves to a $firebaseArray of the given query
+             */
+            function queryByChild(col, val) {
+                return qAll(mainRef(), [col, val])
                     .then(completeQuery)
                     .catch(standardError);
 
@@ -333,12 +375,22 @@
             }
 
             /* Commands */
-            function addIndex(recId, arrName, key) {
+
+            /**
+             * @public
+             * @param{String} recId - key of main record - you can leave it undefined if you've
+             * configured option hash to use your app's session object
+             * @param{String} idxName - name of index
+             * @param{String} key  - foreign key to add to index
+             * @return{Promise<Object>} promise resolves to the firebaseRef of the index
+             */
+
+            function addIndex(recId, idxName, key) {
 
                 if (!angular.isString(recId) && self._session === true) {
                     recId = sessionId();
                 }
-                return qAll(nestedArrayRef(recId, arrName), key)
+                return qAll(nestedArrayRef(recId, idxName), key)
                     .then(completeAction)
                     .catch(standardError);
 
@@ -351,13 +403,22 @@
                 }
             }
 
-            function removeIndex(recId, arrName, key) {
+            /**
+             * @public
+             * @param{String} recId - key of main record - you can leave it undefined if you've
+             * configured option hash to use your app's session object
+             * @param{String} idxName - name of index
+             * @param{String} key  - foreign key to remove from  index
+             * @return{Promise<Object>} promise resolves to the firebaseRef of the index
+             */
+
+            function removeIndex(recId, idxName, key) {
 
                 if (!angular.isString(recId) && self._session === true) {
                     recId = sessionId();
                 }
 
-                return qAll(nestedArrayRef(recId, arrName), key)
+                return qAll(nestedArrayRef(recId, idxName), key)
                     .then(completeAction)
                     .catch(standardError);
 
@@ -369,6 +430,14 @@
                         .catch(standardError);
                 }
             }
+
+            /**
+             * @public
+             * @param{String|Object} id either key of main record or the actual $firebaseObject
+             * @param{Object} scope - $scope
+             * @param{String} varName - variable name to bind object
+             * @return{Promise<Object>}
+             */
 
             function bindTo(id, scope, varName) {
                 switch (angular.isString(id)) {
@@ -384,6 +453,23 @@
 
             }
 
+            /**
+             * @public
+             * @param{Object} data - data object to persist to main array
+             * @return{Promise<Object>} firebaseRef of newly added record
+             */
+
+            function basicAdd(data) {
+                return qAll(mainArray(), data)
+                    .then(add)
+                    .catch(standardError);
+            }
+
+
+            /**
+             * @private
+             */
+
             function createMainRecord(data, flag) {
                 if (flag === true && self._user === true) {
                     data[self._uidProperty] = sessionId();
@@ -398,14 +484,20 @@
                     .catch(standardError);
             }
 
-            function removeMainRecord(key) {
+            /**
+             * @public
+             * @param{String|Object|Array} param - pass the key, the $firebaseObject, or [$firebaseArray,record]
+             * @return{Promise<Object>} - promise resolves to the firebaseRef of the removed record
+             */
 
-                switch (angular.isString(key)) {
+            function removeMainRecord(param) {
+
+                switch (angular.isString(param)) {
                     case true:
-                        return mainRecord(key)
+                        return mainRecord(param)
                             .then(remove);
                     default:
-                        return remove(key);
+                        return remove(param);
                 }
 
             }
@@ -416,13 +508,14 @@
              * ***********/
 
             /** 
+             * @public if options.gps === true
              * @param{Object} obj
              *
              * @param{Object|Array} obj.data locations to save
-             * @param{String} obj.path child node for coordinates
-             * @param{Object|String} obj.[id] if the main record already exists pass its firebaseRef or key and method will
-             * add indexes - optional
-             * @return{Array} [fireBaseRef of mainlocation]
+             * @param{String} [obj.path=self._points] child node for coordinates
+             * @param{Object|String} [obj.id] if the main record already exists pass its firebaseRef or key and method will
+             * add indexes
+             * @return{Promise<Array>} promise resovles to an array of newly created location records or to location indexes
              */
 
             function sendToGeofireToAdd(obj) {
@@ -449,13 +542,14 @@
 
 
 
-            /* @param{Object} obj
-             *
+            /**
+             * @public if options.gps === true
+             * @param{Object} obj
              * @param{String} obj.id "mainRecordId"
-             * @param{Boolean} obj.flag true if only wish to remove coordinates, otherwise leave undefined
-             * @param{String} obj.path child node for coordinates
-             * @param{Array} [obj.locKeys] ["array","or","locationIds"] - optional
-             * @return{Array} [fireBaseRefs of removed main location records]
+             * @param{Boolean} [obj.flag=null] true if only wish to remove coordinates, otherwise leave undefined
+             * @param{String} [obj.path=self._points] child node for coordinates
+             * @param{Array<String>} [obj.locKeys] ["array","or","locationIds"] - optional
+             * @return{Promise<Array>} [fireBaseRefs of removed main location records]
              */
 
             function sendToGeofireToRemove(obj) {
@@ -487,6 +581,10 @@
 
             }
 
+            /**
+             * @private
+             */
+
             function addKeyToLocation(locKey, fKey) {
                 switch (self._addRecordKey) {
                     case true:
@@ -496,9 +594,26 @@
                 }
             }
 
-            function sendToGeoFireToLoadLocations(prop, id) {
-                return self._geofireObject.loadRecordLocations(prop, id);
+            /**
+             * @public - if options.gps === true
+             * @param{String} col - property name to query by
+             * @param{String} id - key of record that you want to load locations of
+             * @return{Promise<Array>}  - promise resolves to a $firebaseArray
+             * @summary load all locations associates with a given main record
+             *
+             */
+            function sendToGeoFireToLoadLocations(col, id) {
+                return self._geofireObject.loadRecordLocations(col, id);
             }
+
+            /**
+             * @public - if options.gps === true
+             * @param{String} key - record id
+             * @param{Array} coords - [latitude,longitude]
+             * @param{String} [pth=self._points] - name of child node to save coordinates at.
+             * This defaults to name of the main node
+             * @return{Promise<Object>} resolves to the firebaseRef of entire geofire node
+             */
 
             function setCoords(key, coords, pth) {
                 if (!pth) {
@@ -507,6 +622,16 @@
                 return self._geofireObject.set(key, coords, pth);
             }
 
+
+            /**
+             * @public - if options.gps === true
+             * @param{String} key - id to lookup
+             * @param{String} [pth=self._points] - name of child node to save coordinates at.
+             * This defaults to name of the main node
+             * @return{Promise<Array|Null>} resolves to the coordinates array or null if no record
+             * is found
+             */
+
             function getCoords(key, pth) {
                 if (!pth) {
                     pth = self._points;
@@ -514,12 +639,33 @@
                 return self._geofireObject.get(key, pth);
             }
 
+            /**
+             * @public - if options.gps === true
+             * @param{String} key - id to lookup
+             * @param{String} [pth=self._points] - name of child node to save coordinates at.
+             * This defaults to name of the main node
+             * @return{Promise<Object>} resolves to the firebaseRef of entire geofire node
+             *
+             */
+
             function removeCoords(key, pth) {
                 if (!pth) {
                     pth = self._points;
                 }
                 return self._geofireObject.remove(key, true, pth);
             }
+
+
+            /**
+             * @public - if options.gps === true
+             * @param{Object} obj
+             * @param{Number} obj.radius - radius of query
+             * @param{Array<Number>} obj.center - [latitude,longitude]
+             * @param{String} [pth=self._points] - name of child node to save coordinates at.
+             * Defaults to name of main node
+             * @return{Promise<Object>} geoquery object
+             */
+
 
             function geoQuery(obj, pth) {
                 if (!pth) {
@@ -533,8 +679,11 @@
              * ***************/
 
             /**
-             * @param{Object|Array}
-             * @return{Array} firebaseRefs of created records
+             * @public - if options.geofire === true
+             * @param{Object|Array<Object>} locs - either data object to add or [data,objects,to,add]
+             * @param{String} [path=self._points] - name of child node for coordinates.  defaults
+             * to name of main node
+             * @return{Array} firebaseRefs of newly created main location Array records
              */
 
             function addLocations(locs, path) {
@@ -549,9 +698,10 @@
             }
 
             /**
-             * @param{Array|String} keys
+             * @public - if options.geofire === true
+             * @param{String|Array<String>} keys -either key - if only one record or ["keys","of","records"]
              * @param{Boolean} flag true if only wish to remove  coordinates, otherwise leave undefined
-             * @return{Array} firebaseRefs of deleted main array record
+             * @return{Array} firebaseRefs of deleted record
              */
 
             function removeLocations(keys, flag, path) {
@@ -566,6 +716,10 @@
             }
 
 
+            /**
+             * @private
+             */
+
             function removeLocation(key, flag, path) {
                 switch (flag) {
                     case true:
@@ -576,6 +730,24 @@
 
             }
 
+            /**
+             * @public - if option.geofire === true
+             * @param{String} col - property name to query by
+             * @param{String} id - key of record that you want to load locations of
+             * @return{Promise<Array>}  - promise resolves to a $firebaseArray
+             * @summary load all locations associates with a given main record
+             */
+
+            function loadRecordLocations(col, id) {
+                return currentRecordLocations(col, id)
+                    .then(wrapQuery)
+                    .then(loaded)
+                    .catch(standardError);
+            }
+
+            /**
+             * @private
+             */
             function addFullLocationRecord(data, path) {
                 var coords = {
                     lat: data[self._latitude],
@@ -593,6 +765,9 @@
 
             }
 
+            /**
+             * @private
+             */
             function removeFullLocationRecord(key, path) {
                 return self._q.all([removeMainRecord(key), removeGeofire(key, path)])
                     .then(setReturnValueToFirst)
@@ -600,11 +775,28 @@
             }
 
 
+            /**
+             * @public - if options.geofire === true
+             * @param{String} key - id to lookup
+             * @param{String} - name of child node to save coordinates at.
+             * @return{Promise<Array|Null>} resolves to the coordinates array or null if no record
+             * is found
+             */
+
             function getGeofire(key, path) {
                 return qAll(makeGeofire(path), key)
                     .then(getGeo)
                     .catch(standardError);
             }
+
+            /**
+             * @public - if options.geofire === true
+             * @param{Object} obj
+             * @param{Number} obj.radius - radius of query
+             * @param{Array<Number>} obj.center - [latitude,longitude]
+             * @param{String} - name of child node to save coordinates at.
+             * @return{Promise<Object>} geoquery object
+             */
 
             function queryGeofire(data, path) {
                 return qAll(makeGeofire(path), data)
@@ -612,11 +804,27 @@
                     .catch(standardError);
             }
 
+            /**
+             * @public - if options.geofire === true
+             * @param{String} key - id to lookup
+             * @param{String} - name of child node to save coordinates at.
+             * @return{Promise<Object>} resolves to the firebaseRef of entire geofire node
+             *
+             */
+
             function removeGeofire(key, path) {
                 return qAll(makeGeofire(path), key)
                     .then(removeGeo)
                     .catch(standardError);
             }
+
+            /**
+             * @public - if options.geofire === true
+             * @param{String} key - record id
+             * @param{Array} coords - [latitude,longitude]
+             * @param{String} path of child node to save coordinates at.
+             * @return{Promise<Object>} resolves to the firebaseRef of entire geofire node
+             */
 
             function setGeofire(key, coords, path) {
                 return qAll(makeGeofire(path), [key, coords])
@@ -624,7 +832,17 @@
                     .catch(standardError);
             }
 
-            function addRecordKey(path, locKey, fKey) {
+            /**
+             * @public - if options.geofire === true
+             * @param{String} path - key in geofire services' foreignKey's object used to identify
+             * this record's property name - see discussion in README
+             * @param{String} locKey - id of location record to lookup
+             * @param{String} mainRecId - id of main record to persist to the associated locations
+             * @summary this method adds a "mainRec" property to any locations added - the actual
+             * name of the property is determined in the constructor's foreignKeys option.  The value stored
+             * is the main Record Id
+             */
+            function addRecordKey(path, locKey, mainRecId) {
                 var prop = self._foreignKeys[path];
                 switch (!angular.isString(prop)) {
                     case true:
@@ -638,7 +856,7 @@
                 function updateLocationRecord(res) {
                     return self._timeout(function() {
                         var obj = {};
-                        obj[prop] = fKey;
+                        obj[prop] = mainRecId;
                         return res.child(locKey).update(obj);
                     });
                 }
@@ -649,32 +867,73 @@
              * User Option
              * ************/
 
+            /** 
+             * @private
+             */
+
             function addUserIndex(key) {
                 return self._userObject
                     .addIndex(null, self._path, key);
             }
+
+            /** 
+             * @private
+             */
 
             function removeUserIndex(key) {
                 return self._userObject
                     .removeIndex(null, self._path, key);
             }
 
+            /**
+             * @public - if option.user === true
+             * @return{Promise<Array>}  - promise resolves to a $firebaseArray
+             * @summary load all main records associated with current User
+             */
+
+            function loadUserRecords() {
+                return currentUserRecords()
+                    .then(wrapQuery)
+                    .then(loaded)
+                    .catch(standardError);
+            }
 
             /****************
              * Session Option
              * ***************/
 
+            /**
+             * @public if options.session === true
+             * @param{Object} s - $scope object
+             * @param{String} v - variable name to bind to
+             * @summary - this is a helper method to bind the current record to the $scope object
+             */
+
             function bindCurrent(s, v) {
                 return bindTo(sessionId(), s, v);
             }
+
+            /**
+             * @public if options.session === true
+             * @return{Promise<Object>} -promise resolves to a $firebaseObject of the current record
+             */
 
             function current() {
                 return mainRecord(sessionId());
             }
 
+            /**
+             * @public if options.session === true
+             * @return{Object} - returns your app's session service
+             */
             function session() {
                 return self._sessionObject;
             }
+
+            /**
+             * @public if options.session === true
+             * @return{String} - returns the current record id
+             */
 
             function sessionId() {
                 return self._sessionObject[self._sessionIdMethod]();
@@ -685,9 +944,11 @@
             /*
              * Combo Methods */
 
-            /* save main record and to user index
+            /** 
+             * @public if options.user === true
              * @param{Object} data to save to user array - just saving key for now
              * @return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record created)]
+             * @summary save main record and to user index
              */
 
             function createWithUser(data) {
@@ -701,9 +962,12 @@
 
             }
 
-            /* remove main record and user index
+
+            /** 
+             * @public if options.user === true
              * @param{String|Array}  key of main record to remove or [fireBaseArray,record to remove]
-             * @return{Array} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
+             * @return{Array<Promise>} [Promise(fireBaseRef at userIndex), firebaseRef(main record removed)]
+             * @summary remove main record and user index
              */
 
             function removeWithUser(key) {
@@ -717,10 +981,19 @@
 
             }
 
-            //TODO add method to update locationRecord with mainrecord id - see below;
+            /**
+             * @public if options.gps ===true
+             * @param{Object} rec - data object to persist to main Array
+             * @param{Object|Array<Object>} loc - location object associated with record or
+             * [locations,associated,with,record]
+             * @return{Promise<Object>} promise resolves to firebaseRef of newly created main record
+             * @summary This method creates a main record and records of associated locations. It also
+             * adds a location index to the main record and adds the main records key to the location
+             * records.
+             */
 
-            function createWithGps(data, loc) {
-                return self._q.all([createMainRecord(data), sendToGeofireToAdd({
+            function createWithGps(rec, loc) {
+                return self._q.all([createMainRecord(rec), sendToGeofireToAdd({
                         data: loc
                     })])
                     .then(addLocationIndexAndPassKey)
@@ -737,7 +1010,7 @@
              * @param{Array} arr
              * @param{Object|String} arr[0] firebaseRef or key of Record that has the associated location data
              * @param{Array} arr[1] array of firebaseRef of newly persisted locations
-             * @return{Array} array of location index, firebaseref of location record
+             * @return{Promise<Array>} array of location index, firebaseRef of location record
              * @summary creates indexes of persisted locations and, unless you've opted out of 'addRecordKey option
              * this will add this record key to the location record as well
              *
@@ -753,11 +1026,18 @@
                 }));
             }
 
-            function removeWithGps(mainRecId) {
+            /**
+             * @public if options.gps ===true
+             * @param{String} recId - id of main record
+             * @return{Promise<Object>} promise resolves to firebaseRef of the removed main record
+             * @summary This method removes a main record and any assocated locations
+             */
+
+            function removeWithGps(recId) {
 
                 return qAll(sendToGeofireToRemove({
-                        id: mainRecId
-                    }), mainRecId)
+                        id: recId
+                    }), recId)
                     .then(removeMainRec)
                     .catch(standardError);
 
@@ -767,16 +1047,18 @@
             }
 
             /** 
-             * @param{object} data to save to main array
-             * @param{object} location data to save
-             * @return{Array} [firebaseRef(location Index), firebaseRef of main record]
-             *
+             * @public if options.user === true && options.gps === true
+             * @param{Object} rec to save to main array
+             * @param{Object|Array} loc location data to persist- or [locations,to,persist]
+             * @return{Promise<Object>} - Promise resolves to the firebaseRef of the newly created main record
+             * @summary - This method adds a main record and records for any locations passed.  It also
+             * adds a location index at the main record, adds main record Id to each location record, and
+             * adds an index in the current user's firebase node.
              */
 
-            //TODO add method to update locationRecord with mainrecord id - see below;
-            function createWithUserAndGps(data, loc) {
+            function createWithUserAndGps(rec, loc) {
 
-                return self._q.all([createWithUser(data), sendToGeofireToAdd({
+                return self._q.all([createWithUser(rec), sendToGeofireToAdd({
                         data: loc
                     })])
                     .then(addLocationIndexAndPassKey)
@@ -790,10 +1072,23 @@
 
             }
 
+            /**
+             * @public if options.gps === true
+						 * @param{String} id key of location record to retrieve
+						 * @return{Promise<Object|Null>} - Promise resolves to the array record or null if not found
+             */
+
             function getLocationRecord(id) {
                 return self._geofireObject
                     .mainRecord(id)
             }
+
+            /** 
+						 * @public if options.user === true && options.gps === true
+						 * @param{String} mainRecId - key of main record to remove
+             * @param{Promise<Object>} - Promise resolves to the firebaseRef of the removed main record
+             *
+             */
 
             function removeWithUserAndGps(mainRecId) {
 
@@ -810,9 +1105,9 @@
             }
 
 
-            /*********************************/
-
-            /* Nested Arrays constructor
+            /** 
+						 * @constructor
+						 * @public if options.nestedArrays is defined
              */
 
             function addNested(obj, arr) {
@@ -903,13 +1198,16 @@
 
 
             /**
-             *@private
+             * @private
              */
 
             function add(res) {
                 return res[0].$add(checkTimeStampAtCreate(res[1]));
             }
 
+            /**
+             * @private
+             */
             function remove(res) {
                 switch (angular.isArray(res)) {
                     case true:
@@ -921,8 +1219,10 @@
                 }
             }
 
+            /**
+             * @private
+             */
             function save(res) {
-                self._log.info(res);
                 switch (angular.isArray(res)) {
                     /* to save array record */
                     case true:
@@ -936,6 +1236,9 @@
                 }
             }
 
+            /**
+             * @private
+             */
             function saveArray(params) {
                 switch (angular.isNumber(params[1])) {
                     case true:
@@ -958,61 +1261,114 @@
             }
 
 
+            /**
+             * @private
+             */
             function getRecord(res) {
                 return res[0].$getRecord(res[1]);
             }
 
+            /**
+             * @private
+             */
             function loadArrayAndGet(key) {
                 return qAll(loadMainArray(), key)
                     .then(getRecord)
                     .catch(standardError);
             }
 
+            /**
+             * @private
+             */
             function keyAt(res) {
                 return res[0].$keyAt(res[1]);
             }
 
+            /**
+             * @private
+             */
             function bindObject(res) {
                 return res[0].$bindTo(res[1][0], res[1][1]);
             }
 
+            /**
+             * @private
+             */
             function loaded(res) {
                 return res.$loaded();
             }
 
+            /**
+             * @private
+             */
             function getGeo(res) {
                 return qAll(res[0], res[0].get(res[1]));
             }
 
+            /**
+             * @private
+             */
             function setGeo(res) {
                 return res[0].set(res[1][0], res[1][1]);
             }
 
+            /**
+             * @private
+             */
             function queryGeo(res) {
                 return qAll(res[0], res[0].query(res[1]));
             }
 
+            /**
+             * @private
+             */
             function removeGeo(res) {
                 return res[0].remove(res[1]);
             }
 
+            /**
+             * @private
+             */
             function setReturnValueToFirst(res) {
                 return self._timeout(function() {
                     return res[0];
                 });
             }
 
+            /**
+             * @private
+             */
+            function currentRecordLocations(prop, id) {
+                return queryByChild(prop, id);
+            }
+
+            /**
+             * @private
+             */
+            function currentUserRecords() {
+                return queryByChild(self._uidProperty, sessionId());
+            }
+
+            /**
+             * @private
+             */
             function setReturnValueToSecond(res) {
                 return self._timeout(function() {
                     return res[1];
                 });
             }
 
+            /**
+             * @private
+             */
             function wrapQuery(res) {
                 return buildFire("array", res, true);
             }
 
 
+            /**
+             * @private
+             */
             function checkTimeStampAtCreate(obj) {
                 switch (self._timeStamp) {
                     case true:
@@ -1022,6 +1378,9 @@
                 }
             }
 
+            /**
+             * @private
+             */
             function checkTimeStampAtSave(obj) {
                 switch (self._timeStamp) {
                     case true:
@@ -1031,14 +1390,23 @@
                 }
             }
 
+            /**
+             * @private
+             */
             function qAll(x, y) {
                 return self._utils.qAll(x, y);
             }
 
+            /**
+             * @private
+             */
             function standardError(err) {
                 return self._utils.standardError(err);
             }
 
+            /**
+             * @public
+             */
             function inspect(item) {
                 switch (!item) {
                     case true:
