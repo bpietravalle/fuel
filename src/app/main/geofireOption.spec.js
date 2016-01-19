@@ -2,7 +2,7 @@
     "use strict";
 
     describe("Geofire Option", function() {
-        var rec1, firePath, utils, points, keyMock, $timeout, test1, rootPath, locData, test, ref, $rootScope, fuel, subject, $q;
+        var rec1, points, keyMock, $timeout, test1, rootPath, locData, test, ref, $rootScope, fuel, subject, $q;
 
         beforeEach(function() {
             rootPath = "https://your-firebase.firebaseio.com";
@@ -96,10 +96,8 @@
                 });
 
 
-            inject(function(_utils_, _firePath_, _$timeout_, _$q_, _$rootScope_, _fuel_) {
+            inject(function(_$timeout_, _$q_, _$rootScope_, _fuel_) {
                 $q = _$q_;
-                firePath = _firePath_;
-                utils = _utils_;
                 $timeout = _$timeout_;
                 $rootScope = _$rootScope_;
                 fuel = _fuel_;
