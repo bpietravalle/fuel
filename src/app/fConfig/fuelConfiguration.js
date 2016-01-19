@@ -1,9 +1,15 @@
 (function() {
     "use strict";
 
-    angular.module('firebase.fuel.config', ['firebase.starter'])
+    angular.module('firebase.fuel.config')
 
     .provider('fuelConfiguration', FuelConfigProvider);
+
+    /**
+     * @public
+     * @constructor
+     * @see {@link https://github.com/bpietravalle/fireStarter}
+     */
 
     /** @ngInject */
     function FuelConfigProvider(fireStarterProvider) {

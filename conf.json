@@ -1,0 +1,19 @@
+{
+    "source": {
+        "include": ["src/app"],
+        "includePattern": ".+\\.js(doc)?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "opts": {
+        "destination": "./docs/",
+				"readme": "./README.md",
+        "recurse": true
+    },
+    "plugins": [
+        "plugins/markdown",
+        "plugins/summarize"
+    ],
+    "templates": {
+        "cleverLinks": true
+    }
+}
