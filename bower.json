@@ -23,7 +23,10 @@
     "**/.*",
     "coverage",
     "node_modules",
-    "bower_components"
+    "bower_components",
+		"docs",
+    "src/test",
+    "src/testutils"
   ],
   "resolutions": {
     "angular": "~1.4.4",

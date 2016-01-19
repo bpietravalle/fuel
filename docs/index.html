@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Fuel</h1><p><a href="https://travis-ci.org/bpietravalle/fuel"><img src="https://travis-ci.org/bpietravalle/fuel.svg?branch=master" alt="Build Status"></a>
+<a href="https://badge.fury.io/js/firebase.fuel"><img src="https://badge.fury.io/js/firebase.fuel.svg" alt="npm version"></a>
+<a href="https://coveralls.io/github/bpietravalle/fuel?branch=master"><img src="https://coveralls.io/repos/bpietravalle/fuel/badge.svg?branch=master&amp;service=github" alt="Coverage Status"></a></p>
+<p>Fuel is a lightweight provider useful for DRYing up common command and query operations 
+across your angular services while maintaing a flat, scalable JSON data structure. 
+This module is designed for angular services using:</p>
+<ul>
+<li><a href="https://www.firebase.com/">Firebase</a></li>
+<li><a href="https://github.com/firebase/angularfire">angularFire</a></li>
+<li><a href="https://github.com/firebase/geofire-js">Geofire</a></li>
+</ul>
+<p>I apologize if you aren't using these in your code, but you really need to get with the program.</p>
+<h2>Installation &amp; Setup</h2><pre class="prettyprint source lang-bash"><code>$ npm install firebase.fuel --save</code></pre><pre class="prettyprint source lang-bash"><code>$ bower install firebase.fuel --save</code></pre><p>1.) Include Fuel in your app dependencies.</p>
+<pre class="prettyprint source lang-javascript"><code>angular.module(&quot;yourApp&quot;,['firebase.fuel']);</code></pre><p>2.) Define your root url in a config block using the <code>setRoot</code> method.</p>
+<pre class="prettyprint source lang-javascript"><code>
+(function(){
+    &quot;use strict&quot;;
+
+    angular.module(&quot;yourApp&quot;)
+            .constant(&quot;YOURURL&quot;,&quot;https://your-firebase.firebaseio.com&quot;)
+            .config(function(fuelConfigurationProvider,YOURURL){
+                 fuelConfigurationProvider.setRoot(YOURURL);
+            });
+
+})();</code></pre><h3>Repo Terminology</h3><p>Though we are both literally on the same page right now, let's make sure we are
+figuratively as well:</p>
+<ol>
+<li><p><em>main</em>: Adjective reserved for any firebaseRef or angularFire service found at a direct child of your root firebaseRef. </p>
+</li>
+<li><p><em>nested</em>: Adjective reserved for any firebaseRef or angularFire service found at a child of a main node. </p>
+</li>
+<li><p><em>index</em>: used as the <a href="https://www.firebase.com/docs/web/guide/structuring-data.html">pros</a> do.</p>
+</li>
+</ol>
+<p>For example:</p>
+<pre class="prettyprint source lang-javascript"><code>/* mainArray - $firebaseArray 
+*  https://your-firebase.firebaseio.com/trips */
+
+/* mainRecord - $firebaseObject
+* https://your-firebase.firebaseio.com/trips/tripId */
+
+/* nestedArray - $firebaseArray (or an index) 
+* https://your-firebase.firebaseio.com/trips/tripId/cities*/
+
+/* nestedRecord - $firebaseObject
+* https://your-firebase.firebaseio.com/trips/tripId/cities/cityId */</code></pre><h2>Usage</h2><p>The Fuel provider takes 2 arguments:</p>
+<pre class="prettyprint source lang-javascript"><code>     fuel(path, options);</code></pre><ol>
+<li><p><em>path</em>: String of the Firebase node your angular service will manage. This should
+be a direct child of your root firebaseRef. </p>
+</li>
+<li><p><em>options</em>: Options hash.  See below.</p>
+</li>
+</ol>
+<h2>Conventions</h2><ul>
+<li><em>Syntax</em>: I've tried to keep naming conventions to a minimum.  You can follow 
+your own convention, however Fuel's defaults for nodes and arrays are plural nouns,
+while defaults for records, objects, and angular services singluar.  The one
+exception is that the default Geofire node and service are both called &quot;geofire&quot;. </li>
+</ul>
+<p>Example:</p>
+<pre class="prettyprint source lang-javascript"><code>
+(function(){
+    &quot;use strict&quot;;
+
+    angular.module(&quot;yourApp&quot;)
+     .factory(&quot;trip&quot;, tripFactory)
+     .factory(&quot;geofire&quot;, geofireFactory);
+
+     /** @ngInject */
+     function tripFactory(fuel){
+            return fuel(&quot;trips&quot;);
+     }
+
+     /** @ngInject */
+     function geofireFactory(fuel){
+            return fuel(&quot;geofire&quot;);
+     }
+
+})();</code></pre><p>Again, you can follow your own convention and override the defaults for all operations
+ on the main node. Nested arrays, however, are another story.  Fuel follows the above 
+naming convention for constructing CRUD methods for nested arrays and nested records. 
+To mainpulate nested data using a different naming convention you can do so manually.</p>
+<ul>
+<li><em>SRP</em>:  Fuel cannot directly manipulate/query other main firebase nodes. 
+To access other direct child nodes of your root firebaseRef, you can call methods on
+a few predefined services that are injected on initialization.  Currently, these services
+are: 'session','user','geofire'.</li>
+</ul>
+<h2>Configuration</h2><p>You can configure Fuel by adding predefined keys to the options hash.  There are 6 core
+options.</p>
+<table>
+<thead>
+<tr>
+<th>options[key]</th>
+<th>Type</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>geofire</td>
+<td>Boolean</td>
+<td>adds methods to persist/query geospatial data to/in Geofire</td>
+</tr>
+<tr>
+<td>gps</td>
+<td>Boolean</td>
+<td>adds a simple API to your app's geofire service</td>
+</tr>
+<tr>
+<td>nestedArrays</td>
+<td>Array</td>
+<td><code>[&quot;child&quot;,&quot;nodes&quot;]</code></td>
+</tr>
+<tr>
+<td>session</td>
+<td>Boolean</td>
+<td>adds a simple API for your app's session service/object</td>
+</tr>
+<tr>
+<td>timeStamp</td>
+<td>Boolean</td>
+<td>adds timestamp properties to main and nested records</td>
+</tr>
+<tr>
+<td>user</td>
+<td>Boolean</td>
+<td>adds a simple API for your app's user service (and session as well) </td>
+</tr>
+</tbody>
+</table>
+<h5>gps vs geofire</h5><p>These keys are confusing, and perhaps need to be renamed.  Anyhow, in keeping with convention SRP, 
+services that have geospatial data to persist and query are not responsible for actually
+executing the given queries/commands. So:</p>
+<pre class="prettyprint source lang-javascript"><code>(function(){
+    &quot;use strict&quot;;
+
+    angular.module(&quot;yourApp&quot;)
+            .factory(&quot;trip&quot;, tripFactory)
+            .factory(&quot;geofire&quot;, geofireFactory);
+
+// a service that has gps data associated with its ontology
+     /** @ngInject */
+     function tripFactory(fuel){
+            return fuel(&quot;trips&quot;,{
+                gps: true
+            });
+     }
+
+// a service that has prefined methods for managing geospatial data
+     /** @ngInject */
+     function geofireFactory(fuel){
+            return fuel(&quot;geofire&quot;,{
+                 geofire: true
+            });
+     }
+
+})();</code></pre><h3><em>Geofire Interface</em></h3><p>By adding <code>geofire: true</code> to the options hash, fuel will persist/query any location
+data on behalf of your other services.</p>
+<p>Fuel separates longitude and latitude from other data associated with a location (<em>eg</em>, placeIds, 
+reviews, etc.). This will allow you to associate more than one location with a given record.
+Fuel will persist non-coordinate data at a firebase Node (default name is <code>geofire</code>), and will then
+persist the given location's coordinates at a child node( default name is the same as the original
+record).  See the example below.  And, yes, you can change these default names.  See below.</p>
+<p>Additionally, through the GPS interface described in the next session, Fuel will,by default, 
+attempt to update each new location with the primary key of the record(<em>e.g.</em>, <code>tripId</code>). 
+You must however expliticly provide the geofire service with the correct property names via 
+the <code>foreignKeys</code> option.  See following example.</p>
+<pre class="prettyprint source lang-javascript"><code>(function(){
+    &quot;use strict&quot;;
+
+    angular.module(&quot;yourApp&quot;)
+            .factory(&quot;flights&quot;, flightsFactory)
+            .factory(&quot;trips&quot;, tripsFactory)
+            .factory(&quot;geofire&quot;, geofireFactory)
+
+     /*Two different types of records with location data
+     * https://your-firebase.firebaseio.com/trips
+     * https://your-firebase.firebaseio.com/flights*/
+
+     /** @ngInject */
+     function tripsFactory(fuel){
+            return fuel(&quot;trips&quot;,{
+                 gps: true
+            });
+     }
+
+     /** @ngInject */
+     function flightsFactory(fuel){
+            return fuel(&quot;flights&quot;,{
+                 gps: true
+            });
+     }
+
+
+     /* Make sure you add these nodes to your security rules.
+
+     * For all location-data
+     * https://your-firebase.firebaseio.com/geofire
+
+     * For all trip coordinates  
+     * https://your-firebase.firebaseio.com/geofire/trips 
+
+     * For all flight coordinates - 
+     * https://your-firebase.firebaseio.com/geofire/flights */
+
+     /** @ngInject */
+     function geofireFactory(fuel){
+            return fuel(&quot;geofire&quot;,{
+                 geofire: true,
+                 foreignKeys: {
+                 &quot;trips&quot;: &quot;tripId&quot;,  // your-fb.com/geofire/uniqueId/tripId must be defined
+                 &quot;flights&quot;: &quot;flightId&quot;,  // your-fb.com/geofire/uniqueId/flightId must be defined.
+                 }
+            });
+     }
+
+})();</code></pre><p>Lastly, the default names for coordinates are <code>lat</code> and <code>lon</code>.<br>These keys are only necessary for communicating with your controller; Geofire follows its own methodology.</p>
+<p><em>REQs</em>:</p>
+<ul>
+<li>Your controller/view will need to save coordinates in a data object with <code>lat</code>/<code>lon</code> keys. See below for 
+renaming these keys.</li>
+<li>Your app will need to specify an angular service responsible for geofire in order for fuel to work properly.
+Also, you must make sure your security rules allow for the nodes and properties described above.</li>
+</ul>
+<h3><em>GPS Interface</em></h3><p>By adding <code>gps: true</code> to the options hash, fuel will:</p>
+<ul>
+<li>send location data to your Geofire services defined above</li>
+<li>save/remove a geofire Index in your main node</li>
+<li>add unique recordId as a property of any location Record.  See example
+below to override this behavior.</li>
+</ul>
+<p><em>REQs</em>:</p>
+<ul>
+<li>Follow setup for Geofire interface </li>
+<li>Specify a geofire index in your security rules. See below for overriding
+the default names.</li>
+<li>By default, Fuel will try to add the main record's unique id to the geofire location.
+To opt-out of this functionality simply add <code>addRecordKey: false</code> to the options hash.</li>
+</ul>
+<p>For example:</p>
+<pre class="prettyprint source lang-javascript"><code>(function(){
+    &quot;use strict&quot;;
+
+    angular.module(&quot;yourApp&quot;)
+            .factory(&quot;trip&quot;, tripFactory);
+
+     /** @ngInject */
+     function tripFactory(fuel){
+            return fuel(&quot;trips&quot;,{
+                 gps: true,
+                 addRecordKey: false
+            });
+     }
+     //make sure that 'https://your-firebase.firebaseio.com/trips/tripId/locations' is defined!
+
+}();</code></pre><h3><em>NestedArrays</em></h3><p>By adding <code>nestedArrays: []</code> to the options hash, fuel will construct
+a few methods for manipulating/querying nested arrays/records.<br>For example:</p>
+<pre class="prettyprint source lang-javascript"><code>fuel(&quot;users&quot;,{
+  nestedArrays: [&quot;phones&quot;]
+});
+
+/* Will expose the firebase node 'https://your-fb.com/users/userId/phones',
+* via the following methods.
+*/
+
+phone(key)
+phones()
+addPhone(data)
+getPhone(key)
+loadPhone(key)
+loadPhones()
+removePhone(idxOrRec)
+savePhone(rec)</code></pre><h3><em>Session Interface</em></h3><p>By adding <code>session: true</code> to the options hash, fuel adds a very simple API for sharing 
+data between your app's session and the given firebase node.  </p>
+<p><em>REQs</em>:</p>
+<ul>
+<li><p><em>injector</em>: fuel will try to inject a <code>session</code> service.  Make sure it's available. 
+See below for overriding these names.</p>
+</li>
+<li><p><em>IdMethod</em>: fuel also expects the session service to have a method for querying ids stored
+in session.  The default is <code>getId</code>.  See below for overriding this name.</p>
+</li>
+</ul>
+<p>Again, very simple but it allows your service to maintain a current Record with very little code.</p>
+<h3><em>TimeStamp</em></h3><p>By adding <code>timeStamp: true</code> to the options hash, fuel will add <code>createdAt</code> and <code>updatedAt</code>
+properties to all persisted records.  See below for overriding these default names.</p>
+<p>Currently, fuel won't allow you to opt out of timestamps for nested records.  Maybe 
+for the next iteration.</p>
+<p><em>REQs</em>:</p>
+<ul>
+<li>Make sure you have added the timeStamp properties to your security rules</li>
+</ul>
+<h3><em>User Interface</em></h3><p>By adding <code>user: true</code> to the options hash, fuel will:</p>
+<ul>
+<li>save/remove an index in your user object </li>
+<li>add a <code>uid</code> property to any record created in the main Array</li>
+<li>queries user records based on the user index or uid property</li>
+</ul>
+<p><em>REQs</em></p>
+<ul>
+<li><em>index</em>: fuel will look for an index with the same name as the main node.
+You need to specify the index in your security rules.</li>
+</ul>
+<p>For example:</p>
+<pre class="prettyprint source lang-javascript"><code>     fuel(&quot;trips&quot;,{
+            user: true
+     };
+//make sure that 'https://your-firebase.firebaseio.com/users/userId/trips' is defined!</code></pre><ul>
+<li><p><em>injector</em>: fuel will try to inject a <code>user</code> service.  Make sure it's
+available. See below for overriding these names.</p>
+</li>
+<li><p><em>uid</em>: Your security rules will need to allow for a uid property. To opt-out of
+this functionality simply add <code>uid: false</code> to the options hash.  You can also specify a
+a different name via the <code>uidProperty</code> option, as described below.</p>
+</li>
+</ul>
+<p><em>Note</em>: This option also provides the session mngt functionality described above.  No need
+to add <code>session: true</code>, however if you want to be redundant redundant, please be my guest.</p>
+<h3>Overriding Defaults</h3><p>Here are the current defaults and the required options to override them.</p>
+<p><em>Nodes and Services</em></p>
+<table>
+<thead>
+<tr>
+<th>options[key]</th>
+<th>Type</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>geofireNode</td>
+<td>String</td>
+<td>&quot;geofire&quot;</td>
+</tr>
+<tr>
+<td>geofireService</td>
+<td>String</td>
+<td>&quot;geofire&quot;</td>
+</tr>
+<tr>
+<td>geofireIndex</td>
+<td>String</td>
+<td>&quot;locations&quot;</td>
+</tr>
+<tr>
+<td>points</td>
+<td>String</td>
+<td><code>path</code> argument of the given fuel service</td>
+</tr>
+<tr>
+<td>sessionService</td>
+<td>String</td>
+<td>&quot;session&quot;</td>
+</tr>
+<tr>
+<td>sessionIdMethod</td>
+<td>String</td>
+<td>&quot;getId&quot;</td>
+</tr>
+<tr>
+<td>userNode</td>
+<td>String</td>
+<td>&quot;users&quot;</td>
+</tr>
+<tr>
+<td>userService</td>
+<td>String</td>
+<td>singular of userNode</td>
+</tr>
+</tbody>
+</table>
+<p><em>Properties</em></p>
+<table>
+<thead>
+<tr>
+<th>options[key]</th>
+<th>Type</th>
+<th>Default Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>createTime</td>
+<td>String</td>
+<td>&quot;createdAt&quot;</td>
+</tr>
+<tr>
+<td>latitude</td>
+<td>String</td>
+<td>&quot;lat&quot;</td>
+</tr>
+<tr>
+<td>longitude</td>
+<td>String</td>
+<td>&quot;lon&quot;</td>
+</tr>
+<tr>
+<td>uidProperty</td>
+<td>String</td>
+<td>&quot;uid&quot;</td>
+</tr>
+<tr>
+<td>updateTime</td>
+<td>String</td>
+<td>&quot;updatedAt&quot;</td>
+</tr>
+</tbody>
+</table>
+<h3>Authentication Helper</h3><p>Fuel does not expose the $firebaseAuth service.  To do so, inject <code>fuelAuth</code>.  This factory will return 
+a $firebaseAuth service at the url specified by the <code>fuelConfigurationProvider</code>, as specified above.</p>
+<h2>Contributing</h2><p>Yes, please.  Below should get you setup.</p>
+<pre class="prettyprint source lang-bash"><code>$ git clone https://github.com/bpietravalle/fireStarter.git
+$ cd fireStarter
+$ npm i && bower i # install dependencies
+$ gulp test #run test suite once
+$ gulp test:auto #watch files and run tests continually</code></pre><p>Any pending tasks associated with this repo are tracked <a href="https://www.pivotaltracker.com/n/projects/1512802">here</a>. </p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="-_anonymous_-Fuel_construct-addNested.html">addNested</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Tue Jan 19 2016 07:43:42 GMT-0500 (EST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
