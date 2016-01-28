@@ -64,7 +64,7 @@ For example:
 /* mainRecord - $firebaseObject
 * https://your-firebase.firebaseio.com/trips/tripId */
 
-/* nestedArray - $firebaseArray (or an index) 
+/* nestedArray - $firebaseArray
 * https://your-firebase.firebaseio.com/trips/tripId/cities*/
 
 /* nestedRecord - $firebaseObject
@@ -140,7 +140,7 @@ timeStamp | Boolean | adds timestamp properties to main and nested records
 user | Boolean | adds a simple API for your app's user service (and session as well) 
 
 ##### gps vs geofire
-These keys are confusing, and perhaps need to be renamed.  Anyhow, in keeping with convention SRP, 
+These keys are confusing, and perhaps need to be renamed.  Anyhow, in keeping with SRP, 
 services that have geospatial data to persist and query are not responsible for actually
 executing the given queries/commands. So:
 
@@ -400,8 +400,8 @@ Yes, please.  Below should get you setup.
 
 
 ```bash
-$ git clone https://github.com/bpietravalle/fireStarter.git
-$ cd fireStarter
+$ git clone https://github.com/bpietravalle/fuel.git
+$ cd fuel
 $ npm i && bower i # install dependencies
 $ gulp test #run test suite once
 $ gulp test:auto #watch files and run tests continually
