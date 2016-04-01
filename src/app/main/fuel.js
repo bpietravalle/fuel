@@ -331,7 +331,7 @@
              * @public
              * @param{String} col - property name used in an 'orderByChild' query;
              * @param{String|Number|etc} val - value of child - ie arg of equalTo
-             * @return{Promise<Array>} promise resolves to a $firebaseArray of the given query
+             * @return{Promise<firebaseRef>} promise resolves to a firebaseRef the given query
              */
 
             function queryByChild(col, val) {
