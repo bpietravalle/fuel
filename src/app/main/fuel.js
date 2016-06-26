@@ -740,6 +740,7 @@
              * name of the property is determined in the constructor's foreignKeys option.  The value stored
              * is the main Record Id
              */
+
             function addRecordKey(path, locKey, mainRecId) {
                 var prop = self._foreignKeys[path];
                 switch (!angular.isString(prop)) {
@@ -888,6 +889,14 @@
 
             }
 
+            // function addKey(obj, str) {
+            //     if (self._addRecordKey) {
+            //         angular.extend(obj, {
+            //             key: str
+            //         });
+
+            //     }
+            // }
 
             /**
              * @public
@@ -1165,6 +1174,8 @@
                     .then(add)
                     .catch(standardError);
             }
+
+
 
             function addKeyToLocation(locKey, fKey) {
                 switch (self._addRecordKey) {

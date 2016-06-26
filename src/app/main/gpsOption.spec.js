@@ -1,7 +1,7 @@
 (function() {
     "use strict";
 
-    describe("Fuel Factory", function() {
+    describe("GPS option", function() {
         var addArr, locRef, remArr, geofire, keyMock, $timeout, newRecord, rootPath, locData, test, $rootScope, user, options, fuel, subject, $q, $log;
 
         beforeEach(function() {
@@ -177,16 +177,16 @@
                     it("should call geofire.addRecordKey for each location added", function() {
                         expect(geofire.addRecordKey.calls.count()).toEqual(2);
                     });
-                    it("should call geofire.addRecordKey with correct args", function() {
-                        flushTime();
-                        var id = Object.keys(this.data)[0];
-                        expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
-                        expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
-                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(id);
-                        expect(geofire.addRecordKey.calls.argsFor(1)[0]).toEqual("trips");
-                        expect(geofire.addRecordKey.calls.argsFor(1)[1]).toEqual(this.key2);
-                        expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(id);
-                    });
+                    // it("should call geofire.addRecordKey with correct args", function() {
+                    //     flushTime();
+                    //     var id = Object.keys(this.data)[0];
+                    //     expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
+                    //     expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
+                    //     expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(id);
+                    //     expect(geofire.addRecordKey.calls.argsFor(1)[0]).toEqual("trips");
+                    //     expect(geofire.addRecordKey.calls.argsFor(1)[1]).toEqual(this.key2);
+                    //     expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(id);
+                    // });
                     it("should add location index to main record and set ref to main record", function() {
                         $rootScope.$digest();
                         $timeout.flush();
