@@ -186,18 +186,9 @@
                     it("should add records to main location array", function() {
                         expect(geofire.add.calls.argsFor(0)[0]).toEqual(locData);
                     });
-                    it("should call geofire.addRecordKey for each location added", function() {
-                        expect(geofire.addRecordKey.calls.count()).toEqual(2);
-                    });
-                    it("should call geofire.addRecordKey with correct args", function() {
-												flushTime();
-                        var id = getPromValue(test).key();
-                        expect(geofire.addRecordKey.calls.argsFor(0)[0]).toEqual("trips");
-                        expect(geofire.addRecordKey.calls.argsFor(0)[1]).toEqual(this.key1);
-                        expect(geofire.addRecordKey.calls.argsFor(0)[2]).toEqual(id);
-                        expect(geofire.addRecordKey.calls.argsFor(1)[0]).toEqual("trips");
-                        expect(geofire.addRecordKey.calls.argsFor(1)[1]).toEqual(this.key2);
-                        expect(geofire.addRecordKey.calls.argsFor(1)[2]).toEqual(id);
+                    it("should call pass new mainRecord key to geofire.add", function() {
+                        var key = Object.keys(this.data)[0];
+                        expect(geofire.add.calls.argsFor(0)[2]).toEqual(key);
                     });
                     it("should add location indices to main record and set ref to main record", function() {
 												flushTime();

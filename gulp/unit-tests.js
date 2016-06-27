@@ -7,47 +7,47 @@ var conf = require('./conf');
 var karma = require('karma');
 
 var pathSrcHtml = [
-  path.join(conf.paths.src, '/**/*.html')
+    path.join(conf.paths.src, '/**/*.html')
 ];
 
 var pathSrcJs = [
-  path.join(conf.paths.src, '/**/!(*.spec).js')
+    path.join(conf.paths.src, '/**/!(*.spec).js')
 
 ];
 
-function runTests (singleRun, done) {
-  var reporters = ['progress','spec','notify'];
-  var preprocessors = {};
+function runTests(singleRun, done) {
+    var reporters = ['progress', 'notify'];
+    var preprocessors = {};
 
-  pathSrcHtml.forEach(function(path) {
-    preprocessors[path] = ['ng-html2js'];
-  });
-
-  if (singleRun) {
-    pathSrcJs.forEach(function(path) {
-      preprocessors[path] = ['coverage'];
+    pathSrcHtml.forEach(function(path) {
+        preprocessors[path] = ['ng-html2js'];
     });
-    reporters.push('coverage')
-  }
 
-  var localConfig = {
-    configFile: path.join(__dirname, '/../karma.conf.js'),
-    singleRun: singleRun,
-    autoWatch: !singleRun,
-    reporters: reporters,
-    preprocessors: preprocessors
-  };
+    if (singleRun) {
+        pathSrcJs.forEach(function(path) {
+            preprocessors[path] = ['coverage'];
+        });
+        reporters.push('coverage')
+    }
 
-  var server = new karma.Server(localConfig, function(failCount) {
-    done(failCount ? new Error("Failed " + failCount + " tests.") : null);
-  })
-  server.start();
+    var localConfig = {
+        configFile: path.join(__dirname, '/../karma.conf.js'),
+        singleRun: singleRun,
+        autoWatch: !singleRun,
+        reporters: reporters,
+        preprocessors: preprocessors
+    };
+
+    var server = new karma.Server(localConfig, function(failCount) {
+        done(failCount ? new Error("Failed " + failCount + " tests.") : null);
+    })
+    server.start();
 }
 
 gulp.task('test', ['scripts'], function(done) {
-  runTests(true, done);
+    runTests(true, done);
 });
 
 gulp.task('test:auto', ['watch'], function(done) {
-  runTests(false, done);
+    runTests(false, done);
 });

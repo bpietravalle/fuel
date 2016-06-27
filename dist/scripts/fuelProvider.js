@@ -838,7 +838,7 @@
              * @public
              * @param{String} col - property name used in an 'orderByChild' query;
              * @param{String|Number|etc} val - value of child - ie arg of equalTo
-             * @return{Promise<Array>} promise resolves to a $firebaseArray of the given query
+             * @return{Promise<firebaseRef>} promise resolves to a firebaseRef the given query
              */
 
             function queryByChild(col, val) {
@@ -975,18 +975,19 @@
              * @param{String} [obj.path=self._points] child node for coordinates
              * @param{Object|String} [obj.id] if the main record already exists pass its firebaseRef or key and method will
              * add indexes
+             * @param{String} [str] - key of main record to save as addRecordKey property
              * @return{Promise<Array>} promise resovles to an array of newly created location records or to location indexes
              */
 
-            function sendToGeofireToAdd(obj) {
+            function sendToGeofireToAdd(obj, str) {
                 if (!obj.path) {
                     obj.path = self._points;
                 }
                 switch (!obj.id) {
                     case true:
-                        return self._geofireObject.add(obj.data, obj.path);
+                        return self._geofireObject.add(obj.data, obj.path, str);
                     default:
-                        return self._geofireObject.add(obj.data, obj.path)
+                        return self._geofireObject.add(obj.data, obj.path, str)
                             .then(setReturnVal)
                             .then(addLocationIndices)
                             .catch(standardError);
@@ -1129,17 +1130,26 @@
             /**
              * @public
              * @param{Object|Array<Object>} locs - either data object to add or [data,objects,to,add]
-             * @param{String} [path=self._points] - name of child node for coordinates.  defaults
+             * @param{String} path- name of child node for coordinates-- also used for setting fkey property
+             * @param{String} [fkey] - key of associated main record
              * to name of main node
              * @return{Array} firebaseRefs of newly created main location Array records
              */
 
-            function addLocations(locs, path) {
+            function addLocations(locs, path, fkey) {
+                var prop;
                 if (!angular.isArray(locs)) {
                     locs = [locs];
                 }
 
+                if (angular.isString(fkey) && angular.isString(path)) {
+                    prop = self._foreignKeys[path];
+                }
+
                 return self._q.all(locs.map(function(loc) {
+                    if (angular.isString(prop)) {
+                        loc[prop] = fkey;
+                    }
                     return addFullLocationRecord(loc, path)
                         .catch(standardError);
                 }));
@@ -1247,6 +1257,7 @@
              * name of the property is determined in the constructor's foreignKeys option.  The value stored
              * is the main Record Id
              */
+
             function addRecordKey(path, locKey, mainRecId) {
                 var prop = self._foreignKeys[path];
                 switch (!angular.isString(prop)) {
@@ -1382,9 +1393,19 @@
              */
 
             function createWithGps(rec, loc) {
-                return self._q.all([createMainRecord(rec), sendToGeofireToAdd({
-                        data: loc
-                    })])
+                var key;
+                return createMainRecord(rec)
+                    .then(function(res) {
+                        if (self._addRecordKey) {
+                            key = res.key();
+                        }
+                        return sendToGeofireToAdd({
+                                data: loc
+                            }, key)
+                            .then(function(arr) {
+                                return [res, arr];
+                            })
+                    })
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValueToSecond)
                     .catch(standardError);
@@ -1395,6 +1416,14 @@
 
             }
 
+            // function addKey(obj, str) {
+            //     if (self._addRecordKey) {
+            //         angular.extend(obj, {
+            //             key: str
+            //         });
+
+            //     }
+            // }
 
             /**
              * @public
@@ -1427,10 +1456,20 @@
              */
 
             function createWithUserAndGps(rec, loc) {
+                var key;
 
-                return self._q.all([createWithUser(rec), sendToGeofireToAdd({
-                        data: loc
-                    })])
+                return createWithUser(rec)
+                    .then(function(res) {
+                        if (self._addRecordKey) {
+                            key = res[1].key();
+                        }
+                        return sendToGeofireToAdd({
+                                data: loc
+                            }, key)
+                            .then(function(arr) {
+                                return [res, arr];
+                            })
+                    })
                     .then(addLocationIndexAndPassKey)
                     .then(setReturnValueToSecond)
                     .catch(standardError);
@@ -1673,15 +1712,6 @@
                     .catch(standardError);
             }
 
-            function addKeyToLocation(locKey, fKey) {
-                switch (self._addRecordKey) {
-                    case true:
-                        return self._geofireObject.addRecordKey(self._points, locKey, fKey);
-                    default:
-                        null;
-                }
-            }
-
             function removeLocation(key, flag, path) {
                 switch (flag) {
                     case true:
@@ -1787,8 +1817,7 @@
              * @param{Object|String} arr[0] firebaseRef or key of Record that has the associated location data
              * @param{Array} arr[1] array of firebaseRef of newly persisted locations
              * @return{Promise<Array>} array of location index, firebaseRef of location record
-             * @summary creates indexes of persisted locations and, unless you've opted out of 'addRecordKey option
-             * this will add this record key to the location record as well
+             * @summary creates indexes of persisted locations
              *
              */
 
@@ -1798,7 +1827,7 @@
                 }
                 return self._q.all(arr[1].map(function(loc) {
 
-                    return qAll(addIndex(arr[0], self._geofireIndex, loc.key()), addKeyToLocation(loc.key(), arr[0]));
+                    return addIndex(arr[0], self._geofireIndex, loc.key()); 
                 }));
             }
 

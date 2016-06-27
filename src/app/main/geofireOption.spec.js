@@ -106,7 +106,11 @@
             points = "trips";
             spyOn($q, "reject").and.callThrough();
             subject = fuel("geofire", {
-                geofire: true
+                geofire: true,
+                foreignKeys: {
+                    "trips": "tripId",
+                    "flights": "flightId"
+                }
             });
         });
         afterEach(function() {
@@ -116,13 +120,6 @@
         describe("Commands", function() {
             describe("Coordinates Only", function() {
                 beforeEach(function() {
-                    subject = fuel("geofire", {
-                        geofire: true,
-                        foreignKeys: {
-                            "trips": "tripId",
-                            "flights": "flightId"
-                        }
-                    });
                     test = subject.set("key", [50, 50], "trips");
                     $rootScope.$digest();
                     $timeout.flush();
@@ -162,13 +159,6 @@
             describe("*Single Record*", function() {
                 describe("addRecordKey()", function() {
                     beforeEach(function() {
-                        subject = fuel("geofire", {
-                            geofire: true,
-                            foreignKeys: {
-                                "trips": "tripId",
-                                "flights": "flightId"
-                            }
-                        });
                         subject.ref().push(locData[0]);
                         subject.ref().flush();
                         this.ref1 = subject.ref()._lastAutoId;
@@ -196,47 +186,65 @@
                     });
                 });
                 describe("add", function() {
-                    beforeEach(function() {
-                        test = subject.add(locData[0], points);
-                        flushTime();
-                        this.key = subject.ref().key();
-                    });
-
-                    it("should be a promise", function() {
-                        expect(test).toBeAPromise();
-                    });
-                    it("should remove coordinates from main array", function() {
-                        var d = subject.ref().getData();
-                        expect(d).toBeDefined();
-                        expect(d.lat).not.toBeDefined();
-                        expect(d.lon).not.toBeDefined();
-                    });
-                    it("should save data to main array", function() {
-                        var d = subject.ref().getData();
-                        var id = Object.keys(d);
-                        expect(d[id].place_id).toEqual("string");
-                        expect(d[this.key]).not.toBeDefined();
-                    });
-                    it("should return an array of main record firebaserefs", function() {
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        expect(getPromValue(test)[0]).toBeAFirebaseRef();
-                        expect(getPromValue(test)).toBeAn("array");
-                    });
-                    it("should add coordinates to coordinates node", function() {
-                        $rootScope.$digest();
-                        $timeout.flush();
-                        $rootScope.$digest();
-                        var d = subject.ref().root().child("geofire/" + points);
-                        d.flush();
-                        var id = Object.keys(d.children)[0];
-                        expect(d.getData()).not.toEqual(null);
-                        expect(d.getData()[id]).toEqual({
-                            "g": jasmine.any(String),
-                            "l": [90, 100]
+                    describe("With fkey param", function() {
+                        beforeEach(function() {
+                            test = subject.add(locData[0], points, "ImAFKey");
+                            flushTime();
+                            this.key = subject.ref().key();
+                        });
+                        it("should add foreignKey property to main record", function() {
+                            var key = subject.ref()._lastAutoId;
+                            var d = subject.ref().child(key).getData();
+                            expect(d.tripId).toEqual("ImAFKey");
                         });
                     });
-                    qReject(0);
+                    describe("Without fkey param", function() {
+                        beforeEach(function() {
+                            test = subject.add(locData[0], points);
+                            flushTime();
+                            this.key = subject.ref().key();
+                        });
+                        it("should be a promise", function() {
+                            expect(test).toBeAPromise();
+                        });
+                        it("should not add foreignKey property to main record", function() {
+                            var key = subject.ref()._lastAutoId;
+                            var d = subject.ref().child(key).getData();
+                            expect(d.tripId).not.toBeDefined();
+                        });
+                        it("should remove coordinates from main array", function() {
+                            var d = subject.ref().getData();
+                            expect(d).toBeDefined();
+                            expect(d.lat).not.toBeDefined();
+                            expect(d.lon).not.toBeDefined();
+                        });
+                        it("should save data to main array", function() {
+                            var d = subject.ref().getData();
+                            var id = Object.keys(d);
+                            expect(d[id].place_id).toEqual("string");
+                            expect(d[this.key]).not.toBeDefined();
+                        });
+                        it("should return an array of main record firebaserefs", function() {
+                            $rootScope.$digest();
+                            $timeout.flush();
+                            expect(getPromValue(test)[0]).toBeAFirebaseRef();
+                            expect(getPromValue(test)).toBeAn("array");
+                        });
+                        it("should add coordinates to coordinates node", function() {
+                            $rootScope.$digest();
+                            $timeout.flush();
+                            $rootScope.$digest();
+                            var d = subject.ref().root().child("geofire/" + points);
+                            d.flush();
+                            var id = Object.keys(d.children)[0];
+                            expect(d.getData()).not.toEqual(null);
+                            expect(d.getData()[id]).toEqual({
+                                "g": jasmine.any(String),
+                                "l": [90, 100]
+                            });
+                        });
+                        qReject(0);
+                    });
                 });
                 // describe("remove", function() {
                 //     beforeEach(function() {

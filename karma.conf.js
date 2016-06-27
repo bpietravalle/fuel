@@ -21,8 +21,7 @@ function listFiles() {
             path.join(conf.paths.src, '/app/**/*.module.js'),
             path.join(conf.paths.src, '/app/**/**/*.js'),
             path.join(conf.paths.src, '/testutils/*.js'),
-            path.join(conf.paths.src, '/**/*.spec.js'),
-            path.join(conf.paths.src, '/**/*.html')
+            path.join(conf.paths.src, '/**/*.spec.js')
         ])
         .concat(pathSrcHtml);
 
@@ -30,12 +29,6 @@ function listFiles() {
         return {
             pattern: pattern
         };
-    });
-    files.push({
-        pattern: path.join(conf.paths.src, '/assets/**/*'),
-        included: false,
-        served: true,
-        watched: false
     });
     return files;
 }
