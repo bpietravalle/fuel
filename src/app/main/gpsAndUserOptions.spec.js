@@ -120,8 +120,8 @@
 
             inject(function(_user_, _session_, _geofire_, _$timeout_, _$log_, _$rootScope_, _fuel_, _$q_) {
                 geofire = _geofire_;
-								user = _user_;
-								session = _session_;
+                user = _user_;
+                session = _session_;
                 $timeout = _$timeout_;
                 $rootScope = _$rootScope_;
                 fuel = _fuel_;
@@ -163,19 +163,19 @@
                         expect(test).toBeAPromise();
                     });
                     it("should add record to main array", function() {
-												flushTime();
+                        flushTime();
                         var ref = getPromValue(test)
                         expect(ref.getData()).toEqual(jasmine.objectContaining(newRecord));
                     });
                     it("should add uid property to main record", function() {
-												flushTime();
+                        flushTime();
                         var ref = getPromValue(test)
                         expect(ref.getData().uid).toEqual(1);
                     });
                     it("should call user.addIndex with correct path and main record key", function() {
-												flushTime();
+                        flushTime();
                         var id = getPromValue(test).key();
-                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", id);
+                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", id, undefined);
                     });
                     it("should call geofire.add once", function() {
                         expect(geofire.add.calls.count()).toEqual(1);
@@ -191,7 +191,7 @@
                         expect(geofire.add.calls.argsFor(0)[2]).toEqual(key);
                     });
                     it("should add location indices to main record and set ref to main record", function() {
-												flushTime();
+                        flushTime();
                         var path = getPromValue(test);
                         expect(path.toString()).toEqual(rootPath + "/trips/" + path.key());
                     });
@@ -244,6 +244,7 @@
         function getPromValue(obj) {
             return obj.$$state.value;
         }
+
         function flushTime() {
             $rootScope.$digest();
             $timeout.flush();

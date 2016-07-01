@@ -83,6 +83,11 @@
             this._userNode = this._utils.paramCheck(this._options.userNode, "str", "users");
             this._userService = this._utils.paramCheck(this._options.userService, "str", this._utils.singularize(this._userNode));
             this._userObject = this._injector.get(this._userService);
+            this._customUserIndex = this._utils.paramCheck(this._options.customUserIndex, "bool", false);
+            if (this._customUserIndex) {
+                this._userIndexProp = this._options.userIndexProp || true;
+            }
+
             this._session = true;
         }
         if (this._session === true) {
@@ -352,10 +357,11 @@
              * configured option hash to use your app's session object
              * @param{String} idxName - name of index
              * @param{String} key  - foreign key to add to index
+             * @param{Any} [val=true] - value to set at index - defaults to true
              * @return{Promise<Object>} promise resolves to the firebaseRef of the index
              */
 
-            function addIndex(recId, idxName, key) {
+            function addIndex(recId, idxName, key, val) {
 
                 if (!angular.isString(recId) && self._session === true) {
                     recId = sessionId();
@@ -365,8 +371,11 @@
                     .catch(standardError);
 
                 function completeAction(res) {
+                    if (!val) {
+                        val = true;
+                    }
                     return self._timeout(function() {
-                            return qAll(res[0], res[0].child(res[1]).set(true))
+                            return qAll(res[0], res[0].child(res[1]).set(val))
                         })
                         .then(setReturnValueToFirst)
                         .catch(standardError);
@@ -850,7 +859,11 @@
                     .catch(standardError);
 
                 function passKeyToUser(res) {
-                    return qAll(addUserIndex(res.key()), res);
+                    var prop;
+                    if (self._customUserIndex) {
+                        prop = data[self._userIndexProp];
+                    }
+                    return qAll(addUserIndex(res.key(), prop), res);
                 }
 
             }
@@ -909,14 +922,6 @@
 
             }
 
-            // function addKey(obj, str) {
-            //     if (self._addRecordKey) {
-            //         angular.extend(obj, {
-            //             key: str
-            //         });
-
-            //     }
-            // }
 
             /**
              * @public
@@ -1260,9 +1265,9 @@
                     .catch(standardError);
             }
 
-            function addUserIndex(key) {
+            function addUserIndex(key, val) {
                 return self._userObject
-                    .addIndex(null, self._path, key);
+                    .addIndex(null, self._path, key, val);
             }
 
             function removeUserIndex(key) {
@@ -1320,7 +1325,7 @@
                 }
                 return self._q.all(arr[1].map(function(loc) {
 
-                    return addIndex(arr[0], self._geofireIndex, loc.key()); 
+                    return addIndex(arr[0], self._geofireIndex, loc.key());
                 }));
             }
 
