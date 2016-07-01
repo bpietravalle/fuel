@@ -200,7 +200,7 @@
                         test = subject.session();
                     });
                     it("should return the session Object", function() {
-											var ses = subject.inspect('sessionObject');
+                        var ses = subject.inspect('sessionObject');
                         expect(test).toEqual(ses);
                     });
                 });
@@ -292,11 +292,33 @@
                 options = {
                     user: true
                 };
-                subject = fuel("trips", options);
             });
             describe("Commands: ", function() {
+                describe("add - with 2nd arg for index", function() {
+                    beforeEach(function() {
+                        options.customUserIndex = true;
+                        options.userIndexProp = 'city';
+                        subject = fuel("trips", options);
+                        newRecord.city = 'boston';
+                        test = subject.add(newRecord, 'city');
+                        flushTime();
+                        this.mainKey = getPromValue(test)[1].key();
+                    });
+                    it("should return an array with two items", function() {
+                        expect(getPromValue(test)).toHaveLength(2);
+                        expect(getPromValue(test)).toEqual(jasmine.any(Array));
+                    });
+                    it("should call user addIndex with main array key and correct data property", function() {
+                        expect(this.mainKey).toEqual(jasmine.any(String));
+                        expect(user.addIndex.calls.argsFor(0)[0]).toEqual(null);
+                        expect(user.addIndex.calls.argsFor(0)[1]).toEqual("trips");
+                        expect(user.addIndex.calls.argsFor(0)[2]).toEqual(this.mainKey);
+                        expect(user.addIndex.calls.argsFor(0)[3]).toEqual('boston');
+                    });
+                });
                 describe("add", function() {
                     beforeEach(function() {
+                        subject = fuel("trips", options);
                         test = subject.add(newRecord);
                         flushTime();
                         this.mainKey = getPromValue(test)[1].key();
@@ -307,7 +329,7 @@
                     });
                     it("should call user addIndex with main array key", function() {
                         expect(this.mainKey).toEqual(jasmine.any(String));
-                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", this.mainKey);
+                        expect(user.addIndex).toHaveBeenCalledWith(null, "trips", this.mainKey, undefined);
                     });
                     it("array item #1 = firebaseRef of userIndex", function() {
                         expect(getPromValue(test)[0].key()).toEqual("addIndexKey");

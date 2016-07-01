@@ -251,7 +251,25 @@
                     });
                     qReject(0);
                 });
+                describe("Indices - Custom save", function() {
+
+                    beforeEach(function() {
+                        test = subject.addIndex("1", "hotels", "string", 123);
+                        $rootScope.$digest();
+                        $timeout.flush();
+                        $rootScope.$digest();
+                        subject.ref().flush();
+                        $rootScope.$digest();
+                        this.idx = subject.ref();
+                    });
+                    it("should add data to index", function() {
+                        expect(this.idx.getData()).toEqual({
+                            "string": 123
+                        });
+                    });
+                });
                 describe("Indices", function() {
+
                     beforeEach(function() {
                         test = subject.addIndex("1", "hotels", "string");
                         $rootScope.$digest();
